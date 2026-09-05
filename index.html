@@ -1,1 +1,15 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Japan Alpha League</title><style>html,body{background:#050505;color:#9b988f;font-family:monospace;padding:20px}</style></head><body>Loading Japan Alpha League…<script>fetch("https://tksqbbezvpjjjgqkpknw.supabase.co/storage/v1/object/public/web/index.html?v="+Date.now()).then(function(r){return r.text()}).then(function(t){document.open();document.write(t);document.close();}).catch(function(e){document.body.textContent="Failed to load app: "+e;});</script></body></html>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JAPAN ALPHA LEAGUE</title>
+<style>body{background:#0b0c0e;color:#c8c6bd;font-family:monospace;margin:0;padding:40px;text-align:center}</style>
+</head>
+<body>
+<div id="b">LOADING JAPAN ALPHA LEAGUE…</div>
+<script>
+fetch("./app.html?v="+Date.now()).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text();}).then(function(h){document.open();document.write(h);document.close();}).catch(function(e){document.getElementById("b").textContent="Load failed: "+e.message+" — refresh to retry.";});
+</script>
+</body>
+</html>
