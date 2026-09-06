@@ -291,7 +291,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody">
         <div id="tkt-lock" class="locknote">Sign in (top-right) to place orders. Orders start filling at the next TSE close — max 20% of 20-day ADV per day.</div>
         <form class="tkt" id="tkt" style="display:none" autocomplete="off">
-          <div><label class="f">Ticker</label><input id="t-code" placeholder="7203" maxlength="5"></div>
+          <div><label class="f">Ticker</label><input id="t-code" placeholder="7203 / NVDA" maxlength="7"></div>
           <div><label class="f">Side</label><select id="t-side"><option>BUY</option><option>SELL</option></select></div>
           <div><label class="f">Size in</label><select id="t-mode"><option value="bn">¥bn</option><option value="shares">Shares</option><option value="bps">bps of NAV</option></select></div>
           <div><label class="f">Qty</label><input id="t-qty" inputmode="decimal" placeholder="30"></div>
@@ -393,7 +393,20 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       </div>
       <div class="pbody">
         <div id="wo-tiles" class="mgc"></div>
-        <div class="hint2">MSCI World vs MSCI Japan, indexed to 100 at range start. Off-benchmark (MSCI World names, up to 25% of NAV) is in build — ordering opens here once live.</div>
+        <h4 class="minih" style="margin-top:10px">OFF-BENCHMARK UNIVERSE — TOP MSCI WORLD NAMES (US-LISTED · USD)</h4>
+        <div class="searchrow">
+          <input id="wu-q" placeholder="filter ticker / name / sector">
+          <span class="cnt" id="wu-cnt"></span>
+        </div>
+        <div style="max-height:420px;overflow:auto;border:1px solid var(--bord);border-radius:3px">
+        <table>
+          <thead><tr>
+            <th class="l">TKR</th><th class="l">NAME</th><th class="l">SECTOR</th><th>WORLD WGT%</th><th>LAST $</th><th>LAST ¥</th><th>ADV $M</th><th>MY POS</th>
+          </tr></thead>
+          <tbody id="wu-body"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
+        </table>
+        </div>
+        <div class="hint2">Off-benchmark bucket: up to 25% of NAV in MSCI World names (US-listed, USD). Orders fill at the most recent US close × USD/JPY; 1-share lots; same 20%-of-ADV participation cap and cost. Click a row to load the ticker into the TRADE ticket. Sizes in ¥bn or shares (bps not yet for World names).</div>
       </div>
     </div>
 
@@ -763,8 +776,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var q=S.quotes.find(function(x){return x.code===code;});
     if(q&&q.price!=null) return {px:Number(q.price), live:true, at:q.updated_at};
     if(S.closes&&S.closes[code]!=null) return {px:Number(S.closes[code]), live:false};
+    if(S.world_closes&&S.world_closes[code]!=null&&S.usdjpy>0) return {px:Number(S.world_closes[code])*Number(S.usdjpy), live:false, world:true, usd:Number(S.world_closes[code])};
     return null;
   }
+  function winstOf(code){ return (S.world_instruments||[]).find(function(w){return w.symbol===code;})||null; }
   function instOf(code){ return S.instruments.find(function(i){return i.code===code;})||null; }
   function statOf(code){ return S.stats.find(function(i){return i.code===code;})||null; }
   function quotesFresh(){
@@ -1294,6 +1309,34 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var s2=mk("MSCI JAPAN","#ffa028",S.benchmark); if(s2)series.push(s2);
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","w2",$("wc-tip"));
   }
+  function renderWorldUniv(){
+    var tb=$("wu-body"); if(!tb) return;
+    var rows=S.world_instruments||[];
+    var qstr=(($("wu-q")||{}).value||"").toLowerCase();
+    var myp=me?S.players.find(function(p){return p.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
+    var fx=Number(S.usdjpy)||null;
+    var list=rows.filter(function(w){
+      if(!qstr) return true;
+      return (w.symbol+" "+(w.name||"")+" "+(w.sector||"")).toLowerCase().indexOf(qstr)>=0;
+    });
+    $("wu-cnt").textContent=list.length+" / "+rows.length+" names"+(fx?" · USD/JPY "+fx.toFixed(2):"");
+    if(!list.length){ tb.innerHTML='<tr><td class="l empty" colspan="8">No matches.</td></tr>'; return; }
+    tb.innerHTML=list.slice(0,150).map(function(w){
+      var pu=S.world_closes?S.world_closes[w.symbol]:null;
+      var pos=myp?S.positions.find(function(x){return x.player_id===myp.id&&x.code===w.symbol;}):null;
+      return '<tr class="pick" data-code="'+esc(w.symbol)+'">'
+        +'<td class="l"><b>'+esc(w.symbol)+'</b></td>'
+        +'<td class="l">'+esc(String(w.name||"").slice(0,22))+'</td>'
+        +'<td class="l">'+esc(String(w.sector||"").slice(0,16))+'</td>'
+        +'<td class="num">'+(w.weight!=null?Number(w.weight).toFixed(2):"–")+'</td>'
+        +'<td class="num">'+(pu!=null?n(Number(pu),2):"–")+'</td>'
+        +'<td class="num">'+(pu!=null&&fx?n(Number(pu)*fx,0):"–")+'</td>'
+        +'<td class="num">'+(w.adv20_value_usd?n(Number(w.adv20_value_usd)/1e6,0):"–")+'</td>'
+        +'<td class="num'+(pos?" warn":"")+'">'+(pos?n(Number(pos.shares)):"–")+'</td>'
+        +'</tr>';
+    }).join("");
+  }
+  (function(){ var el=$("wu-q"); if(el) el.addEventListener("input",function(){ if(S) renderWorldUniv(); }); })();
 
   function renderMarketSummary(){
     var idx=$("ms-idx"), secT=$("ms-sec"), mov=$("ms-mov"), br=$("ms-breadth");
@@ -1417,15 +1460,28 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var qty=parseFloat(($("t-qty").value||"").replace(/,/g,""));
     var mode=$("t-mode").value, side=$("t-side").value;
     if(!myp||!code||!(qty>0)){ el.innerHTML=""; return; }
-    var inst=instOf(code), lc=lastCloseOf(code), st2=statOf(code);
+    var inst=instOf(code), lc=lastCloseOf(code), st2=statOf(code), wi=winstOf(code);
     if(!lc||!(lc.px>0)){ el.innerHTML='<span class="mut">No price data for '+esc(code)+' yet.</span>'; return; }
+    if(lc.world&&mode==="bps"){ el.innerHTML='<span class="warn">bps sizing not yet supported for World names — use ¥bn or shares.</span>'; return; }
     var c=playerCalc(myp);
     var nav=(c.liveNav!=null?c.liveNav:c.nav)||Number(S.league.initial_nav);
+    var lot=lc.world?1:100;
     var sh;
-    if(mode==="shares") sh=Math.floor(qty/100)*100;
-    else if(mode==="bps") sh=Math.floor((qty/1e4)*Math.max(0,nav)/lc.px/100)*100;
-    else sh=Math.floor(qty*1e9/lc.px/100)*100;
+    if(mode==="shares") sh=Math.floor(qty/lot)*lot;
+    else if(mode==="bps") sh=Math.floor((qty/1e4)*Math.max(0,nav)/lc.px/lot)*lot;
+    else sh=Math.floor(qty*1e9/lc.px/lot)*lot;
     if(!(sh>0)){ el.innerHTML='<span class="dn">Rounds to 0 lots at &yen;'+n(lc.px,lc.px<1000?1:0)+' &mdash; increase size.</span>'; return; }
+    var offNote="";
+    if(lc.world){
+      var offG=0;
+      S.positions.forEach(function(x){
+        if(x.player_id!==myp.id) return;
+        var lw=lastCloseOf(x.code);
+        if(lw&&lw.world) offG+=Math.abs(Number(x.shares)*lw.px);
+      });
+      var offAfter=offG+(side==="BUY"?sh*lc.px:0);
+      offNote=' &nbsp;&middot;&nbsp; off-BM bucket: '+(nav>0?(offAfter/nav*100).toFixed(1):"–")+'% / 25% cap'+(nav>0&&offAfter>0.25*nav?' <span class="dn">OVER — will be clipped</span>':'');
+    }
     var pos=S.positions.find(function(x){return x.player_id===myp.id&&x.code===code;});
     var cur=pos?Number(pos.shares):0;
     var clip=side==="SELL"&&sh>cur;
@@ -1435,15 +1491,18 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var bw=inst&&inst.bm_weight?inst.bm_weight/100:0;
     var a0=(w-bw)*1e4, a1=(tw-bw)*1e4;
     var days=null;
-    if(st2&&Number(st2.adv20_value)>0){
-      var perDay=Math.floor(Number(st2.adv20_value)*Number(S.league.participation)/lc.px/100)*100;
+    var advY=st2&&Number(st2.adv20_value)>0?Number(st2.adv20_value):(wi&&Number(wi.adv20_value_usd)>0&&S.usdjpy>0?Number(wi.adv20_value_usd)*Number(S.usdjpy):null);
+    if(advY){
+      var perDay=Math.floor(advY*Number(S.league.participation)/lc.px/lot)*lot;
       if(perDay>0) days=Math.ceil(eff/perDay);
     }
     el.innerHTML='<b>'+n(eff)+' sh</b> &asymp; &yen;'+bn(eff*lc.px,2)+'bn'
       +' &nbsp;&middot;&nbsp; active bet: <span class="num '+cls(a0)+'">'+(a0>=0?"+":"")+a0.toFixed(0)+'bp</span>'
       +' &rarr; <b class="num '+cls(a1)+'">'+(a1>=0?"+":"")+a1.toFixed(0)+'bp</b> vs BM'
       +(days!=null?' &nbsp;&middot;&nbsp; est. fill &asymp; <b>'+days+'</b> trading day'+(days>1?'s':'')+' <span class="mut">(20% ADV cap)</span>':'')
-      +(clip?' &nbsp;&middot;&nbsp; <span class="warn">SELL clipped to position ('+n(cur)+' sh)</span>':'');
+      +(clip?' &nbsp;&middot;&nbsp; <span class="warn">SELL clipped to position ('+n(cur)+' sh)</span>':'')
+      +offNote
+      +(lc.world?' &nbsp;&middot;&nbsp; <span class="mut">US close $'+n(lc.usd,2)+' &times; USD/JPY</span>':'');
   }
   ["t-code","t-qty"].forEach(function(id){ $(id).addEventListener("input",tkPrev); });
   ["t-mode","t-side"].forEach(function(id){ $(id).addEventListener("change",tkPrev); });
@@ -1455,6 +1514,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var code=$("t-code").value.trim().toUpperCase();
     var qty=parseFloat($("t-qty").value.replace(/,/g,""));
     var mode=$("t-mode").value;
+    if(mode==="bps"&&winstOf(code)){ msg.textContent="bps sizing not yet supported for World names — use ¥bn or shares."; msg.className="msg err"; return; }
     if(mode==="bps"){
       // convert bps of NAV to shares client-side (round to 100-share lots)
       if(!(qty>0&&qty<=10000)){ msg.textContent="bps must be between 0 and 10,000."; msg.className="msg err"; return; }
@@ -1985,7 +2045,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       $("bmlvl").innerHTML='MSCI JP <b class="num">'+n(l.level,1)+'</b> <span class="num '+cls(chg)+'">'+pct(chg)+'</span> <span class="mut">'+esc(l.d)+"</span>";
     }
     refreshChip();
-    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); tkPrev();
+    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); tkPrev();
   }
 })();
 </script>
