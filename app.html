@@ -2132,16 +2132,32 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(side==="BUY"&&c.cash!=null&&eff*lc.px>Number(c.cash)){
       cashNote=' &nbsp;&middot;&nbsp; <span class="warn">EXCEEDS CASH &yen;'+bn(Number(c.cash),2)+'bn &mdash; fills stop at available cash (sell first to fund)</span>';
     }
-    var days=null;
+    var days=null, queueNote="";
     var advY=st2&&Number(st2.adv20_value)>0?Number(st2.adv20_value):(wi&&Number(wi.adv20_value_usd)>0&&S.usdjpy>0?Number(wi.adv20_value_usd)*Number(S.usdjpy):null);
     if(advY){
       var perDay=Math.floor(advY*Number(S.league.participation)/lc.px/lot)*lot;
-      if(perDay>0) days=Math.ceil(eff/perDay);
+      // There is ONE participation budget per player per name per day, so any other order this
+      // player already has working in the same name is queued ahead of this one and consumes the
+      // same daily allowance. Counting only this ticket would under-state the fill time.
+      var ahead=0;
+      (S.orders||[]).forEach(function(o){
+        if(o.player_id!==myp.id||String(o.code).toUpperCase()!==code) return;
+        if(o.status!=="pending"&&o.status!=="working") return;
+        var t=o.target_shares!=null?Number(o.target_shares)
+             :(o.mode==="bn"?Math.floor(Number(o.qty)*1e9/lc.px/lot)*lot:Math.floor(Number(o.qty)/lot)*lot);
+        var rem=t-Number(o.filled_shares||0);
+        if(rem>0) ahead+=rem;
+      });
+      if(perDay>0){
+        days=Math.ceil((eff+ahead)/perDay);
+        if(ahead>0) queueNote=' &nbsp;&middot;&nbsp; <span class="mut">'+n(ahead)+' sh already working in '+esc(code)+' shares the same daily cap</span>';
+      }
     }
     el.innerHTML='<b>'+n(eff)+' sh</b> &asymp; &yen;'+bn(eff*lc.px,2)+'bn'
       +' &nbsp;&middot;&nbsp; active bet: <span class="num '+cls(a0)+'">'+(a0>=0?"+":"")+a0.toFixed(0)+'bp</span>'
       +' &rarr; <b class="num '+cls(a1)+'">'+(a1>=0?"+":"")+a1.toFixed(0)+'bp</b> vs BM'
       +(days!=null?' &nbsp;&middot;&nbsp; est. fill &asymp; <b>'+days+'</b> trading day'+(days>1?'s':'')+' <span class="mut">(20% ADV cap)</span>':'')
+      +queueNote
       +(clip?' &nbsp;&middot;&nbsp; <span class="warn">SELL clipped to position ('+n(cur)+' sh)</span>':'')
       +cashNote
       +offNote
