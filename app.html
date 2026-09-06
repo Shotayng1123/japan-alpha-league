@@ -58,6 +58,32 @@ tbody tr:hover{background:#101318}
 tbody tr.sel{background:var(--sel)}
 tbody tr.click{cursor:pointer}
 td .sub{color:var(--txt2);font-size:11px}
+
+/* compact density (Bloomberg-tight) */
+body.cmp{font-size:11.5px;line-height:1.3}
+body.cmp table{font-size:11px}
+body.cmp td{padding:2px 6px}
+body.cmp th{padding:3px 6px;font-size:9.5px}
+body.cmp .pbody{padding:5px 8px}
+body.cmp .phead{padding:4px 8px}
+body.cmp #grid{gap:7px}
+body.cmp .nwrow{padding:1px 5px}
+
+/* news */
+.nwrow{display:flex;gap:8px;align-items:baseline;padding:3px 6px;border-bottom:1px solid #1a1b1e;white-space:nowrap;overflow:hidden}
+.nwrow:hover{background:#101318}
+.nwt{color:var(--txt2);font-size:10.5px;width:78px;flex:none;font-variant-numeric:tabular-nums}
+.nwsig{width:40px;flex:none;font-size:10px;letter-spacing:-.5px;color:var(--amber)}
+.nwsig i{color:#2e2f33;font-style:normal}
+.nwtags{flex:none;display:flex;gap:3px}
+.nwc{font-size:9.5px;border:1px solid var(--bord2);border-radius:2px;padding:0 4px;color:var(--txt2);line-height:1.5}
+.nwc.tk{color:var(--amber);border-color:var(--amber-dim);cursor:pointer}
+.nwc.pos{color:var(--up);border-color:#1d5c3a}
+.nwc.neg{color:var(--dn);border-color:#6b241f}
+.nwh{flex:1;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.nwh a{color:var(--txt);text-decoration:none}
+.nwh a:hover{color:var(--cyan);text-decoration:underline}
+.nwsrc{color:var(--mut);font-size:10px;flex:none;width:74px;text-align:right;overflow:hidden}
 .pill{display:inline-block;font-size:10px;padding:0 7px;border:1px solid var(--bord2);border-radius:2px;letter-spacing:.05em}
 .pill.pending{color:var(--warn)} .pill.working{color:var(--cyan)} .pill.filled{color:var(--up)}
 .pill.rejected,.pill.cancelled{color:var(--dn)}
@@ -247,6 +273,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <a href="#me" data-view="me">MY DESK</a>
     <a href="#trade" data-view="trade">TRADE</a>
     <a href="#market" data-view="market">MARKET</a>
+    <a href="#news" data-view="news">NEWS</a>
     <a href="#japan" data-view="japan">MSCI JAPAN</a>
     <a href="#world" data-view="world">MSCI WORLD</a>
   </nav>
@@ -256,6 +283,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <span id="clock" class="num"></span>
     <span id="upd" class="mut" style="font-size:10px"></span>
     <span id="sz-ctl"><span class="chip-sm" data-sz="0.85">S</span><span class="chip-sm on" data-sz="1">M</span><span class="chip-sm" data-sz="1.15">L</span><span class="chip-sm" data-sz="1.35">XL</span></span>
+    <span id="cmp-ctl" class="chip-sm" title="Compact density &mdash; more rows per screen">COMPACT</span>
     <span class="chip" id="repbtn" title="Download portfolio summary PDF">REPORT</span>
     <span class="chip" id="loginchip">SIGN IN / JOIN</span>
   </span>
@@ -399,6 +427,29 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           <span class="hint2" style="margin:0" id="mg-note"></span>
         </div>
         <div id="mg-box"><div class="empty">Loading global markets&hellip;</div></div>
+      </div>
+    </div>
+
+    <div class="panel c12" data-view="news">
+      <div class="phead"><span class="no">12N</span><span class="t">NEWS &mdash; TAGGED TO YOUR UNIVERSE</span><span class="aux" id="nw-aux"></span></div>
+      <div class="pbody">
+        <div id="nw-ctl" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+          <span class="chip-sm on" data-nwf="g" data-v="">ALL</span>
+          <span class="chip-sm" data-nwf="g" data-v="Macro">MACRO</span>
+          <span class="chip-sm" data-nwf="g" data-v="Earnings">EARNINGS</span>
+          <span class="chip-sm" data-nwf="g" data-v="M&amp;A">M&amp;A</span>
+          <span class="chip-sm" data-nwf="g" data-v="Commodity">COMMODITY</span>
+          <span class="chip-sm" data-nwf="g" data-v="Equity">EQUITY</span>
+          <span style="width:10px"></span>
+          <span class="chip-sm" data-nwf="lang" data-v="ja">日本語</span>
+          <span class="chip-sm" data-nwf="lang" data-v="en">EN</span>
+          <span style="width:10px"></span>
+          <span class="chip-sm" data-nwf="tk" data-v="1">MY NAMES</span>
+          <span class="chip-sm" data-nwf="held" data-v="1">MY BOOK</span>
+          <span style="flex:1"></span>
+          <span class="hint2" style="margin:0">Headlines link out &mdash; read with your own subscription.</span>
+        </div>
+        <div id="nw-list"><div class="empty">Loading news&hellip;</div></div>
       </div>
     </div>
 
@@ -549,7 +600,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   try{ var saved=localStorage.getItem("jal_cred"); if(saved) me=JSON.parse(saved); }catch(e){}
 
   /* ---------- view router ---------- */
-  var VIEWS=["league","me","trade","market","japan","world"];
+  var VIEWS=["league","me","trade","market","news","japan","world"];
   function curView(){ var h=(location.hash||"").replace("#",""); return VIEWS.indexOf(h)>=0?h:"league"; }
   function showView(){
     var v=curView();
@@ -560,6 +611,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#nav a"),function(a){
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
+    if(v==="news"){ loadNews(); }
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
@@ -597,6 +649,21 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   var savedZoom="1";
   try{ savedZoom=localStorage.getItem("jal_zoom")||"1"; }catch(e){}
   applyZoom(savedZoom);
+
+  /* compact density (per-device) */
+  function applyCmp(on){
+    if(on) document.body.classList.add("cmp"); else document.body.classList.remove("cmp");
+    var c=$("cmp-ctl"); if(c) c.className="chip-sm"+(on?" on":"");
+  }
+  var cmpOn=false;
+  try{ cmpOn=localStorage.getItem("jal_cmp")==="1"; }catch(e){}
+  applyCmp(cmpOn);
+  if($("cmp-ctl")) $("cmp-ctl").addEventListener("click",function(){
+    cmpOn=!cmpOn;
+    try{ localStorage.setItem("jal_cmp",cmpOn?"1":"0"); }catch(e){}
+    applyCmp(cmpOn);
+    if(S){ renderHM(); renderHMW(); }
+  });
   Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
     c2.addEventListener("click",function(){
       var z=c2.getAttribute("data-sz");
@@ -2451,6 +2518,91 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   });
 
   /* ---------- render all ---------- */
+  /* ---------- news ---------- */
+  var NEWS=null, nwLoading=false, nwF={g:"",lang:"",tk:false,held:false};
+  function nwCodes(c,pre){ var o=[]; (c||[]).forEach(function(x){ if(x.indexOf(pre)===0) o.push(x.slice(pre.length)); }); return o; }
+  function nwTickers(c){ var o=[]; (c||[]).forEach(function(x){ if(/-(JP|US)$/.test(x)) o.push(x); }); return o; }
+  function nwOne(c,pre){ var a=nwCodes(c,pre); return a.length?a[0]:""; }
+  function myHeldCodes(){
+    var out={};
+    if(!S||!me) return out;
+    var p=(S.players||[]).filter(function(x){return x.nickname===me.nickname;})[0];
+    if(!p) return out;
+    (S.positions||[]).forEach(function(x){ if(x.player_id===p.id) out[String(x.code).toUpperCase()]=1; });
+    return out;
+  }
+  function loadNews(){
+    if(NEWS||nwLoading) { if(NEWS) renderNews(); return; }
+    nwLoading=true;
+    fetch(API+"?action=news&n=300").then(function(r){return r.json();}).then(function(j){
+      nwLoading=false; NEWS=(j&&j.rows)||[]; renderNews();
+    }).catch(function(){ nwLoading=false; var el=$("nw-list"); if(el) el.innerHTML='<div class="empty">News unavailable right now.</div>'; });
+  }
+  function renderNews(){
+    var el=$("nw-list"); if(!el) return;
+    if(!NEWS){ el.innerHTML='<div class="empty">Loading news&hellip;</div>'; return; }
+    var held=myHeldCodes();
+    var nowJ=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+    var rows=NEWS.filter(function(r){
+      var c=r[5]||[];
+      if(nwF.g && nwOne(c,"g:")!==nwF.g) return false;
+      if(nwF.lang && r[4]!==nwF.lang) return false;
+      var tks=nwTickers(c);
+      if(nwF.tk && !tks.length) return false;
+      if(nwF.held){
+        var hit=false;
+        tks.forEach(function(t){ if(held[t.replace(/-(JP|US)$/,"")]) hit=true; });
+        if(!hit) return false;
+      }
+      return true;
+    });
+    $("nw-aux").textContent=rows.length+" / "+NEWS.length+" headlines";
+    if(!rows.length){ el.innerHTML='<div class="empty">No headlines match these filters.</div>'; return; }
+    var h=[];
+    rows.forEach(function(r){
+      var c=r[5]||[];
+      var d=new Date(Date.parse(r[0])+9*3600e3);
+      var ds=d.toISOString().slice(0,10), hm=d.toISOString().slice(11,16);
+      var tlab=(ds===nowJ?hm:ds.slice(5).replace("-","/")+" "+hm);
+      var sig=Number(nwOne(c,"n:"))||1;
+      var dots='';
+      for(var i=0;i<5;i++) dots+= (i<sig?'&#9679;':'<i>&#9679;</i>');
+      var sent=nwOne(c,"x:"), gen=nwOne(c,"g:"), sec=nwOne(c,"s:");
+      var tags='';
+      if(gen) tags+='<span class="nwc">'+esc(gen)+'</span>';
+      nwTickers(c).forEach(function(t){
+        var bare=t.replace(/-(JP|US)$/,"");
+        tags+='<span class="nwc tk" data-snap="'+esc(bare)+'">'+esc(t)+'</span>';
+      });
+      if(sent==="POS") tags+='<span class="nwc pos">+</span>';
+      else if(sent==="NEG") tags+='<span class="nwc neg">&minus;</span>';
+      if(sec) tags+='<span class="nwc">'+esc(sec.slice(0,14))+'</span>';
+      h.push('<div class="nwrow"><span class="nwt">'+esc(tlab)+'</span>'
+        +'<span class="nwsig">'+dots+'</span>'
+        +'<span class="nwtags">'+tags+'</span>'
+        +'<span class="nwh"><a href="'+esc(r[3])+'" target="_blank" rel="noopener noreferrer">'+esc(r[2])+'</a></span>'
+        +'<span class="nwsrc">'+esc(r[1])+'</span></div>');
+    });
+    el.innerHTML=h.join("");
+    Array.prototype.forEach.call(el.querySelectorAll("[data-snap]"),function(t){
+      t.addEventListener("click",function(){ openSnap(t.getAttribute("data-snap")); });
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#nw-ctl [data-nwf]"),function(c2){
+    c2.addEventListener("click",function(){
+      var k=c2.getAttribute("data-nwf"), v=c2.getAttribute("data-v");
+      if(k==="tk"||k==="held"){ nwF[k]=!nwF[k]; c2.className="chip-sm"+(nwF[k]?" on":""); }
+      else{
+        nwF[k]=(nwF[k]===v?"":v);
+        Array.prototype.forEach.call(document.querySelectorAll('#nw-ctl [data-nwf="'+k+'"]'),function(o){
+          o.className="chip-sm"+(o.getAttribute("data-v")===nwF[k]?" on":"");
+        });
+        if(k==="g"&&!nwF.g){ var a=document.querySelector('#nw-ctl [data-nwf="g"][data-v=""]'); if(a) a.className="chip-sm on"; }
+      }
+      renderNews();
+    });
+  });
+
   function renderAll(){
     var qt=0;
     S.quotes.forEach(function(q2){ var x=Date.parse(q2.updated_at||0); if(x>qt)qt=x; });
@@ -2463,7 +2615,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     }
     refreshChip();
     renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); tkPrev();
+    if(NEWS) renderNews();
   }
+  setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); } },600000);
 })();
 </script>
 </body>
