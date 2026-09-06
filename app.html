@@ -333,7 +333,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody">
         <table>
           <thead><tr>
-            <th class="l">#</th><th class="l">PLAYER</th><th>NAV ¥BN</th><th>P&amp;L ¥BN</th><th>DAY</th><th>CUM</th><th>vs BM</th><th>SHARPE</th><th>GROSS</th><th>OFF-BM%</th><th>CASH%</th>
+            <th class="l">#</th><th class="l">PLAYER</th><th>NAV ¥BN</th><th>P&amp;L ¥BN</th><th>DAY</th><th>CUM</th><th title="vs BM = cumulative return minus MSCI Japan's PRICE return over the same window. Books here accrue price return only, so the price index is the like-for-like comparison. The Net TR index (what a real mandate is measured against) additionally earns the index dividend, about 190bp a year on this data; it is drawn as the dotted line on the performance chart so the gap is visible rather than silently charged to every player.">vs BM</th><th>SHARPE</th><th>GROSS</th><th>OFF-BM%</th><th>CASH%</th>
           </tr></thead>
           <tbody id="lb"><tr><td class="l empty" colspan="9">Loading…</td></tr></tbody>
         </table>
@@ -1004,6 +1004,29 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     S.quotes.forEach(function(q2){ var x=Date.parse(q2.updated_at||0); if(x>t)t=x; });
     return t && (Date.now()-t) < 45*60e3;
   }
+  // --- benchmark basis -------------------------------------------------------
+  // Every book here accrues PRICE return only: no dividend is credited on an ex-date.
+  // MSCI Japan is quoted Net Total Return, which reinvests the index dividend net of
+  // withholding. Measuring a price-return book against a total-return index charges every
+  // player that dividend before any skill -- measured on this data at 187bp over the
+  // trailing year, 190bp/yr annualised over three -- and penalises high-yield tilts
+  // (banks, trading houses) hardest, which is exactly the value axis this league is about.
+  // So excess return is computed against MSCI's PRICE variant, and the Net TR series is
+  // kept on the chart so the omitted dividend is visible instead of hidden.
+  var BMTIP="vs BM = cumulative return minus MSCI Japan's PRICE return over the same window. Books here accrue price return only, so the price index is the like-for-like comparison. The Net TR index (what a real mandate is measured against) additionally earns the index dividend, about 190bp a year on this data; it is drawn as the dotted line on the performance chart so the gap is visible rather than silently charged to every player.";
+  function bmSeries(){
+    return (S.benchmark_pr && S.benchmark_pr.length) ? S.benchmark_pr : S.benchmark;
+  }
+  // Net dividend the Net-TR index earned from d0 to the latest common date.
+  function divGap(d0){
+    var pr = S.benchmark_pr || [], nr = S.benchmark || [];
+    if(!pr.length || !nr.length) return null;
+    var m = {}; pr.forEach(function(r){ m[r.d] = Number(r.level); });
+    var pairs = nr.filter(function(r){ return m[r.d] != null && (!d0 || r.d >= d0); });
+    if(pairs.length < 2) return null;
+    var a = pairs[0], b = pairs[pairs.length - 1];
+    return (Number(b.level) / Number(a.level)) / (m[b.d] / m[a.d]) - 1;
+  }
   function playerCalc(p){
     var rows=navRows(p.id);
     var last=rows.length?rows[rows.length-1]:null;
@@ -1029,9 +1052,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     // benchmark cum measured from THIS player's own start date (fair for late joiners)
     var bmc=null;
     var startD=rows.length?rows[0].d:S.league.start_date;
-    if(S.benchmark.length&&startD){
-      var b0=null,b1=S.benchmark[S.benchmark.length-1];
-      for(var i=0;i<S.benchmark.length;i++){ if(S.benchmark[i].d>=startD){ b0=S.benchmark[i]; break; } }
+    var bmS=bmSeries();
+    if(bmS.length&&startD){
+      var b0=null,b1=bmS[bmS.length-1];
+      for(var i=0;i<bmS.length;i++){ if(bmS[i].d>=startD){ b0=bmS[i]; break; } }
       if(b0) bmc=Number(b1.level)/Number(b0.level)-1;
     }
     // sharpe from daily returns
@@ -1042,7 +1066,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(rets.length>=10){
         var mu=rets.reduce(function(a2,b2){return a2+b2;},0)/rets.length;
         var sd=Math.sqrt(rets.reduce(function(a3,b3){return a3+(b3-mu)*(b3-mu);},0)/(rets.length-1));
-        if(sd>0) sharpe=mu/sd*Math.sqrt(252);
+        // A near-constant NAV -- the first days of a league, or a book that has not traded --
+        // gives sd ~1e-16 and a meaningless six-figure Sharpe. Require a daily vol above 1bp
+        // before reporting one; that is far below any real equity book, so live data is untouched.
+        if(sd>1e-6) sharpe=mu/sd*Math.sqrt(252);
       }
     }
     var lastGross=last&&last.gross!=null?Number(last.gross):(nav>0?gross/nav:null);
@@ -1155,8 +1182,15 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var s=mkSeries(p.nickname,COLORS[i%COLORS.length],map,0,p.id===selPid?2.4:1.6);
       if(s) series.push(s);
     });
-    var mJ={}; bmr.forEach(function(r){mJ[r.d]=Number(r.level);});
-    var sJ=mkSeries("MSCI JP","#9b988f",mJ,1,1.8); if(sJ) series.push(sJ);
+    var bmp=bmSeries().filter(function(r){return r.d>=startD;});
+    var mJ={}; bmp.forEach(function(r){mJ[r.d]=Number(r.level);});
+    var sJ=mkSeries("MSCI JP (PR)","#9b988f",mJ,1,1.8); if(sJ) series.push(sJ);
+    // The dividend this simulation does not pay, drawn rather than hidden: the vertical gap
+    // between these two lines IS the index's net dividend over the window.
+    if(S.benchmark_pr&&S.benchmark_pr.length){
+      var mN={}; bmr.forEach(function(r){mN[r.d]=Number(r.level);});
+      var sN=mkSeries("MSCI JP (Net TR)","#5d5a52",mN,3,1.2); if(sN) series.push(sN);
+    }
     var world=S.benchmark_world||[];
     if(world.length){
       var mW={}; world.forEach(function(r){ if(r.d>=startD) mW[r.d]=Number(r.level); });
@@ -1269,7 +1303,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     kr.innerHTML=
       '<div><span class="k">NAV ¥bn</span><span class="v num">'+bn(c.nav,2)+"</span></div>"
       +'<div><span class="k">Cum</span><span class="v num '+cls(c.cum)+'">'+pct(c.cum)+"</span></div>"
-      +'<div><span class="k">vs BM</span><span class="v num '+cls(c.excess)+'">'+bp(c.excess)+"</span></div>"
+      +'<div title="'+esc(BMTIP)+'"><span class="k">vs BM</span><span class="v num '+cls(c.excess)+'">'+bp(c.excess)+"</span></div>"
       +'<div><span class="k">Sharpe</span><span class="v num">'+(c.sharpe==null?"–":c.sharpe.toFixed(2))+"</span></div>"
       +'<div><span class="k">Gross</span><span class="v num">'+(c.gross==null?"–":(c.gross*100).toFixed(0)+"%")+"</span></div>"
       +'<div><span class="k">Cash ¥bn</span><span class="v num">'+bn(c.cash,1)+"</span></div>"
