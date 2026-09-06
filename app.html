@@ -245,6 +245,13 @@ tbody tr.pick{cursor:pointer}
   .phead{flex-wrap:wrap;row-gap:4px}
   .phead .aux{margin-left:0;width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:3px}
   .phead .aux .chip-sm{margin-left:0}
+  /* News + econ rows: on a phone the fixed-width meta columns squeezed .nwh to 0px, so no
+     headline or event name rendered at all. Wrap instead: meta on line 1, title on line 2,
+     source on line 3. */
+  .nwrow{flex-wrap:wrap;white-space:normal;row-gap:1px}
+  .nwrow>*{order:1}
+  .nwh{flex:1 1 100%;order:2;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
+  .nwsrc{order:3;flex:1 1 100%;width:auto;text-align:right;font-size:9px;opacity:.7;overflow:visible}
   .icons{grid-template-columns:repeat(8,1fr)}
 }
 
