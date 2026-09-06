@@ -491,16 +491,16 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         <table class="mini" style="margin-bottom:10px"><tbody id="ms-idx"><tr><td class="l empty">Loading…</td></tr></tbody></table>
         <div class="msg2">
           <div>
-            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg FY+1 PE &middot; net flow</span></h4>
+            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg P/E FY-E &middot; net flow</span></h4>
             <table class="secT">
-              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th>FY+1 PE</th><th class="l">NET FLOW</th></tr></thead>
+              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th class="l">NET FLOW</th></tr></thead>
               <tbody id="ms-sec"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; PE &middot; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; P/E FY-E &middot; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
-              <thead><tr><th class="l">NAME</th><th>1D</th><th>FY+1 PE</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
+              <thead><tr><th class="l">NAME</th><th>1D</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="ms-mov"><tr><td class="l empty" colspan="5">Loading…</td></tr></tbody>
             </table>
             <div class="hint2" id="ms-breadth"></div>
@@ -1667,7 +1667,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     secB.innerHTML=sl.length?sl.map(function(s){
       return '<tr><td class="l">'+esc(String(s.k).slice(0,18))+'</td>'
         +cell(s.d1,s.tip.d1)+cell(s["1w"],s.tip["1w"])+cell(s["1m"],s.tip["1m"])+cell(s["3m"],s.tip["3m"])+cell(s["12m"],s.tip["12m"])
-        +(cfg.showPe?('<td class="num"'+(s.pe==null?'':' title="'+esc('simple average of forward P/E, outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data')+'"')+'>'
+        +(cfg.showPe?('<td class="num"'+(s.pe==null?'':' title="'+esc('simple average of P/E FY-E \u2014 price / company-guidance EPS for the current fiscal year, not FY+1 and not consensus. outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data')+'"')+'>'
             +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut" style="font-size:9px"> n'+s.peN+'</span>')+'</td>'):'')
         +'<td class="l">'+nfBar(s.net)+'</td></tr>';
     }).join(""):'<tr><td class="l empty" colspan="'+cfg.cols+'">&ndash;</td></tr>';
@@ -2058,9 +2058,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     else if(wi&&Number(wi.adv20_value_usd)>0) advTxt="$"+n(Number(wi.adv20_value_usd)/1e6,0)+"M";
     var f=[
       ["LAST", lc&&lc.px>0?(lc.world?esc(lc.cur||"USD")+" "+n(lc.usd,2):"&yen;"+n(lc.px,lc.px<1000?1:0)):"–"],
-      ["3M ADTV", advTxt],
+      ["ADV20", advTxt],
       ["P/E FY-E", st2&&st2.per_fwd!=null?Number(st2.per_fwd).toFixed(1)+"x":"–"],
-      ["FY+1 / FY+2 P/E", "&ndash; / &ndash;"],
+      ["P/E BASIS", st2&&st2.per_fwd!=null?'<span class="mut" style="font-size:9px">company guidance, current FY</span>':"&ndash;"],
       ["MKT CAP", "&ndash;"],
       ["MY POS", pos?n(Number(pos.shares))+" sh":"–"]
     ];
