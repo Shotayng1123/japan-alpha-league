@@ -406,7 +406,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           <tbody id="wu-body"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
         </table>
         </div>
-        <div class="hint2">Off-benchmark bucket: up to 25% of NAV in MSCI World names (US-listed, USD). Orders fill at the most recent US close × USD/JPY; 1-share lots; same 20%-of-ADV participation cap and cost. Click a row to load the ticker into the TRADE ticket. Sizes in ¥bn or shares (bps not yet for World names).</div>
+        <div class="hint2">Off-benchmark bucket: up to 25% of NAV in MSCI World names (US-listed, USD). Orders fill at the most recent US close × USD/JPY; 1-share lots; same 20%-of-ADV participation cap and cost. Click a row to load the ticker into the TRADE ticket. Sizes in ¥bn, shares, or bps of NAV.</div>
       </div>
     </div>
 
@@ -1462,7 +1462,6 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(!myp||!code||!(qty>0)){ el.innerHTML=""; return; }
     var inst=instOf(code), lc=lastCloseOf(code), st2=statOf(code), wi=winstOf(code);
     if(!lc||!(lc.px>0)){ el.innerHTML='<span class="mut">No price data for '+esc(code)+' yet.</span>'; return; }
-    if(lc.world&&mode==="bps"){ el.innerHTML='<span class="warn">bps sizing not yet supported for World names — use ¥bn or shares.</span>'; return; }
     var c=playerCalc(myp);
     var nav=(c.liveNav!=null?c.liveNav:c.nav)||Number(S.league.initial_nav);
     var lot=lc.world?1:100;
@@ -1514,15 +1513,15 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var code=$("t-code").value.trim().toUpperCase();
     var qty=parseFloat($("t-qty").value.replace(/,/g,""));
     var mode=$("t-mode").value;
-    if(mode==="bps"&&winstOf(code)){ msg.textContent="bps sizing not yet supported for World names — use ¥bn or shares."; msg.className="msg err"; return; }
     if(mode==="bps"){
       // convert bps of NAV to shares client-side (round to 100-share lots)
       if(!(qty>0&&qty<=10000)){ msg.textContent="bps must be between 0 and 10,000."; msg.className="msg err"; return; }
       var myp=S&&S.players.find(function(p){return p.nickname.toLowerCase()===me.nickname.toLowerCase();});
       var lc=lastCloseOf(code);
       if(!myp||!lc||!(lc.px>0)){ msg.textContent="Cannot size bps order: no price/NAV data for "+code+"."; msg.className="msg err"; return; }
+      var lot2=winstOf(code)?1:100;
       var nav2=playerCalc(myp).nav;
-      var sh=Math.floor((qty/1e4)*Math.max(0,nav2)/lc.px/100)*100;
+      var sh=Math.floor((qty/1e4)*Math.max(0,nav2)/lc.px/lot2)*lot2;
       if(!(sh>0)){ msg.textContent="Order too small: "+qty+"bp of NAV rounds to 0 lots at ¥"+n(lc.px)+"."; msg.className="msg err"; return; }
       mode="shares"; qty=sh;
     }
