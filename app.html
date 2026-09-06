@@ -1618,7 +1618,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(!sec[k]){ sec[k]={w:0,d1:0,n:0,pe:[],up:0,dn:0}; PER.forEach(function(p){sec[k]["s"+p]=0;sec[k]["w"+p]=0;}); }
       var G=sec[k];
       G.w+=w; G.d1+=w*r; G.n++;
-      PER.forEach(function(p){ var x=cfg.retOf(i,p); if(x!=null){ G["s"+p]+=w*x; G["w"+p]+=w; } });
+      G.ad1=(G.ad1||0)+Math.abs(w*r);
+      if(!G.td1||Math.abs(w*r)>Math.abs(G.td1.v)) G.td1={c:code,v:w*r};
+      PER.forEach(function(p){ var x=cfg.retOf(i,p); if(x!=null){ G["s"+p]+=w*x; G["w"+p]+=w;
+        G["a"+p]=(G["a"+p]||0)+Math.abs(w*x);
+        if(!G["t"+p]||Math.abs(w*x)>Math.abs(G["t"+p].v)) G["t"+p]={c:code,v:w*x}; } });
       var pe=cfg.peOf?cfg.peOf(i):null;
       if(pe!=null&&pe>0&&pe<200) G.pe.push(pe);
       var tv=Number(turn[code])||0;
@@ -1629,7 +1633,14 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var sl=Object.keys(sec).map(function(k){
       var G=sec[k], o={k:k};
       o.d1=G.w?G.d1/G.w:null;
-      PER.forEach(function(p){ o[p]=G["w"+p]?G["s"+p]/G["w"+p]:null; });
+      o.tip={};
+      var domOf=function(abs,top){
+        if(!top||!abs||G.n<3) return "";
+        var sh=Math.abs(top.v)/abs;
+        return sh>0.5?(top.c+" alone accounts for "+Math.round(sh*100)+"% of this sector move \u2014 the number is not representative of the sector"):"";
+      };
+      o.tip.d1=domOf(G.ad1,G.td1);
+      PER.forEach(function(p){ o[p]=G["w"+p]?G["s"+p]/G["w"+p]:null; o.tip[p]=domOf(G["a"+p],G["t"+p]); });
       var ps=G.pe.slice().sort(function(a,b){return a-b;});
       o.pe=ps.length?ps.reduce(function(a,b){return a+b;},0)/ps.length:null;
       o.peN=ps.length;
@@ -1641,10 +1652,13 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     sl.sort(function(a,b){return (b.d1==null?-9:b.d1)-(a.d1==null?-9:a.d1);});
     var secRet={}; sl.forEach(function(s){secRet[s.k]=s.d1;});
-    var cell=function(v){ return '<td class="num '+cls(v)+'">'+(v==null?'<span class="mut">&ndash;</span>':pct(v,1))+'</td>'; };
+    var cell=function(v,tip){
+      if(v==null) return '<td class="num"><span class="mut">&ndash;</span></td>';
+      return '<td class="num '+cls(v)+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+pct(v,1)+(tip?'<span class="mut" style="font-size:8px;vertical-align:super">!</span>':'')+'</td>';
+    };
     secB.innerHTML=sl.length?sl.map(function(s){
       return '<tr><td class="l">'+esc(String(s.k).slice(0,18))+'</td>'
-        +cell(s.d1)+cell(s["1w"])+cell(s["1m"])+cell(s["3m"])+cell(s["12m"])
+        +cell(s.d1,s.tip.d1)+cell(s["1w"],s.tip["1w"])+cell(s["1m"],s.tip["1m"])+cell(s["3m"],s.tip["3m"])+cell(s["12m"],s.tip["12m"])
         +(cfg.showPe?('<td class="num"'+(s.pe==null?'':' title="'+esc('simple average of forward P/E, outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data')+'"')+'>'
             +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut" style="font-size:9px"> n'+s.peN+'</span>')+'</td>'):'')
         +'<td class="l">'+nfBar(s.net)+'</td></tr>';
