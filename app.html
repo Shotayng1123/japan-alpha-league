@@ -693,7 +693,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         +'<div class="mtile" style="grid-column:span 2"><div class="lb">YIELD CURVE &mdash; NOW vs '+gPer+' AGO (%)</div>'+svg2+"</div>";
     }
     function policyChart(){
-      var defs=[["DFEDTARU","US FED (UPPER)","#38c8ff"],["ECBDFR","ECB DEPOSIT","#9a7dff"],["INTDSRJPM193N","BOJ BASIC LOAN","#ffa028"]];
+      var defs=[["DFEDTARU","US FED (UPPER)","#38c8ff"],["ECBDFR","ECB DEPOSIT","#9a7dff"],["JGB1Y","JGB 1Y (JP POLICY PROXY)","#ffa028"]];
       var series=[], t0=Infinity, t1=-Infinity, lo3=Infinity, hi3=-Infinity;
       defs.forEach(function(df){
         var arr=MACRO.by[df[0]]||[];
