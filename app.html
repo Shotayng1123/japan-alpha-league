@@ -10,7 +10,7 @@
 <style>
 :root{
   --bg:#050505; --panel:#0c0c0c; --panel2:#111214; --bord:#26272b; --bord2:#3a3b40;
-  --amber:#ffa028; --amber-dim:#b06a10; --cyan:#38c8ff; --txt:#e8e5de; --txt2:#9b988f; --mut:#66645e;
+  --amber:#ffa028; --amber-dim:#b06a10; --cyan:#38c8ff; --txt:#e8e5de; --txt2:#9b988f; --mut:#8a877e;
   --up:#3fd07e; --dn:#ff4d42; --warn:#e8c437; --sel:#14202b;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
   --sans:'IBM Plex Sans JP','IBM Plex Mono',system-ui,sans-serif;
@@ -135,12 +135,25 @@ tbody tr.pick{cursor:pointer}
 .mtile .lb{font-size:9px;color:var(--mut);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mtile .vl{font-size:13.5px;font-weight:600;margin-top:1px}
 .mtile .ch{font-size:11px;margin-top:1px}
-.mgh{font-size:9.5px;color:var(--mut);letter-spacing:.1em;margin:8px 0 4px;text-transform:uppercase;font-weight:500}
+.mgh{font-size:11.5px;color:var(--amber);letter-spacing:.12em;margin:10px 0 5px;text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--bord);padding-bottom:3px}
 .mclosed{display:inline-block;font-size:8px;color:var(--mut);border:1px solid var(--bord2);padding:0 3px;margin-left:5px;vertical-align:1px;letter-spacing:.05em}
 .thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
 .thcard{border:1px solid var(--bord);border-radius:4px;padding:8px 10px;background:var(--panel2)}
 .thcard .h{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin-bottom:5px;align-items:baseline}
 .thcard .txt{font-size:11.5px;color:var(--txt);white-space:pre-wrap;line-height:1.55;font-family:var(--sans);word-break:break-word}
+.thl{width:100%;border-collapse:collapse;font-size:11px}
+.thl th{font-size:9.5px;color:var(--mut);text-align:left;padding:3px 8px;border-bottom:1px solid var(--bord);letter-spacing:.06em;white-space:nowrap}
+.thl th.num,.thl td.num{text-align:right}
+.thl th.c,.thl td.c{text-align:center}
+.thl td{padding:4px 8px;border-bottom:1px solid var(--bord);white-space:nowrap}
+.thl td.tx{max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
+.thl tr.click{cursor:pointer}
+.thl tr.click:hover td{background:var(--panel2)}
+#thmod{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:60}
+.thmod-box{background:var(--panel);border:1px solid var(--bord);border-radius:6px;min-width:320px;max-width:560px;width:92%;max-height:80vh;overflow:auto;padding:14px 16px}
+.thmod-h{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;gap:10px}
+.thmod-meta{font-size:11px;color:var(--mut);margin-bottom:10px;border-bottom:1px solid var(--bord);padding-bottom:8px}
+.thmod-txt{font-size:12.5px;white-space:pre-wrap;line-height:1.65;font-family:var(--sans);word-break:break-word}
 .hidden-view{display:none!important}
 
 /* mobile (iPhone-width) */
@@ -246,7 +259,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody">
         <table>
           <thead><tr>
-            <th class="l">#</th><th class="l">PLAYER</th><th>NAV ¥BN</th><th>P&amp;L ¥BN</th><th>DAY</th><th>CUM</th><th>vs BM</th><th>SHARPE</th><th>GROSS</th><th>CASH%</th>
+            <th class="l">#</th><th class="l">PLAYER</th><th>NAV ¥BN</th><th>P&amp;L ¥BN</th><th>DAY</th><th>CUM</th><th>vs BM</th><th>SHARPE</th><th>GROSS</th><th>OFF-BM%</th><th>CASH%</th>
           </tr></thead>
           <tbody id="lb"><tr><td class="l empty" colspan="9">Loading…</td></tr></tbody>
         </table>
@@ -586,7 +599,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       d+=(i?"L":"M")+(i/(vals.length-1)*w).toFixed(1)+" "+((1-(vals[i]-mn)/(mx-mn))*(hgt-3)+1.5).toFixed(1);
     }
     var col=up===false?"var(--dn)":(up?"var(--up)":"var(--mut)");
-    return '<svg viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none" style="width:100%;height:'+hgt+'px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.3"/></svg>';
+    return '<svg viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none" style="width:100%;height:'+hgt+'px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.1"/></svg>';
   }
   function ensureBarsAll(res){
     var e=BARSC[res];
@@ -617,14 +630,20 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     fetch(API+"?action=macro").then(function(r){return r.json();}).then(function(j){
       if(!j||!j.meta) return;
       var by={};
-      (j.prices||[]).forEach(function(p){ if(!by[p.symbol]) by[p.symbol]=[]; by[p.symbol].push(p); });
+      if(j.px){
+        Object.keys(j.px).forEach(function(k){
+          by[k]=j.px[k].map(function(a){return {symbol:k,d:a[0],close:a[1]};});
+        });
+      } else {
+        (j.prices||[]).forEach(function(p){ if(!by[p.symbol]) by[p.symbol]=[]; by[p.symbol].push(p); });
+      }
       Object.keys(by).forEach(function(k){ by[k].sort(function(a,b){return a.d<b.d?-1:1;}); });
       MACRO={meta:j.meta, by:by};
       renderMacro();
       if(S) renderWorldChart();
     }).catch(function(e){ console.error(e); });
   }
-  loadMacro(); setInterval(loadMacro,600000);
+  loadMacro(); setInterval(loadMacro,1800000);
   Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
     c2.addEventListener("click",function(){ gPer=c2.getAttribute("data-gper"); renderMacro(); });
   });
@@ -658,7 +677,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         d+=(i?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
       }
       var col=up===false?"var(--dn)":(up?"var(--up)":"var(--mut)");
-      return '<svg viewBox="0 0 120 22" preserveAspectRatio="none" style="width:100%;height:22px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.3"/></svg>';
+      return '<svg viewBox="0 0 120 22" preserveAspectRatio="none" style="width:100%;height:22px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.1"/></svg>';
     }
     function baseIdx(arr){
       var last=arr[arr.length-1];
@@ -701,8 +720,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       svg2+='<text x="2" y="'+(cy(hi2)+3)+'" font-size="8" fill="var(--mut)">'+hi2.toFixed(2)+'</text>';
       svg2+='<text x="2" y="'+(cy(lo2)+3)+'" font-size="8" fill="var(--mut)">'+lo2.toFixed(2)+'</text>';
       for(var k4=0;k4<4;k4++){ svg2+='<text x="'+cx(xs[k4]).toFixed(1)+'" y="'+(CH-3)+'" font-size="8" text-anchor="middle" fill="var(--mut)">'+ten[k4]+'Y</text>'; }
-      svg2+=pline(bases,"#5a6b80",1.2);
-      svg2+=pline(vals,"var(--up)",2);
+      svg2+=pline(bases,"#5a6b80",1);
+      svg2+=pline(vals,"var(--up)",1.5);
       for(var k5=0;k5<4;k5++){ svg2+='<circle cx="'+cx(xs[k5]).toFixed(1)+'" cy="'+cy(vals[k5]).toFixed(1)+'" r="2" fill="var(--up)"/>'; }
       svg2+="</svg>";
       return spTile("YC 10Y&minus;1Y",s10_1,b10_1)+spTile("YC 30Y&minus;10Y",s30_10,b30_10)
@@ -734,9 +753,15 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         sv+='<text x="'+tx2.toFixed(1)+'" y="'+(CH2-4)+'" text-anchor="middle" font-size="8.5" fill="var(--mut)">'+yy+'</text>';
       }
       series.forEach(function(sr){
-        var d5="";
-        sr.pts.forEach(function(p3,i5){ d5+=(i5?"L":"M")+px2(p3[0]).toFixed(1)+" "+py2(p3[1]).toFixed(1); });
-        sv+='<path d="'+d5+'" fill="none" stroke="'+sr.col+'" stroke-width="1.6"/>';
+        var d5="", pY=null;
+        sr.pts.forEach(function(p3,i5){
+          var X6=px2(p3[0]).toFixed(1), Y6=py2(p3[1]).toFixed(1);
+          if(!i5) d5+="M"+X6+" "+Y6;
+          else d5+="L"+X6+" "+pY+"L"+X6+" "+Y6;
+          pY=Y6;
+        });
+        if(pY!=null) d5+="L"+px2(t1).toFixed(1)+" "+pY;
+        sv+='<path d="'+d5+'" fill="none" stroke="'+sr.col+'" stroke-width="1.1"/>';
       });
       sv+="</svg>";
       var lg2=series.map(function(sr){
@@ -861,6 +886,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     rows.sort(function(a,b){ return b.c.cum-a.c.cum; });
     var meP=me?S.players.find(function(x){return x.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
     var isAdm=!!(meP&&meP.is_admin);
+    var offMap={};
+    S.positions.forEach(function(x){
+      var lw=lastCloseOf(x.code);
+      if(lw&&lw.world) offMap[x.player_id]=(offMap[x.player_id]||0)+Math.abs(Number(x.shares)*lw.px);
+    });
     $("lb-aux").textContent = rows.some(function(r){return r.c.live;}) ? "LIVE EST" : (S.league.last_eod?("EOD "+S.league.last_eod):"");
     tb.innerHTML=rows.map(function(r,rank){
       var c=r.c, sel=r.p.id===selPid?" sel":"";
@@ -875,8 +905,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         +'<td class="num '+cls(c.excess)+'">'+bp(c.excess)+"</td>"
         +'<td class="num">'+(c.sharpe==null?"–":c.sharpe.toFixed(2))+"</td>"
         +'<td class="num">'+(c.gross==null?"–":(c.gross*100).toFixed(0)+"%")+"</td>"
+        +'<td class="num">'+(c.nav>0?((offMap[r.p.id]||0)/c.nav*100).toFixed(1)+"%":"–")+"</td>"
         +'<td class="num">'+(c.nav>0?(c.cash/c.nav*100).toFixed(0)+"%":"–")+"</td>"
-        +(isAdm&&(!meP||r.p.id!==meP.id)?'<td class="l"><button class="ghost" data-elim="'+esc(r.p.nickname)+'" title="Eliminate (admin)">✕</button></td>':(isAdm?'<td class="l"></td>':""))
+        +(isAdm&&(!meP||r.p.id!==meP.id)?'<td class="l"><button class="ghost" data-rpin="'+esc(r.p.nickname)+'" title="Reset PIN (admin)">🔑</button> <button class="ghost" data-elim="'+esc(r.p.nickname)+'" title="Eliminate (admin)">✕</button></td>':(isAdm?'<td class="l"></td>':""))
         +"</tr>";
     }).join("");
     Array.prototype.forEach.call(tb.querySelectorAll("tr[data-pid]"),function(tr){
@@ -890,6 +921,20 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         api("eliminate",{nickname:me.nickname,pin:me.pin,target:t2}).then(function(j){
           if(j.error){ alert(j.error); return; }
           load();
+        });
+      });
+    });
+    Array.prototype.forEach.call(tb.querySelectorAll("[data-rpin]"),function(b3){
+      b3.addEventListener("click",function(ev){
+        ev.stopPropagation();
+        var t3=b3.getAttribute("data-rpin");
+        var np=prompt("New PIN for "+t3+" (4-8 digits):");
+        if(np==null)return;
+        np=String(np).trim();
+        if(!/^[0-9]{4,8}$/.test(np)){ alert("PIN must be 4-8 digits."); return; }
+        api("reset_pin",{nickname:me.nickname,pin:me.pin,target:t3,new_pin:np}).then(function(j){
+          if(j.error){ alert(j.error); return; }
+          alert("PIN reset for "+j.reset+" — tell them the new PIN privately.");
         });
       });
     });
@@ -1004,14 +1049,15 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var v=tick0+step*t;
       if(v<lo-step*0.01||v>hi+step*0.01) continue;
       svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
-        +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="#66645e">'+v.toFixed(1)+"</text>";
+        +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="#8a877e">'+v.toFixed(1)+"</text>";
     }
     var kk=Math.max(1,Math.round((nn-1)/5));
     for(var i2=0;i2<nn;i2+=kk){
-      svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="#66645e">'+esc(xlabels[i2])+"</text>";
+      svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="#8a877e">'+esc(xlabels[i2])+"</text>";
     }
     series.forEach(function(s){
-      svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+s.w+'"'+"/>";
+      var w6=s.w>=2?1.4:1;
+      svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+w6+'"'+"/>";
     });
     svg+='<line id="'+pfx+'xh" x1="0" x2="0" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#3a3b40" style="display:none"/>'
       +'<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
@@ -1509,6 +1555,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var w=nav>0?cur*lc.px/nav:0, tw=nav>0?tgt*lc.px/nav:0;
     var bw=inst&&inst.bm_weight?inst.bm_weight/100:0;
     var a0=(w-bw)*1e4, a1=(tw-bw)*1e4;
+    var cashNote="";
+    if(side==="BUY"&&c.cash!=null&&eff*lc.px>Number(c.cash)){
+      cashNote=' &nbsp;&middot;&nbsp; <span class="warn">EXCEEDS CASH &yen;'+bn(Number(c.cash),2)+'bn &mdash; fills stop at available cash (sell first to fund)</span>';
+    }
     var days=null;
     var advY=st2&&Number(st2.adv20_value)>0?Number(st2.adv20_value):(wi&&Number(wi.adv20_value_usd)>0&&S.usdjpy>0?Number(wi.adv20_value_usd)*Number(S.usdjpy):null);
     if(advY){
@@ -1520,6 +1570,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       +' &rarr; <b class="num '+cls(a1)+'">'+(a1>=0?"+":"")+a1.toFixed(0)+'bp</b> vs BM'
       +(days!=null?' &nbsp;&middot;&nbsp; est. fill &asymp; <b>'+days+'</b> trading day'+(days>1?'s':'')+' <span class="mut">(20% ADV cap)</span>':'')
       +(clip?' &nbsp;&middot;&nbsp; <span class="warn">SELL clipped to position ('+n(cur)+' sh)</span>':'')
+      +cashNote
       +offNote
       +(lc.world?' &nbsp;&middot;&nbsp; <span class="mut">last close '+esc(lc.cur||"USD")+' '+n(lc.usd,2)+' &times; FX</span>':'');
   }
@@ -1598,19 +1649,53 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var pmap={}; S.players.forEach(function(p){pmap[p.id]=p;});
     var rows=S.orders.filter(function(o){return o.note&&String(o.note).trim();});
     if(!rows.length){ el.innerHTML='<div class="empty">No trade notes yet &mdash; add a thesis when you transmit an order.</div>'; return; }
-    el.innerHTML=rows.slice(0,24).map(function(o){
+    function amtOf(o){
+      if(o.mode==="shares"){ var lc9=lastCloseOf(o.code); return lc9&&lc9.px>0?"&yen;"+bn(Number(o.qty)*lc9.px,2)+"bn":n(o.qty)+" sh"; }
+      if(o.mode==="bps") return n(o.qty)+"bp";
+      return "&yen;"+n(o.qty,1)+"bn";
+    }
+    var h4='<div style="overflow-x:auto"><table class="thl"><thead><tr><th class="l">PLAYER</th><th class="l">TICKER</th><th class="c">SIDE</th><th>TIME JST</th><th class="num">AMOUNT</th><th class="l">THESIS</th></tr></thead><tbody>';
+    rows.slice(0,40).forEach(function(o){
       var p2=pmap[o.player_id];
       var inst=instOf(o.code);
       var when=String(o.entered_at||"");
       var jstt=when?new Date(new Date(when).getTime()+9*3600e3).toISOString().slice(5,16).replace("T"," "):"";
-      var qty=o.mode==="shares"?n(o.qty)+" sh":(o.mode==="bps"?n(o.qty)+"bp":"&yen;"+n(o.qty,1)+"bn");
-      return '<div class="thcard">'
-        +'<div class="h"><span><span class="badge">'+esc(p2?p2.icon:"?")+'</span> <b>'+esc(p2?p2.nickname:"?")+'</b></span>'
-        +'<span class="num"><b class="'+(o.side==="BUY"?"up":"dn")+'">'+esc(o.side)+'</b> <b>'+esc(o.code)+'</b> <span class="sub">'+esc(inst?String(inst.name).slice(0,14):"")+'</span> '+qty+'</span>'
-        +'<span class="mut num">'+esc(jstt)+'</span></div>'
-        +'<div class="txt">'+esc(o.note)+'</div>'
-        +'</div>';
-    }).join("");
+      var prev2=String(o.note).replace(/\s+/g," ").trim();
+      if(prev2.length>52) prev2=prev2.slice(0,52)+"…";
+      h4+='<tr class="click" data-thid="'+esc(String(o.id))+'">'
+        +'<td class="l"><span class="badge">'+esc(p2?p2.icon:"?")+'</span> '+esc(p2?p2.nickname:"?")+'</td>'
+        +'<td class="l"><b>'+esc(o.code)+'</b> <span class="sub">'+esc(inst?String(inst.name).slice(0,12):"")+'</span></td>'
+        +'<td class="c"><b class="'+(o.side==="BUY"?"up":"dn")+'">'+esc(o.side)+'</b></td>'
+        +'<td class="num mut">'+esc(jstt)+'</td>'
+        +'<td class="num">'+amtOf(o)+'</td>'
+        +'<td class="l tx">'+esc(prev2)+'</td></tr>';
+    });
+    h4+='</tbody></table></div>';
+    el.innerHTML=h4;
+    Array.prototype.forEach.call(el.querySelectorAll("[data-thid]"),function(tr){
+      tr.addEventListener("click",function(){ openThesis(tr.getAttribute("data-thid")); });
+    });
+  }
+  function openThesis(oid){
+    var o=S.orders.find(function(x){return String(x.id)===String(oid);});
+    if(!o) return;
+    var p2=S.players.find(function(x){return x.id===o.player_id;});
+    var inst=instOf(o.code);
+    var ov=$("thmod");
+    if(!ov){
+      ov=document.createElement("div"); ov.id="thmod";
+      ov.innerHTML='<div class="thmod-box"><div class="thmod-h"><span id="thmod-t"></span><button class="ghost" id="thmod-x" title="Close">&#10005;</button></div><div class="thmod-meta" id="thmod-m"></div><div class="thmod-txt" id="thmod-b"></div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener("click",function(ev){ if(ev.target===ov) ov.style.display="none"; });
+      document.getElementById("thmod-x").addEventListener("click",function(){ ov.style.display="none"; });
+    }
+    var when=String(o.entered_at||"");
+    var jstt=when?new Date(new Date(when).getTime()+9*3600e3).toISOString().slice(0,16).replace("T"," ")+" JST":"";
+    var amt=o.mode==="shares"?n(o.qty)+" sh":(o.mode==="bps"?n(o.qty)+"bp":"&yen;"+n(o.qty,1)+"bn");
+    document.getElementById("thmod-t").innerHTML='<span class="badge">'+esc(p2?p2.icon:"?")+'</span> <b>'+esc(p2?p2.nickname:"?")+'</b> &nbsp;<b class="'+(o.side==="BUY"?"up":"dn")+'">'+esc(o.side)+'</b> <b>'+esc(o.code)+'</b> <span class="sub">'+esc(inst?String(inst.name).slice(0,20):"")+'</span>';
+    document.getElementById("thmod-m").innerHTML=amt+' &nbsp;&middot;&nbsp; '+esc(jstt)+' &nbsp;&middot;&nbsp; '+esc(String(o.status||""));
+    document.getElementById("thmod-b").textContent=String(o.note||"");
+    ov.style.display="flex";
   }
 
   /* ---------- heatmap ---------- */
