@@ -435,6 +435,18 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     </div>
 
     <div class="panel c12" data-view="me">
+      <div class="phead"><span class="no">06R</span><span class="t">RISK &amp; ATTRIBUTION &mdash; 1D BRINSON</span><span class="aux" id="attr-aux"></span></div>
+      <div class="pbody">
+        <div class="krow" id="attr-kpi"></div>
+        <table class="mini" style="margin-top:8px">
+          <thead><tr><th class="l">SECTOR</th><th>PORT W</th><th>BM W</th><th>ACTIVE W</th><th>PORT 1D</th><th>BM 1D</th><th title="Brinson-Fachler, single period (today). ALLOC = (port wgt - bm wgt) x (sector bm return - total bm return): what you earned by being in the right sectors. SEL = bm wgt x (port sector return - bm sector return): what you earned picking within a sector. INTER is the cross term. The three sum to the day's excess return exactly - cash is carried as a zero-return sector so the identity closes.">ALLOC bp</th><th title="Brinson-Fachler, single period (today). ALLOC = (port wgt - bm wgt) x (sector bm return - total bm return): what you earned by being in the right sectors. SEL = bm wgt x (port sector return - bm sector return): what you earned picking within a sector. INTER is the cross term. The three sum to the day's excess return exactly - cash is carried as a zero-return sector so the identity closes.">SEL bp</th><th title="Brinson-Fachler, single period (today). ALLOC = (port wgt - bm wgt) x (sector bm return - total bm return): what you earned by being in the right sectors. SEL = bm wgt x (port sector return - bm sector return): what you earned picking within a sector. INTER is the cross term. The three sum to the day's excess return exactly - cash is carried as a zero-return sector so the identity closes.">INTER bp</th><th>TOTAL bp</th></tr></thead>
+          <tbody id="attr-body"><tr><td class="l empty" colspan="10">Appears once the book is seeded.</td></tr></tbody>
+        </table>
+        <div class="hint2" id="attr-foot"></div>
+      </div>
+    </div>
+
+    <div class="panel c12" data-view="me">
       <div class="phead"><span class="no">13</span><span class="t">WATCHLIST</span><span class="aux" id="wl-aux">saved per device</span></div>
       <div class="pbody">
         <div style="display:flex;gap:6px;margin-bottom:6px;max-width:340px">
@@ -1402,6 +1414,139 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     return w>0?s/w:null;
   }
+  // --- risk + single-period Brinson attribution ------------------------------
+  // Benchmark weights are normalised by the same denominator bmRet() uses, so R_b here IS
+  // bmRet() and the attribution identity closes against the number shown elsewhere.
+  // Cash (and any held name with no return today) is carried as a zero-return sector, which
+  // is what makes sum(alloc + sel + inter) equal the day's excess return exactly.
+  function renderAttrib(p,c){
+    var tb=$("attr-body"), kp=$("attr-kpi"), ft=$("attr-foot"), ax=$("attr-aux");
+    if(!tb) return;
+    var rb=bmRet();
+    var poss=S.positions.filter(function(x){return x.player_id===p.id;});
+    if(!poss.length||rb==null||!(c.nav>0)){
+      tb.innerHTML='<tr><td class="l empty" colspan="10">Appears once the book is seeded.</td></tr>';
+      kp.innerHTML=""; ft.textContent=""; ax.textContent=""; return;
+    }
+    var W=0;
+    S.instruments.forEach(function(i){
+      if(!i.in_universe||!i.bm_weight) return;
+      if(ret1dOf(i.code)==null) return;
+      W+=Number(i.bm_weight);
+    });
+    if(!(W>0)){ tb.innerHTML='<tr><td class="l empty" colspan="10">&ndash;</td></tr>'; return; }
+    var CASH="Cash / no price";
+    var sec={}, touch=function(k){ if(!sec[k]) sec[k]={pw:0,bw:0,pr:0,br:0}; return sec[k]; };
+    S.instruments.forEach(function(i){
+      if(!i.in_universe||!i.bm_weight) return;
+      var r=ret1dOf(i.code); if(r==null) return;
+      var g=touch(i.sector||"Other");
+      var w=Number(i.bm_weight)/W;
+      g.bw+=w; g.br+=w*r;
+    });
+    var held={}; poss.forEach(function(x){held[x.code]=x;});
+    var eqW=0;
+    poss.forEach(function(x){
+      var lc=lastCloseOf(x.code); if(!lc) return;
+      var w=Number(x.shares)*lc.px/c.nav;
+      var r=ret1dOf(x.code);
+      var inst=instOf(x.code);
+      var k=(r==null)?CASH:((inst&&inst.sector)||"Other");
+      var g=touch(k);
+      g.pw+=w; if(r!=null) g.pr+=w*r;
+      eqW+=w;
+    });
+    var cashW=1-eqW;
+    if(Math.abs(cashW)>1e-9){ var gc=touch(CASH); gc.pw+=cashW; }
+    var Rp=0; Object.keys(sec).forEach(function(k){ Rp+=sec[k].pr; });
+    var list=Object.keys(sec).map(function(k){
+      var g=sec[k];
+      var Rbs=g.bw>1e-12?g.br/g.bw:0;
+      var Rps=g.pw>1e-12?g.pr/g.pw:0;
+      var aw=g.pw-g.bw;
+      var alloc=aw*(Rbs-rb);
+      var sel=g.bw*(Rps-Rbs);
+      var inter=aw*(Rps-Rbs);
+      return {k:k,pw:g.pw,bw:g.bw,aw:aw,Rps:Rps,Rbs:Rbs,
+              alloc:alloc,sel:sel,inter:inter,tot:alloc+sel+inter};
+    });
+    list.sort(function(a,b){return Math.abs(b.tot)-Math.abs(a.tot);});
+    var T={alloc:0,sel:0,inter:0,tot:0,pw:0,bw:0};
+    list.forEach(function(r){ T.alloc+=r.alloc; T.sel+=r.sel; T.inter+=r.inter; T.tot+=r.tot; T.pw+=r.pw; T.bw+=r.bw; });
+    var excess=Rp-rb;
+    // active share over the union of held and index names
+    var uni={};
+    S.instruments.forEach(function(i){ if(i.in_universe&&i.bm_weight&&ret1dOf(i.code)!=null) uni[i.code]=1; });
+    poss.forEach(function(x){ uni[x.code]=1; });
+    var as=0, nActive=0;
+    Object.keys(uni).forEach(function(code){
+      var inst=instOf(code), x=held[code], lc=lastCloseOf(code);
+      var wp=(x&&lc)?Number(x.shares)*lc.px/c.nav:0;
+      var wb=(inst&&inst.bm_weight&&ret1dOf(code)!=null)?Number(inst.bm_weight)/W:0;
+      var d=wp-wb; as+=Math.abs(d);
+      if(Math.abs(d)>0.0005) nActive++;
+    });
+    as=as/2;
+    // tracking error / information ratio from the daily active-return series
+    var nav=navRows(p.id), bs=bmSeries(), bmap={};
+    bs.forEach(function(r){ bmap[r.d]=Number(r.level); });
+    var act=[];
+    for(var i=1;i<nav.length;i++){
+      var p0=Number(nav[i-1].nav), p1=Number(nav[i].nav);
+      var b0=bmap[nav[i-1].d], b1=bmap[nav[i].d];
+      if(!(p0>0)||b0==null||b1==null||!(b0>0)) continue;
+      act.push((p1/p0-1)-(b1/b0-1));
+    }
+    var te=null, ir=null;
+    if(act.length>=20){
+      var mu=act.reduce(function(x,y){return x+y;},0)/act.length;
+      var sd=Math.sqrt(act.reduce(function(x,y){return x+(y-mu)*(y-mu);},0)/(act.length-1));
+      if(sd>1e-6){ te=sd*Math.sqrt(252); ir=(mu*252)/te; }
+    }
+    var hit=null, nb=0, nw=0;
+    Object.keys(uni).forEach(function(code){
+      var inst=instOf(code), x=held[code], lc=lastCloseOf(code);
+      var wp=(x&&lc)?Number(x.shares)*lc.px/c.nav:0;
+      var wb=(inst&&inst.bm_weight&&ret1dOf(code)!=null)?Number(inst.bm_weight)/W:0;
+      var d=wp-wb; if(Math.abs(d)<=0.0005) return;
+      var r=ret1dOf(code); if(r==null) return;
+      if(d*(r-rb)>0) nb++; else nw++;
+    });
+    if(nb+nw>0) hit=nb/(nb+nw);
+    var kv=function(k,v,t){ return '<div'+(t?' title="'+esc(t)+'"':'')+'><span class="k">'+k+'</span><span class="v num">'+v+'</span></div>'; };
+    kp.innerHTML=
+       kv("Active share",(as*100).toFixed(1)+"%","0.5 x sum of |portfolio weight - index weight|. 0% is the index, 100% shares nothing with it.")
+      +kv("Tracking error",te==null?"&ndash;":(te*100).toFixed(2)+"%","Annualised stdev of daily active return vs the price index. Needs 20+ sessions.")
+      +kv("Info ratio",ir==null?"&ndash;":ir.toFixed(2),"Annualised active return divided by tracking error.")
+      +kv("Hit rate",hit==null?"&ndash;":(hit*100).toFixed(0)+"%","Share of active bets (|active weight| > 5bp) whose position today was on the right side of the benchmark.")
+      +kv("Active names",String(nActive),"Names more than 5bp away from their index weight.")
+      +kv("Cash drag",(( -cashW*rb)*1e4).toFixed(1)+"bp","Cash weight x -(benchmark return). Structural: the index weight list sums to about 99.8%, so a fully invested book still carries ~0.19% cash.");
+    var cell=function(v){ return '<td class="num '+cls(v)+'">'+(v>0?"+":"")+(v*1e4).toFixed(1)+'</td>'; };
+    tb.innerHTML=list.map(function(r){
+      return '<tr><td class="l">'+esc(String(r.k).slice(0,18))+'</td>'
+        +'<td class="num">'+(r.pw*100).toFixed(2)+'%</td>'
+        +'<td class="num">'+(r.bw*100).toFixed(2)+'%</td>'
+        +'<td class="num '+cls(r.aw)+'">'+(r.aw>0?"+":"")+(r.aw*100).toFixed(2)+'%</td>'
+        +'<td class="num '+cls(r.Rps)+'">'+(r.bw+r.pw>0?pct(r.Rps,2):"&ndash;")+'</td>'
+        +'<td class="num '+cls(r.Rbs)+'">'+(r.bw>0?pct(r.Rbs,2):"&ndash;")+'</td>'
+        +cell(r.alloc)+cell(r.sel)+cell(r.inter)
+        +'<td class="num '+cls(r.tot)+'"><b>'+(r.tot>0?"+":"")+(r.tot*1e4).toFixed(1)+'</b></td></tr>';
+    }).join("")
+      +'<tr style="border-top:1px solid var(--bord2)"><td class="l"><b>TOTAL</b></td>'
+      +'<td class="num">'+(T.pw*100).toFixed(2)+'%</td><td class="num">'+(T.bw*100).toFixed(2)+'%</td>'
+      +'<td class="num">'+((T.pw-T.bw)*100).toFixed(2)+'%</td>'
+      +'<td class="num '+cls(Rp)+'">'+pct(Rp,2)+'</td><td class="num '+cls(rb)+'">'+pct(rb,2)+'</td>'
+      +cell(T.alloc)+cell(T.sel)+cell(T.inter)
+      +'<td class="num '+cls(T.tot)+'"><b>'+(T.tot>0?"+":"")+(T.tot*1e4).toFixed(1)+'</b></td></tr>';
+    var resid=Math.abs(T.tot-excess)*1e4;
+    ax.textContent=(p.icon||"")+" "+p.nickname+" · "+list.length+" buckets";
+    ft.innerHTML="Portfolio 1D "+pct(Rp,2)+" &minus; benchmark 1D "+pct(rb,2)+" = <b>"
+      +((excess>0?"+":"")+(excess*1e4).toFixed(1))+"bp</b> excess, and allocation + selection + interaction sums to <b>"
+      +((T.tot>0?"+":"")+(T.tot*1e4).toFixed(1))+"bp</b>"
+      +(resid<0.05?" &mdash; the identity closes."
+                 :' &mdash; <span class="warn">residual '+resid.toFixed(2)+'bp, which should not happen; treat the split as approximate.</span>')
+      +" Cash is carried as a zero-return bucket so the decomposition is exact.";
+  }
   function renderDVA(p,c){
     var top=$("dva-top"), bot=$("dva-bot");
     var rb=bmRet();
@@ -1878,7 +2023,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       return;
     }
     var c=playerCalc(p);
-    renderDVA(p,c); renderSectors(p,c);
+    renderDVA(p,c); renderSectors(p,c); renderAttrib(p,c);
   }
   // click any row/cell with a ticker to prefill the order ticket
   document.addEventListener("click",function(ev){
