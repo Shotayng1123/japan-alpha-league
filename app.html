@@ -99,6 +99,15 @@ table.secT tbody tr:hover{background:#101318}
 .cz.sctr{color:var(--cyan);border-color:#1d4a5c}
 .cz.mom{color:var(--up);border-color:#1d5c3a}
 .cz.idio{color:var(--mut);border-color:#2c2d31}
+  .secdet td{padding:0!important;background:#0a0c10;border-bottom:1px solid var(--bord)}
+  .secdet table{width:100%;border-collapse:collapse}
+  .secdet td.c{padding:2px 8px!important;background:transparent;border-bottom:0;font-size:10.5px;white-space:nowrap}
+  .secdet tr:not(:last-child) td.c{border-bottom:1px solid #141518}
+  .secdet .hd td.c{color:var(--mut);font-size:9px;letter-spacing:.06em;text-transform:uppercase}
+  body.cmp .secdet td.c{padding:1px 6px!important;font-size:10px}
+  tbody.secT-body tr.sech{cursor:pointer}
+  tbody.secT-body tr.sech:hover{background:#101318}
+  .secx{color:var(--mut);font-size:8.5px;margin-left:5px}
   .ekbq{font-size:9px;border:1px solid var(--bord2);border-radius:2px;padding:0 3px;color:var(--mut);cursor:pointer;flex:none}
   .ekbq:hover{color:var(--amber);border-color:var(--amber-dim)}
   .ekb{padding:6px 10px 8px 90px;border-bottom:1px solid #1a1b1e;background:#0a0c10;font-size:11px;line-height:1.5;color:var(--txt2);white-space:normal}
@@ -1687,7 +1696,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var tv=Number(turn[code])||0;
       if(cfg.tconv){ var f=cfg.tconv(code); tv=(f!=null)?tv*f:0; }
       if(r>0) G.up+=tv; else if(r<0) G.dn+=tv;
-      rows.push({code:code,name:cfg.nameOf(i),r:r,sector:k,pe:pe,tv:tv,adv:cfg.advOf(i),m1:cfg.retOf(i,"1m")});
+      var mrec={code:code,name:cfg.nameOf(i),r:r,sector:k,pe:pe,tv:tv,adv:cfg.advOf(i),m1:cfg.retOf(i,"1m"),w:w};
+      rows.push(mrec);
+      (G.mem=G.mem||[]).push(mrec);
     });
     var sl=Object.keys(sec).map(function(k){
       var G=sec[k], o={k:k};
@@ -1707,6 +1718,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       o.peLo=ps.length?ps[0]:null; o.peHi=ps.length?ps[ps.length-1]:null;
       o.peCov=ps.length+"/"+G.n;
       o.net=(G.up+G.dn)>0?(G.up-G.dn)/(G.up+G.dn):null;
+      o.mem=G.mem||[];
       return o;
     });
     sl.sort(function(a,b){return (b.d1==null?-9:b.d1)-(a.d1==null?-9:a.d1);});
@@ -1715,13 +1727,52 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(v==null) return '<td class="num"><span class="mut">&ndash;</span></td>';
       return '<td class="num '+cls(v)+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+pct(v,1)+(tip?'<span class="mut" style="font-size:8px;vertical-align:super">!</span>':'')+'</td>';
     };
-    secB.innerHTML=sl.length?sl.map(function(s){
-      return '<tr><td class="l">'+esc(String(s.k).slice(0,18))+'</td>'
+    secB.className="secT-body";
+    var SPFX=cfg.secId+"-";
+    // Every sector row opens to its constituents, ranked by contribution to the sector's day
+    // (weight x return), which is the order that answers "what actually moved this sector".
+    function secDetail(s,si){
+      var mem=(s.mem||[]).slice().sort(function(a,b){return Math.abs(b.w*b.r)-Math.abs(a.w*a.r);});
+      if(!mem.length) return "";
+      var wsum=mem.reduce(function(t,x){return t+(x.w||0);},0);
+      var h='<tr class="secdet" id="'+SPFX+si+'" hidden><td colspan="'+cfg.cols+'"><table><tbody>'
+        +'<tr class="hd"><td class="c">name</td><td class="c">wgt</td><td class="c">1d</td>'
+        +'<td class="c">contrib</td>'+(cfg.showPe?'<td class="c">p/e fy-e</td>':'')
+        +'<td class="c">vol/adv</td><td class="c">driver</td></tr>';
+      mem.forEach(function(x){
+        var va=(x.adv&&x.adv>0&&x.tv>0)?(x.tv/x.adv):null;
+        // w is already in percent and r is a fraction, so w*r is straight percentage points
+        // of index return. Do NOT scale by 100 again.
+        var contrib=(x.w||0)*x.r;
+        h+='<tr><td class="c"><b data-snap="'+esc(x.code)+'">'+esc(x.code)+'</b> <span class="mut">'+esc(String(x.name||"").slice(0,20))+'</span></td>'
+          +'<td class="c num">'+(x.w!=null?n(x.w,2)+"%":"&ndash;")+'</td>'
+          +'<td class="c num '+cls(x.r)+'">'+pct(x.r)+'</td>'
+          +'<td class="c num '+cls(contrib)+'">'+(contrib>=0?"+":"")+contrib.toFixed(3)+'pp</td>'
+          +(cfg.showPe?('<td class="c num">'+((x.pe!=null&&x.pe>0&&x.pe<200)?n(x.pe,1):'<span class="mut">&ndash;</span>')+'</td>'):'')
+          +'<td class="c num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
+          +'<td class="c">'+drv(x)+'</td></tr>';
+      });
+      h+='<tr class="hd"><td class="c">'+mem.length+' names</td><td class="c num">'+n(wsum,2)+'%</td>'
+        +'<td class="c" colspan="'+(cfg.showPe?5:4)+'">contrib = index weight x 1D return, in percentage points of the index</td></tr>';
+      return h+'</tbody></table></td></tr>';
+    }
+    secB.innerHTML=sl.length?sl.map(function(s,si){
+      return '<tr class="sech" data-sec="'+SPFX+si+'"><td class="l">'+esc(String(s.k).slice(0,18))+'<span class="secx">'+(s.mem?s.mem.length:0)+'</span></td>'
         +cell(s.d1,s.tip.d1)+cell(s["1w"],s.tip["1w"])+cell(s["1m"],s.tip["1m"])+cell(s["3m"],s.tip["3m"])+cell(s["12m"],s.tip["12m"])
         +(cfg.showPe?('<td class="num"'+(s.pe==null?'':' title="'+esc('simple average of P/E FY-E \u2014 price / company-guidance EPS for the current fiscal year, not FY+1 and not consensus. outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data')+'"')+'>'
             +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut" style="font-size:9px"> n'+s.peN+'</span>')+'</td>'):'')
-        +'<td class="l">'+nfBar(s.net)+'</td></tr>';
+        +'<td class="l">'+nfBar(s.net)+'</td></tr>'+secDetail(s,si);
     }).join(""):'<tr><td class="l empty" colspan="'+cfg.cols+'">&ndash;</td></tr>';
+    if(!secB.dataset.secBound){
+      secB.dataset.secBound="1";
+      secB.addEventListener("click",function(ev){
+        if(ev.target.closest&&ev.target.closest("[data-snap]")) return;
+        var row=ev.target.closest?ev.target.closest("tr.sech[data-sec]"):null;
+        if(!row) return;
+        var d=document.getElementById(row.getAttribute("data-sec"));
+        if(d) d.hidden=!d.hidden;
+      });
+    }
 
     rows.sort(function(a,b){return b.r-a.r;});
     function drv(x){
