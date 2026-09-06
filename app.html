@@ -401,13 +401,18 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         <div style="max-height:420px;overflow:auto;border:1px solid var(--bord);border-radius:3px">
         <table>
           <thead><tr>
-            <th class="l">TKR</th><th class="l">NAME</th><th class="l">SECTOR</th><th>WORLD WGT%</th><th>LAST $</th><th>LAST ¥</th><th>ADV $M</th><th>MY POS</th>
+            <th class="l">TKR</th><th class="l">NAME</th><th class="l">SECTOR</th><th>WORLD WGT%</th><th>LAST LOC</th><th>LAST ¥</th><th>ADV $M</th><th>MY POS</th>
           </tr></thead>
           <tbody id="wu-body"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
         </table>
         </div>
         <div class="hint2">Off-benchmark bucket: up to 25% of NAV in MSCI World names (US-listed, USD). Orders fill at the most recent US close × USD/JPY; 1-share lots; same 20%-of-ADV participation cap and cost. Click a row to load the ticker into the TRADE ticket. Sizes in ¥bn, shares, or bps of NAV.</div>
       </div>
+    </div>
+
+    <div class="panel c12" data-view="world">
+      <div class="phead"><span class="no">15</span><span class="t">MSCI WORLD — HEAT MAP</span><span class="aux" id="hmw-ctl"><span class="chip-sm on" data-wper="1D">1D</span><span class="chip-sm" data-wper="1W">1W</span><span class="chip-sm" data-wper="1M">1M</span><span class="chip-sm" data-wper="3M">3M</span><span class="chip-sm" data-wper="6M">6M</span><span class="chip-sm" data-wper="12M">12M</span><span style="margin-left:8px">size = index weight · color = period % · top 300 names</span></span></div>
+      <div class="pbody" style="position:relative"><div id="hmw" style="position:relative;width:100%;height:430px;background:#0a0a0a;overflow:hidden"></div><div id="hmwtip" style="position:absolute;display:none;pointer-events:none;background:#0f1013;border:1px solid var(--bord2);padding:8px 10px;font-size:11px;z-index:10;min-width:185px;border-radius:3px"></div></div>
     </div>
 
     <div class="panel c12" data-view="japan">
@@ -513,7 +518,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#nav a"),function(a){
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
-    if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); } if(v==="league"||v==="me") renderChart(); }
+    if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
   showView();
@@ -628,21 +633,32 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-gper")===gPer?" on":"");
     });
-    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["FUTURES","FUTURES"],["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
+    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
     var now=Date.now(), anyClosed=false, latest=0;
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
     var barsData=null;
     if(barsRes){ var bc=BARSC[barsRes]; if(bc&&bc.data){ barsData=bc.data; } else { ensureBarsAll(barsRes); } }
     function tileSpark(sym,arr,bi,up){
-      var vals=null;
-      if(barsData&&barsData[sym]&&barsData[sym].length>1){ vals=barsData[sym].map(function(x){return x[1];}); }
-      else if(arr&&arr.length>1){
-        var st=bi>=0?bi:Math.max(0,arr.length-2);
-        var seg=arr.slice(st);
-        if(seg.length>120){ var kk2=Math.ceil(seg.length/120); seg=seg.filter(function(_x,ii){return ii%kk2===0||ii===seg.length-1;}); }
-        if(seg.length>1) vals=seg.map(function(x){return Number(x.close);});
+      if(barsData&&barsData[sym]&&barsData[sym].length>1){
+        return sparkSvg(barsData[sym].map(function(x){return x[1];}),120,22,up);
       }
-      return vals?sparkSvg(vals,120,22,up):"";
+      if(!arr||arr.length<2) return "";
+      var st=bi>=0?bi:Math.max(0,arr.length-2);
+      var seg=arr.slice(st);
+      if(seg.length<2) return "";
+      var t0=Date.parse(seg[0].d), t1=Date.parse(seg[seg.length-1].d);
+      if(!(t1>t0)) return "";
+      var vals=seg.map(function(x){return Number(x.close);});
+      var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+      if(!(mx-mn>0)) mx=mn+1e-9;
+      var d="";
+      for(var i=0;i<seg.length;i++){
+        var xx=(Date.parse(seg[i].d)-t0)/(t1-t0)*120;
+        var yy=(1-(vals[i]-mn)/(mx-mn))*19+1.5;
+        d+=(i?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
+      }
+      var col=up===false?"var(--dn)":(up?"var(--up)":"var(--mut)");
+      return '<svg viewBox="0 0 120 22" preserveAspectRatio="none" style="width:100%;height:22px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.3"/></svg>';
     }
     function baseIdx(arr){
       var last=arr[arr.length-1];
@@ -693,7 +709,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         +'<div class="mtile" style="grid-column:span 2"><div class="lb">YIELD CURVE &mdash; NOW vs '+gPer+' AGO (%)</div>'+svg2+"</div>";
     }
     function policyChart(){
-      var defs=[["DFEDTARU","US FED (UPPER)","#38c8ff"],["ECBDFR","ECB DEPOSIT","#9a7dff"],["JGB1Y","JGB 1Y (JP POLICY PROXY)","#ffa028"]];
+      var defs=[["DFEDTARU","US FED (UPPER)","#38c8ff"],["ECBDFR","ECB DEPOSIT","#9a7dff"],["BOJTARGET","BOJ TARGET","#ffa028"]];
       var series=[], t0=Infinity, t1=-Infinity, lo3=Infinity, hi3=-Infinity;
       defs.forEach(function(df){
         var arr=MACRO.by[df[0]]||[];
@@ -776,7 +792,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var q=S.quotes.find(function(x){return x.code===code;});
     if(q&&q.price!=null) return {px:Number(q.price), live:true, at:q.updated_at};
     if(S.closes&&S.closes[code]!=null) return {px:Number(S.closes[code]), live:false};
-    if(S.world_closes&&S.world_closes[code]!=null&&S.usdjpy>0) return {px:Number(S.world_closes[code])*Number(S.usdjpy), live:false, world:true, usd:Number(S.world_closes[code])};
+    if(S.world_yen&&S.world_yen[code]!=null){
+      var wi0=winstOf(code);
+      return {px:Number(S.world_yen[code]), live:false, world:true, usd:S.world_closes?Number(S.world_closes[code]):null, cur:wi0?(wi0.currency||"USD"):"USD"};
+    }
     return null;
   }
   function winstOf(code){ return (S.world_instruments||[]).find(function(w){return w.symbol===code;})||null; }
@@ -1319,18 +1338,19 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(!qstr) return true;
       return (w.symbol+" "+(w.name||"")+" "+(w.sector||"")).toLowerCase().indexOf(qstr)>=0;
     });
-    $("wu-cnt").textContent=list.length+" / "+rows.length+" names"+(fx?" · USD/JPY "+fx.toFixed(2):"");
+    $("wu-cnt").textContent=list.length+" / "+rows.length+" tradable names (top of MSCI World by weight)"+(fx?" · USD/JPY "+fx.toFixed(2):"");
     if(!list.length){ tb.innerHTML='<tr><td class="l empty" colspan="8">No matches.</td></tr>'; return; }
     tb.innerHTML=list.slice(0,150).map(function(w){
       var pu=S.world_closes?S.world_closes[w.symbol]:null;
+      var py=S.world_yen?S.world_yen[w.symbol]:null;
       var pos=myp?S.positions.find(function(x){return x.player_id===myp.id&&x.code===w.symbol;}):null;
       return '<tr class="pick" data-code="'+esc(w.symbol)+'">'
         +'<td class="l"><b>'+esc(w.symbol)+'</b></td>'
         +'<td class="l">'+esc(String(w.name||"").slice(0,22))+'</td>'
         +'<td class="l">'+esc(String(w.sector||"").slice(0,16))+'</td>'
         +'<td class="num">'+(w.weight!=null?Number(w.weight).toFixed(2):"–")+'</td>'
-        +'<td class="num">'+(pu!=null?n(Number(pu),2):"–")+'</td>'
-        +'<td class="num">'+(pu!=null&&fx?n(Number(pu)*fx,0):"–")+'</td>'
+        +'<td class="num">'+(pu!=null?n(Number(pu),2)+' <span class="sub">'+esc(w.currency||"USD")+'</span>':"–")+'</td>'
+        +'<td class="num">'+(py!=null?n(Number(py),0):"–")+'</td>'
         +'<td class="num">'+(w.adv20_value_usd?n(Number(w.adv20_value_usd)/1e6,0):"–")+'</td>'
         +'<td class="num'+(pos?" warn":"")+'">'+(pos?n(Number(pos.shares)):"–")+'</td>'
         +'</tr>';
@@ -1501,7 +1521,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       +(days!=null?' &nbsp;&middot;&nbsp; est. fill &asymp; <b>'+days+'</b> trading day'+(days>1?'s':'')+' <span class="mut">(20% ADV cap)</span>':'')
       +(clip?' &nbsp;&middot;&nbsp; <span class="warn">SELL clipped to position ('+n(cur)+' sh)</span>':'')
       +offNote
-      +(lc.world?' &nbsp;&middot;&nbsp; <span class="mut">US close $'+n(lc.usd,2)+' &times; USD/JPY</span>':'');
+      +(lc.world?' &nbsp;&middot;&nbsp; <span class="mut">last close '+esc(lc.cur||"USD")+' '+n(lc.usd,2)+' &times; FX</span>':'');
   }
   ["t-code","t-qty"].forEach(function(id){ $(id).addEventListener("input",tkPrev); });
   ["t-mode","t-side"].forEach(function(id){ $(id).addEventListener("change",tkPrev); });
@@ -1670,7 +1690,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     el.innerHTML=html;
   }
-  window.addEventListener("resize",function(){ if(S) renderHM(); });
+  window.addEventListener("resize",function(){ if(S){ renderHM(); renderHMW(); } });
   Array.prototype.forEach.call(document.querySelectorAll("#hm-ctl [data-hper]"),function(c2){
     c2.addEventListener("click",function(){
       hmPer=c2.getAttribute("data-hper");
@@ -1721,6 +1741,86 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       });
     });
     hm.addEventListener("mouseleave",function(){ tip.style.display="none"; hmCur=null; });
+  })();
+
+  /* ---------- world heatmap ---------- */
+  var hmwPer="1D";
+  Array.prototype.forEach.call(document.querySelectorAll("#hmw-ctl [data-wper]"),function(c2){
+    c2.addEventListener("click",function(){
+      hmwPer=c2.getAttribute("data-wper");
+      Array.prototype.forEach.call(document.querySelectorAll("#hmw-ctl [data-wper]"),function(x){
+        x.className="chip-sm"+(x.getAttribute("data-wper")===hmwPer?" on":"");
+      });
+      if(S) renderHMW();
+    });
+  });
+  function hmwRet(w){
+    var f={"1D":"chg1d","1W":"chg1w","1M":"chg1m","3M":"chg3m","6M":"chg6m","12M":"chg12m"}[hmwPer];
+    return f&&w[f]!=null?Number(w[f]):null;
+  }
+  function hmwColor(chg){
+    if(chg==null||isNaN(chg))return "#3a3b3e";
+    var t=Math.max(-1,Math.min(1,chg/(HM_SCALE[hmwPer==="12M"?"12M":hmwPer]||3)));
+    var neu=[58,59,62],pos=[9,112,54],neg=[168,39,36];
+    var to=t>=0?pos:neg,a=Math.abs(t);
+    var c=neu.map(function(nv,i){return Math.round(nv+(to[i]-nv)*a);});
+    return "rgb("+c[0]+","+c[1]+","+c[2]+")";
+  }
+  function renderHMW(){
+    var el=$("hmw"); if(!el) return;
+    var rows=(S.world_instruments||[]).filter(function(w){return w.weight;});
+    if(!rows.length){ el.innerHTML='<div class="empty">World universe loads after tonight&#39;s refresh.</div>'; return; }
+    var W=el.clientWidth||1400,H=el.clientHeight||430;
+    var bySec={};
+    rows.forEach(function(r){ (bySec[r.sector||"Other"]=bySec[r.sector||"Other"]||[]).push(r); });
+    var secItems=Object.keys(bySec).map(function(sec){
+      return {v:bySec[sec].reduce(function(a,r){return a+Number(r.weight);},0),sec:sec,rows:bySec[sec]};
+    }).sort(function(a,b){return b.v-a.v;});
+    var html="";
+    squarify(secItems,0,0,W,H).forEach(function(sr){
+      html+='<div class="hm-sec" style="left:'+sr.x+'px;top:'+sr.y+'px;width:'+sr.w+'px;height:'+sr.h+'px">';
+      if(sr.w>70&&sr.h>26) html+='<div class="hm-sec-label">'+esc(sr.item.sec)+"</div>";
+      var stocks=sr.item.rows.map(function(r){return {v:Number(r.weight),r:r};}).sort(function(a,b){return b.v-a.v;});
+      squarify(stocks,1,1,sr.w-2,sr.h-2).forEach(function(cell){
+        var r=cell.item.r,chg=hmwRet(r);
+        var big=cell.w>34&&cell.h>20,med=cell.w>48&&cell.h>32;
+        var label="";
+        if(big) label='<span class="c" style="font-size:'+Math.max(8.5,Math.min(14,cell.w/5.5))+'px">'+esc(r.symbol)+"</span>";
+        if(med) label+='<span class="p">'+(chg==null?"–":pc(chg,1))+"</span>";
+        html+='<div class="hm-cell" style="left:'+cell.x.toFixed(1)+"px;top:"+cell.y.toFixed(1)+"px;width:"+cell.w.toFixed(1)+"px;height:"+cell.h.toFixed(1)
+          +"px;background:"+hmwColor(chg)+'" data-wsym="'+esc(r.symbol)+'">'+label+"</div>";
+      });
+      html+="</div>";
+    });
+    el.innerHTML=html;
+  }
+  (function(){
+    var hm=$("hmw"), tip=$("hmwtip");
+    if(!hm) return;
+    hm.addEventListener("mousemove",function(ev){
+      var cell=ev.target&&ev.target.closest?ev.target.closest(".hm-cell"):null;
+      if(!cell||!S){ tip.style.display="none"; return; }
+      var sym=cell.getAttribute("data-wsym");
+      var w=(S.world_instruments||[]).find(function(x){return x.symbol===sym;});
+      if(!w){ tip.style.display="none"; return; }
+      function row(k,v2,c){ return '<div class="row" style="display:flex;justify-content:space-between;gap:14px"><span class="mut">'+k+'</span><b class="num '+(c||"")+'">'+v2+"</b></div>"; }
+      var pu=S.world_closes?S.world_closes[sym]:null;
+      var perV=hmwRet(w);
+      tip.innerHTML='<div style="font-weight:700;font-size:12px">'+esc(w.name||sym)+"</div>"
+        +'<div class="mut" style="margin-bottom:5px">'+esc(sym)+" · "+esc(w.sector||"")+" · wgt "+Number(w.weight).toFixed(2)+"%</div>"
+        +row("LAST",pu!=null?esc(w.currency||"USD")+" "+n(Number(pu),2):"–","")
+        +row("1D",w.chg1d!=null?pc(Number(w.chg1d),2):"–",cls(w.chg1d))
+        +(hmwPer!=="1D"?row(hmwPer,perV==null?"–":pc(perV,1),cls(perV)):"")
+        +row("3M",w.chg3m!=null?pc(Number(w.chg3m),1):"–",cls(w.chg3m))
+        +row("12M",w.chg12m!=null?pc(Number(w.chg12m),1):"–",cls(w.chg12m));
+      tip.style.display="block";
+      var r=tip.parentElement.getBoundingClientRect();
+      var tx=ev.clientX-r.left+14, ty=ev.clientY-r.top+10;
+      if(tx+200>r.width) tx=ev.clientX-r.left-210;
+      if(ty+150>r.height) ty=ev.clientY-r.top-160;
+      tip.style.left=tx+"px"; tip.style.top=ty+"px";
+    });
+    hm.addEventListener("mouseleave",function(){ tip.style.display="none"; });
   })();
 
   /* ---------- universe table ---------- */
@@ -2044,7 +2144,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       $("bmlvl").innerHTML='MSCI JP <b class="num">'+n(l.level,1)+'</b> <span class="num '+cls(chg)+'">'+pct(chg)+'</span> <span class="mut">'+esc(l.d)+"</span>";
     }
     refreshChip();
-    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); tkPrev();
+    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); tkPrev();
   }
 })();
 </script>
