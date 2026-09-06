@@ -130,6 +130,13 @@ tbody tr.pick{cursor:pointer}
 .betcard .r .nm2{color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62%}
 .msgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 @media(max-width:1000px){.msgrid{grid-template-columns:1fr}}
+.mgc{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px;margin:2px 0 4px}
+.mtile{border:1px solid var(--bord);padding:5px 8px 6px;border-radius:2px}
+.mtile .lb{font-size:9px;color:var(--mut);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtile .vl{font-size:13.5px;font-weight:600;margin-top:1px}
+.mtile .ch{font-size:11px;margin-top:1px}
+.mgh{font-size:9.5px;color:var(--mut);letter-spacing:.1em;margin:8px 0 4px;text-transform:uppercase;font-weight:500}
+.mclosed{display:inline-block;font-size:8px;color:var(--mut);border:1px solid var(--bord2);padding:0 3px;margin-left:5px;vertical-align:1px;letter-spacing:.05em}
 .hidden-view{display:none!important}
 
 /* mobile (iPhone-width) */
@@ -325,6 +332,13 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         <div id="mc-tip"></div>
         <div style="margin-top:4px"><span id="mc-ctl"><span class="chip-sm" data-mrng="1W">1W</span><span class="chip-sm" data-mrng="1M">1M</span><span class="chip-sm on" data-mrng="3M">3M</span><span class="chip-sm" data-mrng="6M">6M</span><span class="chip-sm" data-mrng="12M">12M</span><span class="chip-sm" data-mrng="24M">24M</span><span class="chip-sm" data-mrng="36M">36M</span></span></div>
       </div>
+      <div class="pbody" style="border-bottom:1px solid var(--bord)">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <span><span class="minih" style="margin:0 6px 0 0;display:inline">GLOBAL MARKETS</span><span id="mg-ctl"><span class="chip-sm on" data-gper="1D">1D</span><span class="chip-sm" data-gper="1W">1W</span><span class="chip-sm" data-gper="1M">1M</span><span class="chip-sm" data-gper="3M">3M</span><span class="chip-sm" data-gper="6M">6M</span><span class="chip-sm" data-gper="12M">12M</span><span class="chip-sm" data-gper="24M">24M</span><span class="chip-sm" data-gper="36M">36M</span></span></span>
+          <span class="hint2" style="margin:0" id="mg-note"></span>
+        </div>
+        <div id="mg-box"><div class="empty">Loading global markets&hellip;</div></div>
+      </div>
       <div class="pbody">
         <div class="msgrid">
           <div>
@@ -482,6 +496,117 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   }
   load(); setInterval(load,60000);
   document.addEventListener("visibilitychange",function(){ if(!document.hidden) load(); });
+
+  /* ---------- global macro panels ---------- */
+  var MACRO=null, gPer="1D";
+  function loadMacro(){
+    fetch(API+"?action=macro").then(function(r){return r.json();}).then(function(j){
+      if(!j||!j.meta) return;
+      var by={};
+      (j.prices||[]).forEach(function(p){ if(!by[p.symbol]) by[p.symbol]=[]; by[p.symbol].push(p); });
+      Object.keys(by).forEach(function(k){ by[k].sort(function(a,b){return a.d<b.d?-1:1;}); });
+      MACRO={meta:j.meta, by:by};
+      renderMacro();
+    }).catch(function(e){ console.error(e); });
+  }
+  loadMacro(); setInterval(loadMacro,600000);
+  Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
+    c2.addEventListener("click",function(){ gPer=c2.getAttribute("data-gper"); renderMacro(); });
+  });
+  function renderMacro(){
+    var box=$("mg-box"); if(!box||!MACRO) return;
+    Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
+      c2.className="chip-sm"+(c2.getAttribute("data-gper")===gPer?" on":"");
+    });
+    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["FUTURES","FUTURES"],["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
+    var now=Date.now(), anyClosed=false, latest=0;
+    function baseIdx(arr){
+      var last=arr[arr.length-1];
+      if(gPer==="1D") return arr.length>1?arr.length-2:-1;
+      var days={"1W":7,"1M":31,"3M":92,"6M":183,"12M":365,"24M":730,"36M":1095}[gPer]||7;
+      var cut=new Date(Date.parse(last.d)-days*86400e3).toISOString().slice(0,10);
+      for(var i2=arr.length-1;i2>=0;i2--) if(arr[i2].d<=cut) return i2;
+      return 0;
+    }
+    function ycHtml(syms){
+      var vals=[], bases=[];
+      for(var k2=0;k2<syms.length;k2++){
+        var a2=MACRO.by[syms[k2]]||[];
+        if(!a2.length) return "";
+        vals.push(Number(a2[a2.length-1].close));
+        var b3=baseIdx(a2);
+        bases.push(b3>=0?Number(a2[b3].close):null);
+      }
+      var s10_1=(vals[2]-vals[0])*100, s30_10=(vals[3]-vals[2])*100;
+      var b10_1=bases[2]!=null&&bases[0]!=null?(bases[2]-bases[0])*100:null;
+      var b30_10=bases[3]!=null&&bases[2]!=null?(bases[3]-bases[2])*100:null;
+      function spTile(lb,cur,prev){
+        var d3=prev==null?null:cur-prev;
+        return '<div class="mtile"><div class="lb">'+lb+'</div><div class="vl">'+(cur>=0?"+":"")+cur.toFixed(0)+'bp</div><div class="ch '+(d3==null?"":(d3>=0?"up":"dn"))+'">'+(d3==null?"&ndash;":((d3>=0?"+":"")+d3.toFixed(0)+"bp vs "+gPer))+"</div></div>";
+      }
+      var ten=[1,3,10,30], xs=ten.map(function(t2){return Math.log(t2);});
+      var xmin=xs[0], xmax=xs[3];
+      var all2=vals.concat(bases.filter(function(v2){return v2!=null;}));
+      var lo2=Math.min.apply(null,all2), hi2=Math.max.apply(null,all2);
+      if(hi2-lo2<0.2){var mid=(hi2+lo2)/2; lo2=mid-0.1; hi2=mid+0.1;}
+      var CW=250, CH=74, cmL=30, cmR=8, cmT=8, cmB=14;
+      function cx(x2){return cmL+(x2-xmin)/(xmax-xmin)*(CW-cmL-cmR);}
+      function cy(v2){return cmT+(1-(v2-lo2)/(hi2-lo2))*(CH-cmT-cmB);}
+      function pline(vv,color,w2){
+        var d4="";
+        for(var k3=0;k3<4;k3++){ if(vv[k3]==null) return ""; d4+=(k3?"L":"M")+cx(xs[k3]).toFixed(1)+" "+cy(vv[k3]).toFixed(1);}
+        return '<path d="'+d4+'" fill="none" stroke="'+color+'" stroke-width="'+w2+'"/>';
+      }
+      var svg2='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;max-width:260px;height:auto;display:block">';
+      svg2+='<text x="2" y="'+(cy(hi2)+3)+'" font-size="8" fill="var(--mut)">'+hi2.toFixed(2)+'</text>';
+      svg2+='<text x="2" y="'+(cy(lo2)+3)+'" font-size="8" fill="var(--mut)">'+lo2.toFixed(2)+'</text>';
+      for(var k4=0;k4<4;k4++){ svg2+='<text x="'+cx(xs[k4]).toFixed(1)+'" y="'+(CH-3)+'" font-size="8" text-anchor="middle" fill="var(--mut)">'+ten[k4]+'Y</text>'; }
+      svg2+=pline(bases,"#5a6b80",1.2);
+      svg2+=pline(vals,"var(--up)",2);
+      for(var k5=0;k5<4;k5++){ svg2+='<circle cx="'+cx(xs[k5]).toFixed(1)+'" cy="'+cy(vals[k5]).toFixed(1)+'" r="2" fill="var(--up)"/>'; }
+      svg2+="</svg>";
+      return spTile("YC 10Y&minus;1Y",s10_1,b10_1)+spTile("YC 30Y&minus;10Y",s30_10,b30_10)
+        +'<div class="mtile" style="grid-column:span 2"><div class="lb">YIELD CURVE &mdash; NOW vs '+gPer+' AGO (%)</div>'+svg2+"</div>";
+    }
+    var h="";
+    groups.forEach(function(g){
+      var rows=MACRO.meta.filter(function(m){return m.grp===g[0];});
+      if(!rows.length) return;
+      h+='<div class="mgh">'+g[1]+'</div><div class="mgc">';
+      rows.forEach(function(m){
+        var arr=MACRO.by[m.symbol]||[];
+        if(!arr.length){ h+='<div class="mtile"><div class="lb">'+esc(m.label)+'</div><div class="vl">&ndash;</div><div class="ch"></div></div>'; return; }
+        var last=arr[arr.length-1], bi=baseIdx(arr);
+        var base=bi>=0?arr[bi]:null;
+        var mt=m.market_time?Date.parse(m.market_time):null;
+        if(mt&&mt>latest) latest=mt;
+        var closed=mt?(now-mt>3*3600e3):false;
+        if(closed) anyClosed=true;
+        var badge=closed?'<span class="mclosed">CLOSED</span>':"";
+        if(m.kind==="yield"||m.kind==="yield10x"){
+          var dv=m.kind==="yield10x"?10:1;
+          var vl=(Number(last.close)/dv).toFixed(2)+"%";
+          var d10=base?(Number(last.close)-Number(base.close))/dv*100:null;
+          var chTxt=d10==null?"&ndash;":((d10>=0?"+":"")+d10.toFixed(0)+"bp");
+          h+='<div class="mtile"><div class="lb">'+esc(m.label)+badge+'</div><div class="vl">'+vl+'</div><div class="ch '+(d10==null?"":(d10>=0?"up":"dn"))+'">'+chTxt+"</div></div>";
+        } else {
+          var p2=Number(last.close);
+          var vl2=n(p2, p2<10?3:(p2<100?2:(p2<10000?1:0)));
+          var r2=base?p2/Number(base.close)-1:null;
+          h+='<div class="mtile"><div class="lb">'+esc(m.label)+badge+'</div><div class="vl">'+vl2+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div></div>";
+        }
+      });
+      if(g[0]==="RATES_US") h+=ycHtml(["DGS1","DGS3","DGS10","DGS30"]);
+      if(g[0]==="RATES_JP") h+=ycHtml(["JGB1Y","JGB3Y","JGB10Y","JGB30Y"]);
+      h+="</div>";
+    });
+    box.innerHTML=h||'<div class="empty">&ndash;</div>';
+    var parts=[];
+    if(anyClosed) parts.push("CLOSED markets show last close");
+    if(latest) parts.push("latest "+new Date(latest).toLocaleString("en-GB",{timeZone:"Asia/Tokyo",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"})+" JST");
+    parts.push(gPer+" change");
+    $("mg-note").textContent=parts.join(" · ");
+  }
 
   /* ---------- derived helpers ---------- */
   function navRows(pid){ return S.navs.filter(function(r){return r.player_id===pid;}); }
@@ -687,7 +812,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="#66645e">'+esc(xlabels[i2])+"</text>";
     }
     series.forEach(function(s){
-      svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+s.w+'"'+(s.dash?' stroke-dasharray="5 4"':"")+"/>";
+      svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+s.w+'"'+"/>";
     });
     svg+='<line id="'+pfx+'xh" x1="0" x2="0" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#3a3b40" style="display:none"/>'
       +'<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
@@ -1353,12 +1478,12 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     for(var i2=0;i2<nn;i2+=kk){
       svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="8.5" fill="#7a8698" font-family="Helvetica">'+esc(dates[i2])+'</text>';
     }
-    if(bv) svg+='<path d="'+path(bv)+'" fill="none" stroke="#8a97a8" stroke-width="1.6" stroke-dasharray="5 3"/>';
+    if(bv) svg+='<path d="'+path(bv)+'" fill="none" stroke="#8a97a8" stroke-width="1.6"/>';
     if(pv) svg+='<path d="'+path(pv)+'" fill="none" stroke="#10284a" stroke-width="2.2"/>';
     svg+='<rect x="'+(W-232)+'" y="'+(mT+2)+'" width="222" height="16" fill="#fff" opacity="0.85"/>'
       +'<line x1="'+(W-228)+'" x2="'+(W-208)+'" y1="'+(mT+10)+'" y2="'+(mT+10)+'" stroke="#10284a" stroke-width="2.2"/>'
       +'<text x="'+(W-204)+'" y="'+(mT+13)+'" font-size="8.5" fill="#333" font-family="Helvetica">PORTFOLIO</text>'
-      +'<line x1="'+(W-134)+'" x2="'+(W-114)+'" y1="'+(mT+10)+'" y2="'+(mT+10)+'" stroke="#8a97a8" stroke-width="1.6" stroke-dasharray="5 3"/>'
+      +'<line x1="'+(W-134)+'" x2="'+(W-114)+'" y1="'+(mT+10)+'" y2="'+(mT+10)+'" stroke="#8a97a8" stroke-width="1.6"/>'
       +'<text x="'+(W-110)+'" y="'+(mT+13)+'" font-size="8.5" fill="#333" font-family="Helvetica">MSCI JAPAN</text>';
     return svg+"</svg>";
   }
