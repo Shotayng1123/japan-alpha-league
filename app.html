@@ -1699,7 +1699,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     function mrow(x){
       var va=(x.adv&&x.adv>0&&x.tv>0)?(x.tv/x.adv):null;
       return '<tr class="pick" data-code="'+esc(x.code)+'">'
-        +'<td class="l"><b>'+esc(x.code)+'</b> <span class="sub">'+esc(String(x.name||"").slice(0,13))+'</span></td>'
+        +'<td class="l"><b data-snap="'+esc(x.code)+'">'+esc(x.code)+'</b> <span class="sub">'+esc(String(x.name||"").slice(0,13))+'</span></td>'
         +'<td class="num '+cls(x.r)+'">'+pct(x.r)+'</td>'
         +(cfg.showPe?('<td class="num">'+((x.pe!=null&&x.pe>0&&x.pe<200)?n(x.pe,1):'<span class="mut">&ndash;</span>')+'</td>'):'')
         +'<td class="num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
