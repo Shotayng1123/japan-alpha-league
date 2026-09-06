@@ -80,6 +80,7 @@ body.cmp .nwrow{padding:1px 5px}
 .nwc.tk{color:var(--amber);border-color:var(--amber-dim);cursor:pointer}
 .nwc.pos{color:var(--up);border-color:#1d5c3a}
 .nwc.neg{color:var(--dn);border-color:#6b241f}
+.nwc.neu{color:#9aa8b8;border-color:#3a4450}
 .nwh{flex:1;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .nwh a{color:var(--txt);text-decoration:none}
 .nwh a:hover{color:var(--cyan);text-decoration:underline}
@@ -440,6 +441,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           <span class="chip-sm" data-nwf="g" data-v="M&amp;A">M&amp;A</span>
           <span class="chip-sm" data-nwf="g" data-v="Commodity">COMMODITY</span>
           <span class="chip-sm" data-nwf="g" data-v="Equity">EQUITY</span>
+          <span style="width:10px"></span>
+          <span class="chip-sm" data-nwf="x" data-v="POS">+</span>
+          <span class="chip-sm" data-nwf="x" data-v="NEG">&minus;</span>
+          <span class="chip-sm" data-nwf="x" data-v="NEU">N</span>
           <span style="width:10px"></span>
           <span class="chip-sm" data-nwf="lang" data-v="ja">日本語</span>
           <span class="chip-sm" data-nwf="lang" data-v="en">EN</span>
@@ -2519,7 +2524,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 
   /* ---------- render all ---------- */
   /* ---------- news ---------- */
-  var NEWS=null, nwLoading=false, nwF={g:"",lang:"",tk:false,held:false};
+  var NEWS=null, nwLoading=false, nwF={g:"",x:"",lang:"",tk:false,held:false};
   function nwCodes(c,pre){ var o=[]; (c||[]).forEach(function(x){ if(x.indexOf(pre)===0) o.push(x.slice(pre.length)); }); return o; }
   function nwTickers(c){ var o=[]; (c||[]).forEach(function(x){ if(/-(JP|US)$/.test(x)) o.push(x); }); return o; }
   function nwOne(c,pre){ var a=nwCodes(c,pre); return a.length?a[0]:""; }
@@ -2546,6 +2551,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var rows=NEWS.filter(function(r){
       var c=r[5]||[];
       if(nwF.g && nwOne(c,"g:")!==nwF.g) return false;
+      if(nwF.x && nwOne(c,"x:")!==nwF.x) return false;
       if(nwF.lang && r[4]!==nwF.lang) return false;
       var tks=nwTickers(c);
       if(nwF.tk && !tks.length) return false;
@@ -2574,8 +2580,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         var bare=t.replace(/-(JP|US)$/,"");
         tags+='<span class="nwc tk" data-snap="'+esc(bare)+'">'+esc(t)+'</span>';
       });
-      if(sent==="POS") tags+='<span class="nwc pos">+</span>';
-      else if(sent==="NEG") tags+='<span class="nwc neg">&minus;</span>';
+      if(sent==="POS") tags+='<span class="nwc pos" title="Reads positive for the market">+</span>';
+      else if(sent==="NEG") tags+='<span class="nwc neg" title="Reads negative for the market">&minus;</span>';
+      else tags+='<span class="nwc neu" title="Market-impacting, but direction is not determinable from the headline">N</span>';
       if(sec) tags+='<span class="nwc">'+esc(sec.slice(0,14))+'</span>';
       h.push('<div class="nwrow"><span class="nwt">'+esc(tlab)+'</span>'
         +'<span class="nwsig">'+dots+'</span>'
