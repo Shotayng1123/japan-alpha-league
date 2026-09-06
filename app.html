@@ -2003,7 +2003,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       +'<div class="snap-rets" id="snap-r"></div>'
       +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span style="flex:1"></span><span id="snap-vs"></span></div>'
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
-      +'<div class="mut" style="font-size:10.5px;margin-top:10px;border-top:1px solid var(--bord);padding-top:8px" id="snap-fs">5Y FINANCIALS (Sales &rarr; NI, growth, margins) &mdash; loading pipeline lands with v6.9.</div>'
+      +'<div class="mut" style="font-size:10.5px;margin-top:10px;border-top:1px solid var(--bord);padding-top:8px" id="snap-fs">5Y FINANCIALS (Sales &rarr; NI, growth, margins) &mdash; not on file yet. The P/E above is company guidance for the current fiscal year, not a consensus estimate.</div>'
       +'</div>';
     document.body.appendChild(ov);
     ov.addEventListener("click",function(ev){ if(ev.target===ov) ov.style.display="none"; });
@@ -2071,7 +2071,6 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       ["ADV20", advTxt],
       ["P/E FY-E", st2&&st2.per_fwd!=null?Number(st2.per_fwd).toFixed(1)+"x":"–"],
       ["P/E BASIS", st2&&st2.per_fwd!=null?'<span class="mut" style="font-size:9px">company guidance, current FY</span>':"&ndash;"],
-      ["MKT CAP", "&ndash;"],
       ["MY POS", pos?n(Number(pos.shares))+" sh":"–"]
     ];
     $("snap-f").innerHTML=f.map(function(x){return '<div><div class="k">'+x[0]+'</div><div class="v num">'+x[1]+'</div></div>';}).join("");
