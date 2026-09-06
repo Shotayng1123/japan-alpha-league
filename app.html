@@ -81,6 +81,24 @@ body.cmp .nwrow{padding:1px 5px}
 .nwc.pos{color:var(--up);border-color:#1d5c3a}
 .nwc.neg{color:var(--dn);border-color:#6b241f}
 .nwc.neu{color:#9aa8b8;border-color:#3a4450}
+
+/* sectors + movers (market tabs) */
+.msg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1150px){.msg2{grid-template-columns:1fr}}
+table.secT{width:100%;font-size:11px;border-collapse:collapse}
+table.secT th{font-size:9px;padding:3px 4px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bord);text-align:right;white-space:nowrap}
+table.secT th.l{text-align:left}
+table.secT td{padding:2px 4px;border-bottom:1px solid #16171a;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.secT td.l{text-align:left}
+table.secT tbody tr:hover{background:#101318}
+.nf{display:inline-block;position:relative;width:92px;height:9px;background:#131417;border-radius:2px;vertical-align:middle}
+.nf i{position:absolute;top:1px;bottom:1px;display:block}
+.nf u{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#43444a;text-decoration:none}
+.cz{font-size:9px;border:1px solid var(--bord2);border-radius:2px;padding:0 3px;color:var(--txt2);cursor:default}
+.cz.news{color:var(--amber);border-color:var(--amber-dim)}
+.cz.sctr{color:var(--cyan);border-color:#1d4a5c}
+.cz.mom{color:var(--up);border-color:#1d5c3a}
+.cz.idio{color:var(--mut);border-color:#2c2d31}
 .nwh{flex:1;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .nwh a{color:var(--txt);text-decoration:none}
 .nwh a:hover{color:var(--cyan);text-decoration:underline}
@@ -461,18 +479,22 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <div class="panel c12" data-view="japan">
       <div class="phead"><span class="no">13</span><span class="t">JAPAN — BENCHMARKS · SECTORS · MOVERS</span><span class="aux" id="ms-aux2"></span></div>
       <div class="pbody">
-        <div class="msgrid">
+        <h4 class="minih">BENCHMARKS &amp; CROSS-ASSET</h4>
+        <table class="mini" style="margin-bottom:10px"><tbody id="ms-idx"><tr><td class="l empty">Loading…</td></tr></tbody></table>
+        <div class="msg2">
           <div>
-            <h4 class="minih">BENCHMARKS &amp; CROSS-ASSET</h4>
-            <table class="mini"><tbody id="ms-idx"><tr><td class="l empty">Loading…</td></tr></tbody></table>
+            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg FY+1 PE &middot; net flow</span></h4>
+            <table class="secT">
+              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th>FY+1 PE</th><th class="l">NET FLOW</th></tr></thead>
+              <tbody id="ms-sec"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
+            </table>
           </div>
           <div>
-            <h4 class="minih">SECTORS — 1D (BM-WEIGHTED)</h4>
-            <table class="mini"><tbody id="ms-sec"><tr><td class="l empty">Loading…</td></tr></tbody></table>
-          </div>
-          <div>
-            <h4 class="minih">TOP MOVERS — MSCI JAPAN</h4>
-            <table class="mini"><tbody id="ms-mov"><tr><td class="l empty">Loading…</td></tr></tbody></table>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; PE &middot; volume vs ADV &middot; move driver</span></h4>
+            <table class="secT">
+              <thead><tr><th class="l">NAME</th><th>1D</th><th>FY+1 PE</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
+              <tbody id="ms-mov"><tr><td class="l empty" colspan="5">Loading…</td></tr></tbody>
+            </table>
             <div class="hint2" id="ms-breadth"></div>
           </div>
         </div>
@@ -488,6 +510,25 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           <div id="wc-drv" style="flex:1 1 36%;min-width:280px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:8px"></div>
         </div>
         <div id="wc-tip"></div>
+      </div>
+      <div class="pbody" style="border-bottom:1px solid var(--bord)">
+        <div class="msg2">
+          <div>
+            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; index-weighted returns &middot; net flow</span></h4>
+            <table class="secT">
+              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th class="l">NET FLOW</th></tr></thead>
+              <tbody id="wm-sec"><tr><td class="l empty" colspan="7">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
+            <table class="secT">
+              <thead><tr><th class="l">NAME</th><th>1D</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
+              <tbody id="wm-mov"><tr><td class="l empty" colspan="4">Loading…</td></tr></tbody>
+            </table>
+            <div class="hint2" id="wm-breadth"></div>
+          </div>
+        </div>
       </div>
       <div class="pbody">
         <div id="wo-tiles" class="mgc"></div>
@@ -617,6 +658,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
     if(v==="news"){ loadNews(); }
+    if(v==="japan"||v==="world"){ loadFlow(); }
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
@@ -1542,6 +1584,128 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   }
   (function(){ var el=$("wu-q"); if(el) el.addEventListener("input",function(){ if(S) renderWorldUniv(); }); })();
 
+/* ---------- flow: session turnover + news-tagged codes ---------- */
+  var FLOW=null, flowLoading=false;
+  function loadFlow(){
+    if(FLOW||flowLoading) return;
+    flowLoading=true;
+    fetch(API+"?action=flow").then(function(r){return r.json();}).then(function(j){
+      flowLoading=false; FLOW=j||{};
+      FLOW.jpm={}; (FLOW.jp||[]).forEach(function(a){FLOW.jpm[a[0]]=a[1];});
+      FLOW.wdm={}; (FLOW.wd||[]).forEach(function(a){FLOW.wdm[a[0]]=a[1];});
+      FLOW.nset={}; (FLOW.news||[]).forEach(function(c){FLOW.nset[c]=1;});
+      if(S){ renderMarketSummary(); renderWorldSecMov(); }
+    }).catch(function(){ flowLoading=false; });
+  }
+  function nfBar(v){
+    if(v==null||isNaN(v)) return '<span class="mut">&ndash;</span>';
+    var w=Math.max(1,Math.min(50,Math.abs(v)*50));
+    var side=v>=0?('left:50%;width:'+w+'%;background:var(--up)'):('right:50%;width:'+w+'%;background:var(--dn)');
+    var t=(v>=0?"+":"")+Math.round(v*100)+"% net of sector turnover in "+(v>=0?"rising":"falling")+" names";
+    return '<span class="nf" title="'+esc(t)+'"><i style="'+side+'"></i><u></u></span>';
+  }
+  /* shared by MSCI Japan and MSCI World panels */
+  function renderSecMov(cfg){
+    var secB=$(cfg.secId), movB=$(cfg.movId), brEl=cfg.brId?$(cfg.brId):null;
+    if(!secB||!movB) return;
+    var turn=cfg.turn||{}, nset=(FLOW&&FLOW.nset)||{};
+    var PER=["1w","1m","3m","12m"];
+    var sec={}, rows=[];
+    cfg.list.forEach(function(i){
+      var code=cfg.codeOf(i), w=Number(cfg.wOf(i))||0;
+      var r=cfg.retOf(i,"1d"); if(r==null) return;
+      var k=i.sector||"Other";
+      if(!sec[k]){ sec[k]={w:0,d1:0,n:0,pe:[],up:0,dn:0}; PER.forEach(function(p){sec[k]["s"+p]=0;sec[k]["w"+p]=0;}); }
+      var G=sec[k];
+      G.w+=w; G.d1+=w*r; G.n++;
+      PER.forEach(function(p){ var x=cfg.retOf(i,p); if(x!=null){ G["s"+p]+=w*x; G["w"+p]+=w; } });
+      var pe=cfg.peOf?cfg.peOf(i):null;
+      if(pe!=null&&pe>0&&pe<200) G.pe.push(pe);
+      var tv=Number(turn[code])||0;
+      if(cfg.tconv){ var f=cfg.tconv(code); tv=(f!=null)?tv*f:0; }
+      if(r>0) G.up+=tv; else if(r<0) G.dn+=tv;
+      rows.push({code:code,name:cfg.nameOf(i),r:r,sector:k,pe:pe,tv:tv,adv:cfg.advOf(i),m1:cfg.retOf(i,"1m")});
+    });
+    var sl=Object.keys(sec).map(function(k){
+      var G=sec[k], o={k:k};
+      o.d1=G.w?G.d1/G.w:null;
+      PER.forEach(function(p){ o[p]=G["w"+p]?G["s"+p]/G["w"+p]:null; });
+      var ps=G.pe.slice().sort(function(a,b){return a-b;});
+      o.pe=ps.length?ps.reduce(function(a,b){return a+b;},0)/ps.length:null;
+      o.peN=ps.length;
+      o.peMed=ps.length?(ps.length%2?ps[(ps.length-1)/2]:(ps[ps.length/2-1]+ps[ps.length/2])/2):null;
+      o.peLo=ps.length?ps[0]:null; o.peHi=ps.length?ps[ps.length-1]:null;
+      o.peCov=ps.length+"/"+G.n;
+      o.net=(G.up+G.dn)>0?(G.up-G.dn)/(G.up+G.dn):null;
+      return o;
+    });
+    sl.sort(function(a,b){return (b.d1==null?-9:b.d1)-(a.d1==null?-9:a.d1);});
+    var secRet={}; sl.forEach(function(s){secRet[s.k]=s.d1;});
+    var cell=function(v){ return '<td class="num '+cls(v)+'">'+(v==null?'<span class="mut">&ndash;</span>':pct(v,1))+'</td>'; };
+    secB.innerHTML=sl.length?sl.map(function(s){
+      return '<tr><td class="l">'+esc(String(s.k).slice(0,18))+'</td>'
+        +cell(s.d1)+cell(s["1w"])+cell(s["1m"])+cell(s["3m"])+cell(s["12m"])
+        +(cfg.showPe?('<td class="num"'+(s.pe==null?'':' title="'+esc('simple average of forward P/E, outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data')+'"')+'>'
+            +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut" style="font-size:9px"> n'+s.peN+'</span>')+'</td>'):'')
+        +'<td class="l">'+nfBar(s.net)+'</td></tr>';
+    }).join(""):'<tr><td class="l empty" colspan="'+cfg.cols+'">&ndash;</td></tr>';
+
+    rows.sort(function(a,b){return b.r-a.r;});
+    function drv(x){
+      var sr=secRet[x.sector];
+      var resid=(sr==null)?null:(x.r-sr);
+      var share=(sr==null)?null:Math.abs(sr)/(Math.abs(sr)+Math.abs(resid)||1);
+      var shareTxt=(share==null)?"":" sector explains ~"+Math.round(share*100)+"% of the move;";
+      if(nset[x.code+cfg.nsuf])
+        return '<span class="cz news" title="'+esc("A headline tagged to this name in the last 2 sessions."+shareTxt+" Fact-based tag.")+'">NEWS</span>';
+      if(sr!=null&&Math.abs(sr)>=0.003&&share>=0.6)
+        return '<span class="cz sctr" title="'+esc("Moves with its sector ("+pct(sr,1)+")."+shareTxt+" Residual "+pct(resid,1)+".")+'">SECTOR</span>';
+      if(x.m1!=null&&Math.abs(x.m1)>=0.05&&((x.m1>0)===(x.r>0)))
+        return '<span class="cz mom" title="'+esc("Extends its 1-month trend ("+pct(x.m1,1)+") in the same direction."+shareTxt)+'">MOM</span>';
+      return '<span class="cz idio" title="'+esc("No tagged headline, not explained by sector, not a trend continuation."+shareTxt+" Likely stock-specific.")+'">IDIO</span>';
+    }
+    function mrow(x){
+      var va=(x.adv&&x.adv>0&&x.tv>0)?(x.tv/x.adv):null;
+      return '<tr class="pick" data-code="'+esc(x.code)+'">'
+        +'<td class="l"><b>'+esc(x.code)+'</b> <span class="sub">'+esc(String(x.name||"").slice(0,13))+'</span></td>'
+        +'<td class="num '+cls(x.r)+'">'+pct(x.r)+'</td>'
+        +(cfg.showPe?('<td class="num">'+((x.pe!=null&&x.pe>0&&x.pe<200)?n(x.pe,1):'<span class="mut">&ndash;</span>')+'</td>'):'')
+        +'<td class="num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
+        +'<td class="l">'+drv(x)+'</td></tr>';
+    }
+    var K=6;
+    movB.innerHTML=rows.length
+      ? (rows.length<=K*2
+          ? rows.map(mrow).join("")
+          : rows.slice(0,K).map(mrow).join("")+'<tr><td class="l mut" colspan="'+cfg.mcols+'">&middot;&middot;&middot;&middot;&middot;</td></tr>'+rows.slice(-K).reverse().map(mrow).join(""))
+      : '<tr><td class="l empty" colspan="'+cfg.mcols+'">&ndash;</td></tr>';
+    if(brEl){
+      var up=rows.filter(function(x){return x.r>0;}).length, dn=rows.filter(function(x){return x.r<0;}).length;
+      var tot=0, upv=0;
+      rows.forEach(function(x){ tot+=x.tv||0; if(x.r>0) upv+=x.tv||0; });
+      brEl.innerHTML="Breadth "+up+" up / "+dn+" down of "+rows.length
+        +(tot>0?(" &middot; "+Math.round(upv/tot*100)+"% of turnover in rising names"):"")
+        +' &middot; DRIVER: <span class="cz news">NEWS</span> headline today &middot; <span class="cz sctr">SECTOR</span> tracks sector &middot; <span class="cz mom">MOM</span> 1M trend &middot; <span class="cz idio">IDIO</span> stock-specific (heuristic)';
+    }
+  }
+  function renderWorldSecMov(){
+    if(!S||!$("wm-sec")) return;
+    var wy=S.world_yen||{}, wc=S.world_closes||{}, uj=Number(S.usdjpy)||null;
+    renderSecMov({
+      secId:"wm-sec", movId:"wm-mov", brId:"wm-breadth", cols:7, mcols:4, showPe:false, nsuf:"-US",
+      list:(S.world_instruments||[]).filter(function(w){return Number(w.weight)>0;}),
+      codeOf:function(i){return i.symbol;}, nameOf:function(i){return i.name;},
+      wOf:function(i){return Number(i.weight);},
+      retOf:function(i,p){ var k={"1d":"chg1d","1w":"chg1w","1m":"chg1m","3m":"chg3m","12m":"chg12m"}[p];
+        return (k&&i[k]!=null)?Number(i[k])/100:null; },
+      peOf:null,
+      advOf:function(i){ return Number(i.adv20_value_usd)>0?Number(i.adv20_value_usd):null; },
+      tconv:function(sym){ if(!uj) return null; var y=Number(wy[sym]), c=Number(wc[sym]);
+        return (y>0&&c>0)?((y/c)/uj):null; },
+      turn:(FLOW&&FLOW.wdm)||{}
+    });
+  }
+
   function renderMarketSummary(){
     var idx=$("ms-idx"), secT=$("ms-sec"), mov=$("ms-mov"), br=$("ms-breadth");
     function line(label,val,chg){
@@ -1565,32 +1729,21 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       html+=line(m.label||m.symbol, p2==null?"–":n(p2, p2<100?2:(p2<10000?1:0)), m.chg_pct==null?null:Number(m.chg_pct)/100);
     });
     idx.innerHTML=html||'<tr><td class="l empty">Loading…</td></tr>';
-    var sec={};
-    S.instruments.forEach(function(i){
-      if(!i.in_universe||!i.bm_weight) return;
-      var r=ret1dOf(i.code); if(r==null) return;
-      var k=i.sector||"Other";
-      if(!sec[k]) sec[k]={w:0,s:0};
-      sec[k].w+=i.bm_weight; sec[k].s+=i.bm_weight*r;
+    var stq=function(c){ return statOf(c)||{}; };
+    renderSecMov({
+      secId:"ms-sec", movId:"ms-mov", brId:"ms-breadth", cols:8, mcols:5, showPe:true, nsuf:"-JP",
+      list:S.instruments.filter(function(i){return i.in_universe&&i.bm_weight;}),
+      codeOf:function(i){return i.code;}, nameOf:function(i){return i.name;},
+      wOf:function(i){return Number(i.bm_weight);},
+      retOf:function(i,p){
+        if(p==="1d") return ret1dOf(i.code);
+        var s2=stq(i.code), k={"1w":"chg1w","1m":"chg1m","3m":"chg3m","12m":"chg52w"}[p];
+        return (k&&s2[k]!=null)?Number(s2[k])/100:null;
+      },
+      peOf:function(i){ var s2=stq(i.code); return s2.per_fwd!=null?Number(s2.per_fwd):null; },
+      advOf:function(i){ var s2=stq(i.code); return Number(s2.adv20_value)>0?Number(s2.adv20_value):null; },
+      tconv:null, turn:(FLOW&&FLOW.jpm)||{}
     });
-    var sl=Object.keys(sec).map(function(k){return {k:k,r:sec[k].s/sec[k].w};});
-    sl.sort(function(a,b){return b.r-a.r;});
-    secT.innerHTML=sl.length?sl.map(function(r){
-      return '<tr><td class="l">'+esc(String(r.k).slice(0,16))+'</td><td class="num '+cls(r.r)+'">'+pct(r.r)+"</td></tr>";
-    }).join(""):'<tr><td class="l empty">–</td></tr>';
-    var uu=[];
-    S.instruments.forEach(function(i){
-      if(!i.in_universe) return;
-      var r=ret1dOf(i.code); if(r==null) return;
-      uu.push({code:i.code,name:i.name,r:r});
-    });
-    uu.sort(function(a,b){return b.r-a.r;});
-    function mrow(x){ return '<tr class="pick" data-code="'+esc(x.code)+'"><td class="l"><b>'+esc(x.code)+'</b> <span class="sub">'+esc(String(x.name).slice(0,15))+'</span></td><td class="num '+cls(x.r)+'">'+pct(x.r)+"</td></tr>"; }
-    mov.innerHTML=uu.length
-      ? uu.slice(0,5).map(mrow).join("")+'<tr><td class="l mut" colspan="2">·····</td></tr>'+uu.slice(-5).reverse().map(mrow).join("")
-      : '<tr><td class="l empty">–</td></tr>';
-    var adv=uu.filter(function(x){return x.r>0;}).length, dec=uu.filter(function(x){return x.r<0;}).length;
-    br.textContent=uu.length?("Breadth: "+adv+" up / "+dec+" down / "+(uu.length-adv-dec)+" flat of "+uu.length):"";
     $("ms-aux").textContent=quotesFresh()?"live (30-min refresh)":"as of last close";
   }
   function renderExtras(){
@@ -2621,7 +2774,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       $("bmlvl").innerHTML='MSCI JP <b class="num">'+n(l.level,1)+'</b> <span class="num '+cls(chg)+'">'+pct(chg)+'</span> <span class="mut">'+esc(l.d)+"</span>";
     }
     refreshChip();
-    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); tkPrev();
+    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); renderWorldSecMov(); tkPrev();
     if(NEWS) renderNews();
   }
   setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); } },600000);
