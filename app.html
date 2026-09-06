@@ -450,6 +450,14 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     </div>
 
     <div class="panel c12" data-view="news">
+      <div class="phead"><span class="no">12E</span><span class="t">ECONOMIC CALENDAR &mdash; SCHEDULED RELEASES</span><span class="aux" id="ec-aux"></span></div>
+      <div class="pbody">
+        <div id="ec-list"><div class="empty">Loading calendar&hellip;</div></div>
+        <div class="hint2">Dates come from each issuing institution&rsquo;s published schedule (Federal Reserve, Bank of Japan, BLS). Times are JST; &ldquo;翌&rdquo; means the release lands early the next JST morning. Nothing here is inferred from a rule of thumb &mdash; if a schedule is not published, the event is not listed.</div>
+      </div>
+    </div>
+
+    <div class="panel c12" data-view="news">
       <div class="phead"><span class="no">12N</span><span class="t">NEWS &mdash; TAGGED TO YOUR UNIVERSE</span><span class="aux" id="nw-aux"></span></div>
       <div class="pbody">
         <div id="nw-ctl" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
@@ -657,7 +665,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#nav a"),function(a){
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
-    if(v==="news"){ loadNews(); }
+    if(v==="news"){ loadNews(); loadEcon(); }
     if(v==="japan"||v==="world"){ loadFlow(); }
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="league"||v==="me") renderChart(); }
   }
@@ -2690,6 +2698,44 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   });
 
   /* ---------- render all ---------- */
+  /* ---------- economic calendar ---------- */
+  var ECON=null, econLoading=false;
+  function loadEcon(){
+    if(ECON||econLoading){ if(ECON) renderEcon(); return; }
+    econLoading=true;
+    fetch(API+"?action=econ").then(function(r){return r.json();}).then(function(j){
+      econLoading=false; ECON=(j&&j.rows)||[]; renderEcon();
+    }).catch(function(){ econLoading=false; var el=$("ec-list"); if(el) el.innerHTML='<div class="empty">Calendar unavailable right now.</div>'; });
+  }
+  function renderEcon(){
+    var el=$("ec-list"); if(!el) return;
+    if(!ECON){ el.innerHTML='<div class="empty">Loading calendar&hellip;</div>'; return; }
+    if(!ECON.length){ el.innerHTML='<div class="empty">No scheduled releases on file.</div>'; return; }
+    var today=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+    var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    var upcoming=0, h=[];
+    ECON.forEach(function(r){
+      var d=r[0], past=d<today, isToday=d===today;
+      if(!past) upcoming++;
+      var dt=new Date(d+"T00:00:00Z");
+      var lab=d.slice(5).replace("-","/")+" "+DOW[dt.getUTCDay()];
+      var days=Math.round((Date.parse(d+"T00:00:00Z")-Date.parse(today+"T00:00:00Z"))/86400e3);
+      var when=isToday?"today":(days>0?("in "+days+"d"):(-days)+"d ago");
+      var sig=Number(r[4])||3, dots="";
+      for(var i=0;i<5;i++) dots+=(i<sig?'&#9679;':'<i>&#9679;</i>');
+      h.push('<div class="nwrow"'+(past?' style="opacity:.42"':(isToday?' style="background:#141109"':''))+'>'
+        +'<span class="nwt" style="width:84px">'+esc(lab)+'</span>'
+        +'<span class="nwt" style="width:56px">'+esc(r[1])+'</span>'
+        +'<span class="nwtags"><span class="nwc'+(r[2]==="JP"?" tk":"")+'">'+esc(r[2])+'</span></span>'
+        +'<span class="nwsig">'+dots+'</span>'
+        +'<span class="nwh">'+esc(r[3])+(r[5]?' <span class="mut" style="font-size:10px">'+esc(r[5])+'</span>':'')+'</span>'
+        +'<span class="nwt" style="width:52px;text-align:right">'+esc(when)+'</span>'
+        +'<span class="nwsrc">'+esc(r[6])+'</span></div>');
+    });
+    el.innerHTML=h.join("");
+    $("ec-aux").textContent=upcoming+" upcoming / "+ECON.length+" listed";
+  }
+
   /* ---------- news ---------- */
   var NEWS=null, nwLoading=false, nwF={g:"",x:"",lang:"",tk:false,held:false};
   function nwCodes(c,pre){ var o=[]; (c||[]).forEach(function(x){ if(x.indexOf(pre)===0) o.push(x.slice(pre.length)); }); return o; }
