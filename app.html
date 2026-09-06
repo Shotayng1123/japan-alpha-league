@@ -342,7 +342,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody">
         <table>
           <thead><tr>
-            <th class="l">#</th><th class="l">PLAYER</th><th>NAV ¥BN</th><th>P&amp;L ¥BN</th><th>DAY</th><th>CUM</th><th title="vs BM = cumulative return minus MSCI Japan's PRICE return over the same window. Books here accrue price return only, so the price index is the like-for-like comparison. The Net TR index (what a real mandate is measured against) additionally earns the index dividend, about 190bp a year on this data; it is drawn as the dotted line on the performance chart so the gap is visible rather than silently charged to every player.">vs BM</th><th>SHARPE</th><th>GROSS</th><th>OFF-BM%</th><th>CASH%</th>
+            <th class="l" title="Ranked by cumulative excess return vs the benchmark (the vs BM column), measured from each player's own start date. Absolute return breaks ties.">#</th><th class="l">PLAYER</th><th>NAV ¥BN</th><th>P&amp;L ¥BN</th><th>DAY</th><th>CUM</th><th title="vs BM = cumulative return minus MSCI Japan's PRICE return over the same window. Books here accrue price return only, so the price index is the like-for-like comparison. The Net TR index (what a real mandate is measured against) additionally earns the index dividend, about 190bp a year on this data; it is drawn as the dotted line on the performance chart so the gap is visible rather than silently charged to every player.">vs BM</th><th>SHARPE</th><th>GROSS</th><th>OFF-BM%</th><th>CASH%</th>
           </tr></thead>
           <tbody id="lb"><tr><td class="l empty" colspan="9">Loading…</td></tr></tbody>
         </table>
@@ -463,7 +463,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="phead"><span class="no">12</span><span class="t">EARNINGS CALENDAR — NEXT 3 WEEKS</span><span class="aux" id="er-aux"></span></div>
       <div class="pbody">
         <table class="mini"><thead><tr><th class="l">DATE</th><th class="l">TKR</th><th class="l">NAME</th><th class="l">SECTOR</th><th>BM WGT</th><th>MY WGT</th><th>IN</th></tr></thead>
-        <tbody id="er-body"><tr><td class="l empty" colspan="7">Earnings dates populate nightly.</td></tr></tbody></table>
+        <tbody id="er-body"><tr><td class="l empty" colspan="7">Scheduled earnings dates are not available from the current data source.</td></tr></tbody></table>
       </div>
     </div>
 
@@ -1104,7 +1104,20 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(!S.players.length){ tb.innerHTML='<tr><td class="l empty" colspan="10">No players yet — press SIGN IN / JOIN.</td></tr>'; return; }
     var initNav=Number(S.league.initial_nav);
     var rows=S.players.map(function(p,i){ return {p:p,i:i,c:playerCalc(p)}; });
-    rows.sort(function(a,b){ return b.c.cum-a.c.cum; });
+    // The rulebook ranks the league on cumulative EXCESS return vs the benchmark, not on absolute
+    // return. For players who started on the same day the benchmark term is identical, so the two
+    // orders coincide -- which is why sorting on cum went unnoticed. A LATE JOINER breaks the tie:
+    // playerCalc measures each player's benchmark from their OWN start date, so someone who beat a
+    // flat market can otherwise rank below someone who merely rode a rising one. Excess first,
+    // absolute return as the tie-break, and a player with no benchmark yet sorts last, not first.
+    rows.sort(function(a,b){
+      var ea=a.c.excess, eb=b.c.excess;
+      if(ea==null&&eb==null) return b.c.cum-a.c.cum;
+      if(ea==null) return 1;
+      if(eb==null) return -1;
+      if(eb!==ea) return eb-ea;
+      return b.c.cum-a.c.cum;
+    });
     var meP=me?S.players.find(function(x){return x.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
     var isAdm=!!(meP&&meP.is_admin);
     var offMap={};
@@ -2353,8 +2366,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       rows.push({d:s2.next_earnings,code:s2.code,name:inst.name,sector:inst.sector||"",bw:inst.bm_weight||0,w:w});
     });
     rows.sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:b.bw-a.bw);});
-    $("er-aux").textContent=haveAny?(rows.length+" reports in window"):"dates populate nightly (Yahoo Japan)";
-    if(!rows.length){ tb.innerHTML='<tr><td class="l empty" colspan="7">'+(haveAny?"No universe names report in the next 3 weeks.":"Earnings dates populate nightly.")+'</td></tr>'; return; }
+    // Yahoo Japan's quote page carries the MOST RECENT announcement date, not the next one, so the
+    // nightly scrape can never fill this. Say so instead of promising a fill that will not come.
+    $("er-aux").textContent=haveAny?(rows.length+" reports in window"):"no scheduled-date source";
+    if(!rows.length){ tb.innerHTML='<tr><td class="l empty" colspan="7">'+(haveAny?"No universe names report in the next 3 weeks.":"Scheduled earnings dates are not available from the current data source.")+'</td></tr>'; return; }
     tb.innerHTML=rows.map(function(r){
       var days=Math.round((Date.parse(r.d)-Date.parse(today))/86400e3);
       return '<tr class="pick" data-code="'+esc(r.code)+'">'
