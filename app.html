@@ -224,12 +224,15 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <a href="#me" data-view="me">MY DESK</a>
     <a href="#trade" data-view="trade">TRADE</a>
     <a href="#market" data-view="market">MARKET</a>
+    <a href="#japan" data-view="japan">MSCI JAPAN</a>
+    <a href="#world" data-view="world">MSCI WORLD</a>
   </nav>
   <span class="bmq">
     <span id="mktstat" class="mut">TSE —</span>
     <span id="bmlvl" class="num mut">MSCI JP —</span>
     <span id="clock" class="num"></span>
     <span id="upd" class="mut" style="font-size:10px"></span>
+    <span id="sz-ctl"><span class="chip-sm" data-sz="0.85">S</span><span class="chip-sm on" data-sz="1">M</span><span class="chip-sm" data-sz="1.15">L</span><span class="chip-sm" data-sz="1.35">XL</span></span>
     <span class="chip" id="repbtn" title="Download portfolio summary PDF">REPORT</span>
     <span class="chip" id="loginchip">SIGN IN / JOIN</span>
   </span>
@@ -335,7 +338,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       </div>
     </div>
 
-    <div class="panel c12" data-view="me market">
+    <div class="panel c12" data-view="me japan">
       <div class="phead"><span class="no">12</span><span class="t">EARNINGS CALENDAR — NEXT 3 WEEKS</span><span class="aux" id="er-aux"></span></div>
       <div class="pbody">
         <table class="mini"><thead><tr><th class="l">DATE</th><th class="l">TKR</th><th class="l">NAME</th><th class="l">SECTOR</th><th>BM WGT</th><th>MY WGT</th><th>IN</th></tr></thead>
@@ -358,10 +361,14 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         </div>
         <div id="mg-box"><div class="empty">Loading global markets&hellip;</div></div>
       </div>
+    </div>
+
+    <div class="panel c12" data-view="japan">
+      <div class="phead"><span class="no">13</span><span class="t">JAPAN — BENCHMARKS · SECTORS · MOVERS</span><span class="aux" id="ms-aux2"></span></div>
       <div class="pbody">
         <div class="msgrid">
           <div>
-            <h4 class="minih">INDICES &amp; CROSS-ASSET</h4>
+            <h4 class="minih">BENCHMARKS &amp; CROSS-ASSET</h4>
             <table class="mini"><tbody id="ms-idx"><tr><td class="l empty">Loading…</td></tr></tbody></table>
           </div>
           <div>
@@ -377,12 +384,25 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       </div>
     </div>
 
-    <div class="panel c12" data-view="market">
+    <div class="panel c12" data-view="world">
+      <div class="phead"><span class="no">14</span><span class="t">MSCI WORLD — REFERENCE (NET TR ¥)</span><span class="aux" id="wc-ctl"><span class="chip-sm" data-wrng="1M">1M</span><span class="chip-sm on" data-wrng="3M">3M</span><span class="chip-sm" data-wrng="12M">12M</span><span class="chip-sm" data-wrng="36M">36M</span></span></div>
+      <div class="pbody" style="border-bottom:1px solid var(--bord)">
+        <div class="legend" id="wc-leg"></div>
+        <div id="wc-box"></div>
+        <div id="wc-tip"></div>
+      </div>
+      <div class="pbody">
+        <div id="wo-tiles" class="mgc"></div>
+        <div class="hint2">MSCI World vs MSCI Japan, indexed to 100 at range start. Off-benchmark (MSCI World names, up to 25% of NAV) is in build — ordering opens here once live.</div>
+      </div>
+    </div>
+
+    <div class="panel c12" data-view="japan">
       <div class="phead"><span class="no">09</span><span class="t">MSCI JAPAN — HEAT MAP</span><span class="aux" id="hm-ctl"><span class="chip-sm on" data-hper="1D">1D</span><span class="chip-sm" data-hper="1W">1W</span><span class="chip-sm" data-hper="1M">1M</span><span class="chip-sm" data-hper="3M">3M</span><span class="chip-sm" data-hper="6M">6M</span><span class="chip-sm" data-hper="12M">12M</span><span style="margin-left:8px">size = index weight · color = period % · hover for detail + 1M chart</span></span></div>
       <div class="pbody" style="position:relative"><div id="hm"></div><div id="hmtip"></div></div>
     </div>
 
-    <div class="panel c12" data-view="market">
+    <div class="panel c12" data-view="japan">
       <div class="phead"><span class="no">10</span><span class="t">MSCI JAPAN — UNIVERSE</span><span class="aux" id="u-aux"></span></div>
       <div class="pbody">
         <div class="searchrow">
@@ -441,7 +461,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   <div class="modal">
     <h3 id="m-title">JOIN THE LEAGUE</h3>
     <div class="sub2" id="m-sub">Each player runs a JPY 1tn book. Pick a nickname, an icon and a PIN.</div>
-    <div class="row" id="m-invite-row"><label class="f">Invite code</label><input id="m-invite" autocomplete="off"></div>
+    <div class="row" id="m-invite-row"><label class="f">League password</label><input id="m-invite" autocomplete="off" placeholder="shared password"></div>
+    <div class="row" id="m-email-row"><label class="f">Email</label><input id="m-email" type="email" autocomplete="off" placeholder="you@example.com"></div>
     <div class="row"><label class="f">Nickname</label><input id="m-nick" maxlength="16" autocomplete="off"></div>
     <div class="row" id="m-icon-row"><label class="f">Icon</label><div class="icons" id="m-icons"></div></div>
     <div class="row"><label class="f">PIN (4–8 digits)</label><input id="m-pin" inputmode="numeric" maxlength="8" autocomplete="off"></div>
@@ -468,7 +489,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   try{ var saved=localStorage.getItem("jal_cred"); if(saved) me=JSON.parse(saved); }catch(e){}
 
   /* ---------- view router ---------- */
-  var VIEWS=["league","me","trade","market"];
+  var VIEWS=["league","me","trade","market","japan","world"];
   function curView(){ var h=(location.hash||"").replace("#",""); return VIEWS.indexOf(h)>=0?h:"league"; }
   function showView(){
     var v=curView();
@@ -479,7 +500,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#nav a"),function(a){
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
-    if(S){ if(v==="market"){ renderHM(); renderMarketChart(); } if(v==="league"||v==="me") renderChart(); }
+    if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
   showView();
@@ -505,6 +526,25 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     el.className=open?"up":(lunch?"warn":"mut");
   }
   tickClock(); setInterval(tickClock,15000);
+
+  /* ---------- display size ---------- */
+  function applyZoom(z){
+    document.body.style.zoom=z;
+    Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
+      c2.className="chip-sm"+(c2.getAttribute("data-sz")===String(z)?" on":"");
+    });
+  }
+  var savedZoom="1";
+  try{ savedZoom=localStorage.getItem("jal_zoom")||"1"; }catch(e){}
+  applyZoom(savedZoom);
+  Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
+    c2.addEventListener("click",function(){
+      var z=c2.getAttribute("data-sz");
+      try{ localStorage.setItem("jal_zoom",z); }catch(e){}
+      applyZoom(z);
+      if(S){ renderHM(); }
+    });
+  });
 
   /* ---------- data load ---------- */
   function load(){
@@ -563,6 +603,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       Object.keys(by).forEach(function(k){ by[k].sort(function(a,b){return a.d<b.d?-1:1;}); });
       MACRO={meta:j.meta, by:by};
       renderMacro();
+      if(S) renderWorldChart();
     }).catch(function(e){ console.error(e); });
   }
   loadMacro(); setInterval(loadMacro,600000);
@@ -574,7 +615,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-gper")===gPer?" on":"");
     });
-    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["FUTURES","FUTURES"],["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
+    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["FUTURES","FUTURES"],["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
     var now=Date.now(), anyClosed=false, latest=0;
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
     var barsData=null;
@@ -638,6 +679,43 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       return spTile("YC 10Y&minus;1Y",s10_1,b10_1)+spTile("YC 30Y&minus;10Y",s30_10,b30_10)
         +'<div class="mtile" style="grid-column:span 2"><div class="lb">YIELD CURVE &mdash; NOW vs '+gPer+' AGO (%)</div>'+svg2+"</div>";
     }
+    function policyChart(){
+      var defs=[["DFEDTARU","US FED (UPPER)","#38c8ff"],["ECBDFR","ECB DEPOSIT","#9a7dff"],["INTDSRJPM193N","BOJ BASIC LOAN","#ffa028"]];
+      var series=[], t0=Infinity, t1=-Infinity, lo3=Infinity, hi3=-Infinity;
+      defs.forEach(function(df){
+        var arr=MACRO.by[df[0]]||[];
+        if(arr.length<2) return;
+        var pts=arr.map(function(x){return [Date.parse(x.d),Number(x.close)];});
+        pts.forEach(function(p3){ if(p3[0]<t0)t0=p3[0]; if(p3[0]>t1)t1=p3[0]; if(p3[1]<lo3)lo3=p3[1]; if(p3[1]>hi3)hi3=p3[1]; });
+        series.push({nm:df[1],col:df[2],pts:pts});
+      });
+      if(!series.length) return "";
+      if(hi3-lo3<0.5){ hi3=lo3+0.5; }
+      var CW2=560, CH2=150, pL=34, pR=8, pT=10, pB=18;
+      function px2(t2){ return pL+(t2-t0)/(t1-t0)*(CW2-pL-pR); }
+      function py2(v2){ return pT+(1-(v2-lo3)/(hi3-lo3))*(CH2-pT-pB); }
+      var sv='<svg viewBox="0 0 '+CW2+' '+CH2+'" style="width:100%;height:auto;display:block">';
+      for(var g5=Math.ceil(lo3);g5<=Math.floor(hi3);g5++){
+        sv+='<line x1="'+pL+'" x2="'+(CW2-pR)+'" y1="'+py2(g5).toFixed(1)+'" y2="'+py2(g5).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
+          +'<text x="'+(pL-4)+'" y="'+(py2(g5)+3).toFixed(1)+'" text-anchor="end" font-size="8.5" fill="var(--mut)">'+g5+'%</text>';
+      }
+      var y0=new Date(t0).getUTCFullYear()+1, y1=new Date(t1).getUTCFullYear();
+      for(var yy=y0;yy<=y1;yy+=2){
+        var tx2=px2(Date.parse(yy+"-01-01"));
+        sv+='<text x="'+tx2.toFixed(1)+'" y="'+(CH2-4)+'" text-anchor="middle" font-size="8.5" fill="var(--mut)">'+yy+'</text>';
+      }
+      series.forEach(function(sr){
+        var d5="";
+        sr.pts.forEach(function(p3,i5){ d5+=(i5?"L":"M")+px2(p3[0]).toFixed(1)+" "+py2(p3[1]).toFixed(1); });
+        sv+='<path d="'+d5+'" fill="none" stroke="'+sr.col+'" stroke-width="1.6"/>';
+      });
+      sv+="</svg>";
+      var lg2=series.map(function(sr){
+        var lastV=sr.pts[sr.pts.length-1][1];
+        return '<span style="margin-right:12px"><span class="sw" style="background:'+sr.col+'"></span>'+sr.nm+' <b class="num">'+lastV.toFixed(2)+'%</b></span>';
+      }).join("");
+      return '<div class="mtile" style="grid-column:1/-1"><div class="lb">CENTRAL BANK POLICY RATES &mdash; 10 YEARS</div><div class="legend" style="padding:2px 0 3px;font-size:10.5px">'+lg2+'</div>'+sv+"</div>";
+    }
     var h="";
     groups.forEach(function(g){
       var rows=MACRO.meta.filter(function(m){return m.grp===g[0];});
@@ -668,6 +746,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       });
       if(g[0]==="RATES_US") h+=ycHtml(["DGS1","DGS3","DGS10","DGS30"]);
       if(g[0]==="RATES_JP") h+=ycHtml(["JGB1Y","JGB3Y","JGB10Y","JGB30Y"]);
+      if(g[0]==="RATES_POLICY") h+=policyChart();
       h+="</div>";
     });
     box.innerHTML=h||'<div class="empty">&ndash;</div>';
@@ -746,6 +825,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var initNav=Number(S.league.initial_nav);
     var rows=S.players.map(function(p,i){ return {p:p,i:i,c:playerCalc(p)}; });
     rows.sort(function(a,b){ return b.c.cum-a.c.cum; });
+    var meP=me?S.players.find(function(x){return x.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
+    var isAdm=!!(meP&&meP.is_admin);
     $("lb-aux").textContent = rows.some(function(r){return r.c.live;}) ? "LIVE EST" : (S.league.last_eod?("EOD "+S.league.last_eod):"");
     tb.innerHTML=rows.map(function(r,rank){
       var c=r.c, sel=r.p.id===selPid?" sel":"";
@@ -761,10 +842,22 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         +'<td class="num">'+(c.sharpe==null?"–":c.sharpe.toFixed(2))+"</td>"
         +'<td class="num">'+(c.gross==null?"–":(c.gross*100).toFixed(0)+"%")+"</td>"
         +'<td class="num">'+(c.nav>0?(c.cash/c.nav*100).toFixed(0)+"%":"–")+"</td>"
+        +(isAdm&&(!meP||r.p.id!==meP.id)?'<td class="l"><button class="ghost" data-elim="'+esc(r.p.nickname)+'" title="Eliminate (admin)">✕</button></td>':(isAdm?'<td class="l"></td>':""))
         +"</tr>";
     }).join("");
     Array.prototype.forEach.call(tb.querySelectorAll("tr[data-pid]"),function(tr){
       tr.addEventListener("click",function(){ selPid=tr.getAttribute("data-pid"); renderLB(); renderPF(); renderExtras(); renderChart(); renderBlot(); });
+    });
+    Array.prototype.forEach.call(tb.querySelectorAll("[data-elim]"),function(b2){
+      b2.addEventListener("click",function(ev){
+        ev.stopPropagation();
+        var t2=b2.getAttribute("data-elim");
+        if(!confirm("Eliminate "+t2+" from the league? Their history is kept but they leave the rankings."))return;
+        api("eliminate",{nickname:me.nickname,pin:me.pin,target:t2}).then(function(j){
+          if(j.error){ alert(j.error); return; }
+          load();
+        });
+      });
     });
   }
 
@@ -1160,6 +1253,48 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(!series.length){ box.innerHTML='<div class="empty">–</div>'; leg.innerHTML=""; return; }
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","m",$("mc-tip"));
   }
+  var worldRange="3M";
+  Array.prototype.forEach.call(document.querySelectorAll("#wc-ctl [data-wrng]"),function(c2){
+    c2.addEventListener("click",function(){ worldRange=c2.getAttribute("data-wrng"); if(S) renderWorldChart(); });
+  });
+  function renderWorldChart(){
+    var box=$("wc-box"), leg=$("wc-leg");
+    if(!box) return;
+    Array.prototype.forEach.call(document.querySelectorAll("#wc-ctl [data-wrng]"),function(c2){
+      c2.className="chip-sm"+(c2.getAttribute("data-wrng")===worldRange?" on":"");
+    });
+    var tl=$("wo-tiles");
+    if(tl&&MACRO){
+      var h2="";
+      MACRO.meta.filter(function(m){return m.grp==="ETF";}).forEach(function(m){
+        var arr=MACRO.by[m.symbol]||[];
+        if(!arr.length){ h2+='<div class="mtile"><div class="lb">'+esc(m.label)+'</div><div class="vl">&ndash;</div></div>'; return; }
+        var last=arr[arr.length-1], prev=arr.length>1?arr[arr.length-2]:null;
+        var r2=prev?Number(last.close)/Number(prev.close)-1:null;
+        h2+='<div class="mtile"><div class="lb">'+esc(m.label)+'</div><div class="vl">'+n(Number(last.close),2)+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div>"
+          +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0)+"</div>";
+      });
+      tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
+    }
+    var days={"1M":31,"3M":92,"12M":366,"36M":1096}[worldRange]||92;
+    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
+    var wr=(S.benchmark_world||[]).filter(function(r){return r.d>=startD;});
+    if(wr.length<2){ box.innerHTML='<div class="empty">Not enough MSCI World history for this range yet.</div>'; leg.innerHTML=""; return; }
+    var dates=wr.map(function(r){return r.d;});
+    var idx={}; dates.forEach(function(d,i){idx[d]=i;});
+    function mk(label,color,rows){
+      var arr=new Array(dates.length).fill(null);
+      rows.forEach(function(r){ if(r.d>=startD&&idx[r.d]!=null) arr[idx[r.d]]=Number(r.level); });
+      var base=null; for(var i=0;i<arr.length;i++){ if(arr[i]!=null){base=arr[i];break;} }
+      if(base==null||base<=0) return null;
+      return {label:label,color:color,dash:0,w:1.9,vals:arr.map(function(v){return v==null?null:100*v/base;})};
+    }
+    var series=[];
+    var s1=mk("MSCI WORLD","#38c8ff",S.benchmark_world||[]); if(s1)series.push(s1);
+    var s2=mk("MSCI JAPAN","#ffa028",S.benchmark); if(s2)series.push(s2);
+    drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","w2",$("wc-tip"));
+  }
+
   function renderMarketSummary(){
     var idx=$("ms-idx"), secT=$("ms-sec"), mov=$("ms-mov"), br=$("ms-breadth");
     function line(label,val,chg){
@@ -1586,8 +1721,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   function openModal(mode){
     modalMode=mode;
     $("m-title").textContent=mode==="join"?"JOIN THE LEAGUE":"SIGN IN";
-    $("m-sub").textContent=mode==="join"?"Each player runs a JPY 1tn book that starts at MSCI Japan neutral weight (built at the next close). Pick a nickname, an icon and a PIN.":"Enter your nickname and PIN.";
+    $("m-sub").textContent=mode==="join"?"Each player runs a JPY 1tn book that starts at MSCI Japan neutral weight (built at the next close). Enter the league password, your email, a nickname, an icon and your own PIN.":"Enter your nickname and PIN.";
     $("m-invite-row").style.display=mode==="join"?"":"none";
+    $("m-email-row").style.display=mode==="join"?"":"none";
     $("m-icon-row").style.display=mode==="join"?"":"none";
     $("m-go").textContent=mode==="join"?"JOIN":"SIGN IN";
     $("m-switch").textContent=mode==="join"?"Sign in instead":"Register instead";
@@ -1616,7 +1752,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var msg=$("m-msg"); msg.className="msg";
     var nick=$("m-nick").value.trim(), pin=$("m-pin").value.trim();
     if(modalMode==="join"){
-      api("register",{invite:$("m-invite").value.trim(),nickname:nick,icon:pickedIcon,pin:pin}).then(function(j){
+      api("register",{invite:$("m-invite").value.trim(),email:$("m-email").value.trim(),nickname:nick,icon:pickedIcon,pin:pin}).then(function(j){
         if(j.error){msg.textContent=j.error;msg.className="msg err";return;}
         me={nickname:nick,pin:pin,icon:pickedIcon};
         try{localStorage.setItem("jal_cred",JSON.stringify(me));}catch(e){}
@@ -1849,7 +1985,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       $("bmlvl").innerHTML='MSCI JP <b class="num">'+n(l.level,1)+'</b> <span class="num '+cls(chg)+'">'+pct(chg)+'</span> <span class="mut">'+esc(l.d)+"</span>";
     }
     refreshChip();
-    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); tkPrev();
+    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); tkPrev();
   }
 })();
 </script>
