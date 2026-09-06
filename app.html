@@ -227,8 +227,8 @@ tbody tr.pick{cursor:pointer}
   #grid{gap:8px}
   #topbar{gap:8px;padding:6px 8px}
   #topbar .tag{display:none}
-  #nav{width:100%;order:3;margin-left:0}
-  #nav a{flex:1;text-align:center;padding:5px 2px}
+  #nav{width:100%;order:3;margin-left:0;flex-wrap:wrap;row-gap:3px}
+  #nav a{flex:1 1 auto;min-width:0;text-align:center;padding:5px 6px;font-size:10px;letter-spacing:.05em}
   #topbar .bmq{margin-left:0;width:100%;gap:10px;flex-wrap:wrap}
   .pbody{padding:6px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{font-size:11px}
@@ -243,7 +243,8 @@ tbody tr.pick{cursor:pointer}
   #univwrap{max-height:400px}
   #u-tbl{min-width:660px}
   .phead{flex-wrap:wrap;row-gap:4px}
-  .phead .aux{margin-left:0;width:100%}
+  .phead .aux{margin-left:0;width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:3px}
+  .phead .aux .chip-sm{margin-left:0}
   .icons{grid-template-columns:repeat(8,1fr)}
 }
 
