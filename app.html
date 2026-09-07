@@ -226,6 +226,7 @@ tbody tr.pick{cursor:pointer}
 .mtile .ch{font-size:11px;margin-top:1px}
 .mgh{font-size:11.5px;color:var(--amber);letter-spacing:.12em;margin:10px 0 5px;text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--bord);padding-bottom:3px}
 .mclosed{display:inline-block;font-size:8px;color:var(--mut);border:1px solid var(--bord2);padding:0 3px;margin-left:5px;vertical-align:1px;letter-spacing:.05em}
+.mopen{display:inline-block;font-size:8px;color:var(--up);border:1px solid #1d5c3a;background:rgba(63,208,126,.16);padding:0 3px;margin-left:5px;vertical-align:1px;letter-spacing:.05em;font-weight:600}
 .thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
 .thcard{border:1px solid var(--bord);border-radius:4px;padding:8px 10px;background:var(--panel2)}
 .thcard .h{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin-bottom:5px;align-items:baseline}
@@ -742,16 +743,107 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   function bp(x){ if(x==null||isNaN(x))return "–"; var b=Math.round(x*1e4); return (b>0?"+":"")+n(b)+"bp"; }
   function cls(x){ return x>0?"up":(x<0?"dn":""); }
   function pc(v,dp){ if(v==null||isNaN(v))return "–"; return (v>0?"+":"")+Number(v).toFixed(dp==null?1:dp)+"%"; }
+  // Spreadsheet-style colour scale, returned as a ready-to-splice style attribute. v is placed
+  // linearly on [lo,hi]; cyan below the mid-point, amber above, strongest at either extreme.
+  // Deliberately NOT the red/green used for returns -- a P/E is a level and carries no direction.
+  // Contrast of --txt on the strongest tints was computed rather than eyeballed: 8.75:1 (cyan)
+  // and 8.99:1 (amber) over the panel. A degenerate range returns nothing, so a single-value
+  // column is left unshaded instead of being painted an arbitrary colour.
+  function heatBg(v,lo,hi){
+    if(v==null||lo==null||hi==null||!(hi-lo>1e-9)) return "";
+    var t=(v-lo)/(hi-lo), d=Math.abs(t-0.5)*2;
+    return ' style="background:rgba('+(t<0.5?"56,200,255":"255,160,40")+','+(0.06+0.22*d).toFixed(3)+')"';
+  }
+
+  /* ---------- exchange sessions and the OPEN badge ----------
+     Session windows taken from each exchange's own published schedule, not from memory:
+       TSE   09:00-11:30 / 12:30-15:30 JST  jpx.co.jp/english/equities/trading/domestic/01.html
+       HKEX  09:30-12:00 / 13:00-16:10 HKT  continuous trading ends 16:00; the closing auction
+             runs to a random close between 16:08 and 16:10 (hkex.com.hk, Securities Market)
+       SSE   09:30-11:30 / 13:00-15:00 CST  the 14:57-15:00 closing call auction sits inside the
+             afternoon window (english.sse.com.cn/start/trading/schedule)
+     None of the three observes daylight saving, so a fixed offset from UTC is exact all year and
+     no timezone data is needed.
+
+     Only these three carry a badge. Our own tick runs 09:00-15:55 JST, so a US or European
+     session produces no live prints here at all; a badge driven by a US calendar would print
+     OPEN over a number that is two days old, which is worse than printing nothing. The as-of
+     stamp beside each label already states the truth for those tiles.
+
+     A market is OPEN only when ALL THREE hold:
+       1. the venue's own clock is inside a session window, Monday to Friday;
+       2. the venue's newest print is dated TODAY in the venue's own time zone;
+       3. that print is less than 90 minutes old.
+     (1) on its own puts a confident OPEN on every exchange holiday, and a holiday calendar is
+     exactly what this app has no verified source for. (2) removes holidays without needing one:
+     on a non-trading day the newest print carries an earlier date. (3) catches a feed that died
+     mid-session. The 90 minutes is sized from measurement: the feed's own print timestamp ran
+     17 minutes behind at 13:02 JST on 2026-09-07, the macro payload reloads every 5 minutes
+     inside these sessions and the tick fires every 5 -- about 30 worst case, doubled for
+     headroom. It cannot resurrect a false OPEN, because on a non-trading day the newest print is
+     at least 17.5 hours old (Friday's close to Monday's open).
+     Accepted limitation: the tick stops at 15:55 JST, so HKEX's last ~75 minutes and SSE's last
+     5 produce no new prints and the badge goes out early. That is honest -- the number really
+     has stopped moving -- and the alternative is claiming live data we do not have. */
+  var VENUE={"^N225":"TSE","1306.T":"TSE","^HSI":"HK","000001.SS":"CN"};
+  var SESS={TSE:{off:9,win:[[540,690],[750,930]]},
+            HK :{off:8,win:[[570,720],[780,970]]},
+            CN :{off:8,win:[[570,690],[780,900]]}};
+  var FRESH_MS=90*60e3;
+  var OPEN_TIP="Trading now. Shown only when the exchange is inside a session AND this series' newest print is dated today and under 90 minutes old, so an exchange holiday cannot light it. Sessions verified against JPX, HKEX and SSE. Tokyo, Hong Kong and Shanghai only: price polling runs 09:00-15:55 JST, so no US or European session produces live prints here.";
+  function venueNow(v){ return new Date(Date.now()+SESS[v].off*3600e3); }
+  function inSession(v){
+    var d=venueNow(v), dw=d.getUTCDay();
+    if(dw===0||dw===6) return false;
+    var t=d.getUTCHours()*60+d.getUTCMinutes(), w=SESS[v].win;
+    for(var i=0;i<w.length;i++) if(t>=w[i][0]&&t<w[i][1]) return true;
+    return false;
+  }
+  function inLunch(v){
+    var d=venueNow(v), dw=d.getUTCDay();
+    if(dw===0||dw===6) return false;
+    var t=d.getUTCHours()*60+d.getUTCMinutes(), w=SESS[v].win;
+    return w.length>1&&t>=w[0][1]&&t<w[1][0];
+  }
+  function mtOf(sym){
+    var m=MACRO&&MACRO.meta&&MACRO.meta.find(function(x){return x.symbol===sym;});
+    var t=m&&m.market_time?Date.parse(m.market_time):NaN;
+    return isFinite(t)?t:null;
+  }
+  function venueMt(v){
+    var best=null;
+    Object.keys(VENUE).forEach(function(sy){
+      if(VENUE[sy]!==v) return;
+      var t=mtOf(sy); if(t!=null&&(best==null||t>best)) best=t;
+    });
+    return best;
+  }
+  function printedToday(v,t){
+    if(t==null) return false;
+    var o=SESS[v].off*3600e3, a=new Date(t+o), b=new Date(Date.now()+o);
+    return a.getUTCFullYear()===b.getUTCFullYear()&&a.getUTCMonth()===b.getUTCMonth()&&a.getUTCDate()===b.getUTCDate();
+  }
+  function isVenueOpen(v,t){
+    return !!v&&!!SESS[v]&&inSession(v)&&printedToday(v,t)&&(Date.now()-t)<FRESH_MS;
+  }
+  function symOpen(sym){ var v=VENUE[sym]; return v?isVenueOpen(v,mtOf(sym)):false; }
+  function anyVenueInSession(){ return inSession("TSE")||inSession("HK")||inSession("CN"); }
 
   /* ---------- clock / market status ---------- */
   function tickClock(){
     var jst=new Date(Date.now()+9*3600e3);
     var hh=jst.getUTCHours(), mm=jst.getUTCMinutes();
     $("clock").textContent=("0"+hh).slice(-2)+":"+("0"+mm).slice(-2)+" JST";
-    var dow=jst.getUTCDay(), t=hh*60+mm;
-    var open=dow>=1&&dow<=5&&((t>=540&&t<690)||(t>=750&&t<930));
-    var lunch=dow>=1&&dow<=5&&t>=690&&t<750;
+    // This pill used to be driven by the wall clock alone, which meant it said "TSE OPEN" on
+    // every Japanese public holiday -- a weekday inside 09:00-15:30 with nothing trading. It now
+    // uses the same evidence as the tile badges: the session window AND the exchange's own print
+    // timestamp. Until the macro payload has loaded there is no evidence either way, so it says
+    // nothing rather than guessing.
     var el=$("mktstat");
+    var jmt=venueMt("TSE");
+    if(jmt==null){ el.textContent="TSE \u2014"; el.className="mut"; return; }
+    var open=isVenueOpen("TSE",jmt);
+    var lunch=!open&&inLunch("TSE")&&printedToday("TSE",jmt);
     el.textContent="TSE "+(open?"OPEN":(lunch?"LUNCH":"CLOSED"));
     el.className=open?"up":(lunch?"warn":"mut");
   }
@@ -854,10 +946,17 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       Object.keys(by).forEach(function(k){ by[k].sort(function(a,b){return a.d<b.d?-1:1;}); });
       MACRO={meta:j.meta, by:by};
       renderMacro();
+      tickClock();
       if(S) renderWorldChart();
     }).catch(function(e){ console.error(e); });
   }
-  loadMacro(); setInterval(loadMacro,1800000);
+  // A flat 30-minute reload left a tile up to half an hour behind a number that updates every
+  // five, and it would have delayed the OPEN badge well past the opening bell, since the badge is
+  // gated on the venue's own print timestamp. Inside the Asian sessions -- the only hours our tick
+  // runs -- the payload now reloads every five minutes, matching the tick, and falls back to 30
+  // outside them so an idle overnight tab costs nothing extra.
+  loadMacro();
+  (function macroLoop(){ setTimeout(function(){ loadMacro(); macroLoop(); }, anyVenueInSession()?300000:1800000); })();
   Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
     c2.addEventListener("click",function(){ gPer=c2.getAttribute("data-gper"); renderMacro(); });
   });
@@ -1029,9 +1128,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         var mt=m.market_time?Date.parse(m.market_time):null;
         if(mt&&mt>latest) latest=mt;
         if(mt&&(!oldest||mt<oldest)) oldest=mt;
-        var closed=mt?(now-mt>3*3600e3):false;
+        var isOpen=symOpen(m.symbol);
+        var closed=(!isOpen)&&(mt?(now-mt>3*3600e3):false);
         if(closed) anyClosed=true;
-        var badge=closed?'<span class="mclosed">CLOSED</span>':"";
+        var badge=isOpen?'<span class="mopen" title="'+esc(OPEN_TIP)+'">OPEN</span>'
+                        :(closed?'<span class="mclosed">CLOSED</span>':"");
         if(m.kind==="yield"||m.kind==="yield10x"){
           var dv=m.kind==="yield10x"?10:1;
           var vl=(Number(last.close)/dv).toFixed(2)+"%";
@@ -1999,12 +2100,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(v==null||secPeLo==null||!(secPeHi-secPeLo>1e-9)) return null;
       return (v-secPeLo)/(secPeHi-secPeLo);
     }
-    function peBg(v){
-      var t=peT(v);
-      if(t==null) return "";
-      var d=Math.abs(t-0.5)*2;
-      return ' style="background:rgba('+(t<0.5?"56,200,255":"255,160,40")+','+(0.06+0.22*d).toFixed(3)+')"';
-    }
+    function peBg(v){ return heatBg(v,secPeLo,secPeHi); }
     secB.className="secT-body";
     var SPFX=cfg.secId+"-";
     // Every sector row opens to its constituents, ranked by contribution to the sector's day
@@ -2013,6 +2109,12 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var mem=(s.mem||[]).slice().sort(function(a,b){return Math.abs(b.w*b.r)-Math.abs(a.w*a.r);});
       if(!mem.length) return "";
       var wsum=mem.reduce(function(t,x){return t+(x.w||0);},0);
+      // The same colour scale as the sector row, but ranged within THIS sector, so it answers
+      // "which of these names is expensive against its own peers" rather than repeating the
+      // cross-sector ranking the parent row already shows. Names without a usable P/E are left
+      // unshaded and excluded from the range.
+      var dpe=mem.map(function(x){return (x.pe!=null&&x.pe>0&&x.pe<200)?x.pe:null;}).filter(function(v){return v!=null;});
+      var dLo=dpe.length?Math.min.apply(null,dpe):null, dHi=dpe.length?Math.max.apply(null,dpe):null;
       var h='<tr class="secdet" id="'+SPFX+si+'" hidden><td colspan="'+cfg.cols+'"><table><tbody>'
         +'<tr class="hd"><td class="c tk">ticker</td><td class="c nm">name</td><td class="c">wgt</td><td class="c">1d</td>'
         +'<td class="c">contrib</td>'+(cfg.showPe?'<td class="c">p/e fy-e</td>':'')
@@ -2027,7 +2129,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           +'<td class="c num">'+(x.w!=null?n(x.w,2)+"%":"&ndash;")+'</td>'
           +'<td class="c num '+cls(x.r)+'">'+pct(x.r)+'</td>'
           +'<td class="c num '+cls(contrib)+'">'+(contrib>=0?"+":"")+contrib.toFixed(3)+'pp</td>'
-          +(cfg.showPe?('<td class="c num">'+((x.pe!=null&&x.pe>0&&x.pe<200)?n(x.pe,1):'<span class="mut">&ndash;</span>')+'</td>'):'')
+          +(cfg.showPe?('<td class="c num"'+((x.pe!=null&&x.pe>0&&x.pe<200)?heatBg(x.pe,dLo,dHi):'')+'>'+((x.pe!=null&&x.pe>0&&x.pe<200)?n(x.pe,1):'<span class="mut">&ndash;</span>')+'</td>'):'')
           +'<td class="c num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
           +'<td class="c">'+drv(x)+'</td></tr>';
       });
