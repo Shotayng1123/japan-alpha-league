@@ -95,6 +95,19 @@ table.secT th.l{text-align:left}
 table.secT td{padding:2px 4px;border-bottom:1px solid #16171a;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 table.secT td.l{text-align:left}
 table.secT tbody tr:hover{background:#101318}
+/* The "!" dominance flag was an ordinary inline span inside a right-aligned cell, so it did two
+   things it should not: it pushed the figure 4.8px left of the unflagged figures in the same
+   column (measured live: +325.1% ended at x=686.48, +31.8% at 691.29), and its superscript line
+   box made flagged rows 1.16px taller than the rest (20.46px vs 19.30px). Taking it out of flow
+   fixes both -- it now hangs in the 8px gutter between the two columns (4.8px wide, 1.2px clear
+   of the digits, 2px clear of the next column) and contributes nothing to the line box. */
+table.secT tbody tr.sech>td.num{position:relative}
+table.secT tbody tr.sech>td.num>.domf{position:absolute;right:-2px;top:2.5px;font-size:8px;color:var(--mut);pointer-events:none}
+/* Same class of defect on the names-with-data count: a variable-width suffix in a right-aligned
+   cell staggered the P/E figures by exactly one 9px character (764.71 vs 770.11 measured). The
+   count now sits in a fixed-width box, left-aligned inside it, so the P/E digits end at the same
+   x on every row. 26px holds "n999"; the largest sector today is n41. */
+table.secT tbody tr.sech>td.num>.pen{display:inline-block;box-sizing:border-box;width:26px;padding-left:4px;text-align:left;font-size:9px}
 .nf{display:inline-block;position:relative;width:92px;height:9px;background:#131417;border-radius:2px;vertical-align:middle}
 .nf i{position:absolute;top:1px;bottom:1px;display:block}
 .nf u{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#43444a;text-decoration:none}
@@ -541,7 +554,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         <table class="mini" style="margin-bottom:10px"><tbody id="ms-idx"><tr><td class="l empty">Loading…</td></tr></tbody></table>
         <div class="msg2">
           <div>
-            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg P/E FY-E &middot; net flow</span></h4>
+            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg P/E FY-E, shaded low&ndash;high across sectors &middot; net flow</span></h4>
             <table class="secT">
               <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th class="l">NET FLOW</th></tr></thead>
               <tbody id="ms-sec"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
@@ -1971,8 +1984,27 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var secRet={}; sl.forEach(function(s){secRet[s.k]=s.d1;});
     var cell=function(v,tip){
       if(v==null) return '<td class="num"><span class="mut">&ndash;</span></td>';
-      return '<td class="num '+cls(v)+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+pct(v,1)+(tip?'<span class="mut" style="font-size:8px;vertical-align:super">!</span>':'')+'</td>';
+      return '<td class="num '+cls(v)+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+pct(v,1)+(tip?'<span class="domf">!</span>':'')+'</td>';
     };
+    // Cross-sector P/E shading, in the spirit of a spreadsheet colour scale: each cell is placed
+    // linearly on today's low-high range of the very same statistic shown in the column, so the
+    // ranking is readable without comparing eleven numbers by eye. Cyan below the mid-point of
+    // the range, amber above, strongest at either extreme -- deliberately NOT the red/green used
+    // for returns, because a P/E is a level and carries no direction. Recomputed every render;
+    // sectors with no P/E data are left unshaded rather than assigned a position.
+    var peAll=sl.map(function(s){return s.pe;}).filter(function(v){return v!=null;});
+    var secPeLo=peAll.length?Math.min.apply(null,peAll):null;
+    var secPeHi=peAll.length?Math.max.apply(null,peAll):null;
+    function peT(v){
+      if(v==null||secPeLo==null||!(secPeHi-secPeLo>1e-9)) return null;
+      return (v-secPeLo)/(secPeHi-secPeLo);
+    }
+    function peBg(v){
+      var t=peT(v);
+      if(t==null) return "";
+      var d=Math.abs(t-0.5)*2;
+      return ' style="background:rgba('+(t<0.5?"56,200,255":"255,160,40")+','+(0.06+0.22*d).toFixed(3)+')"';
+    }
     secB.className="secT-body";
     var SPFX=cfg.secId+"-";
     // Every sector row opens to its constituents, ranked by contribution to the sector's day
@@ -2006,8 +2038,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     secB.innerHTML=sl.length?sl.map(function(s,si){
       return '<tr class="sech" data-sec="'+SPFX+si+'"><td class="l">'+esc(String(s.k).slice(0,18))+'<span class="secx">'+(s.mem?s.mem.length:0)+'</span></td>'
         +cell(s.d1,s.tip.d1)+cell(s["1w"],s.tip["1w"])+cell(s["1m"],s.tip["1m"])+cell(s["3m"],s.tip["3m"])+cell(s["12m"],s.tip["12m"])
-        +(cfg.showPe?('<td class="num"'+(s.pe==null?'':' title="'+esc('simple average of P/E FY-E \u2014 price / company-guidance EPS for the current fiscal year, not FY+1 and not consensus. outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data')+'"')+'>'
-            +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut" style="font-size:9px"> n'+s.peN+'</span>')+'</td>'):'')
+        +(cfg.showPe?('<td class="num"'+peBg(s.pe)+(s.pe==null?'':' title="'+esc('simple average of P/E FY-E \u2014 price / company-guidance EPS for the current fiscal year, not FY+1 and not consensus. outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data. shading places this sector at '+Math.round(peT(s.pe)*100)+'% of today\'s '+n(secPeLo,1)+'x-'+n(secPeHi,1)+'x spread across sectors \u2014 a level, not a return')+'"')+'>'
+            +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut pen">n'+s.peN+'</span>')+'</td>'):'')
         +'<td class="l">'+nfBar(s.net)+'</td></tr>'+secDetail(s,si);
     }).join(""):'<tr><td class="l empty" colspan="'+cfg.cols+'">&ndash;</td></tr>';
     if(!secB.dataset.secBound){
