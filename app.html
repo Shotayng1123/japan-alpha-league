@@ -762,13 +762,17 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
              runs to a random close between 16:08 and 16:10 (hkex.com.hk, Securities Market)
        SSE   09:30-11:30 / 13:00-15:00 CST  the 14:57-15:00 closing call auction sits inside the
              afternoon window (english.sse.com.cn/start/trading/schedule)
-     None of the three observes daylight saving, so a fixed offset from UTC is exact all year and
-     no timezone data is needed.
+       NYSE / Nasdaq  09:30-16:00 ET      nyse.com/markets/hours-calendars and the Nasdaq
+             holiday schedule page both state the core session. New York observes daylight
+             saving, so its local time is taken from the browser's ICU data (Intl,
+             America/New_York) rather than a hand-rolled rule; the three Asian venues do not
+             observe it and use a fixed offset.
 
-     Only these three carry a badge. Our own tick runs 09:00-15:55 JST, so a US or European
-     session produces no live prints here at all; a badge driven by a US calendar would print
-     OPEN over a number that is two days old, which is worse than printing nothing. The as-of
-     stamp beside each label already states the truth for those tiles.
+     The tick polls the feed through both the Tokyo session (09:00-15:55 JST) and the US session
+     (09:30-16:00 ET), so these four venues can carry live prints and a badge. Futures, FX and
+     commodities move around the clock and their as-of stamps show it, but they have no single
+     session to test against and carry no badge. ^VIX is left out too: Cboe's dissemination hours
+     could not be verified from its own site, and an unverified window is a guess.
 
      A market is OPEN only when ALL THREE hold:
        1. the venue's own clock is inside a session window, Monday to Friday;
@@ -785,25 +789,45 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
      Accepted limitation: the tick stops at 15:55 JST, so HKEX's last ~75 minutes and SSE's last
      5 produce no new prints and the badge goes out early. That is honest -- the number really
      has stopped moving -- and the alternative is claiming live data we do not have. */
-  var VENUE={"^N225":"TSE","1306.T":"TSE","^HSI":"HK","000001.SS":"CN"};
+  var VENUE={"^N225":"TSE","1306.T":"TSE","^HSI":"HK","000001.SS":"CN",
+             "^GSPC":"US","^IXIC":"US","^SOX":"US","MCHI":"US","URTH":"US","EEM":"US","AAXJ":"US","EWJ":"US","URA":"US"};
   var SESS={TSE:{off:9,win:[[540,690],[750,930]]},
             HK :{off:8,win:[[570,720],[780,970]]},
-            CN :{off:8,win:[[570,690],[780,900]]}};
+            CN :{off:8,win:[[570,690],[780,900]]},
+            US :{tz:"America/New_York",win:[[570,960]]}};
   var FRESH_MS=90*60e3;
-  var OPEN_TIP="Trading now. Shown only when the exchange is inside a session AND this series' newest print is dated today and under 90 minutes old, so an exchange holiday cannot light it. Sessions verified against JPX, HKEX and SSE. Tokyo, Hong Kong and Shanghai only: price polling runs 09:00-15:55 JST, so no US or European session produces live prints here.";
-  function venueNow(v){ return new Date(Date.now()+SESS[v].off*3600e3); }
+  var OPEN_TIP="Trading now. Shown only when the exchange is inside a session AND this series' newest print is dated today and under 90 minutes old, so an exchange holiday cannot light it. Sessions verified against JPX, HKEX, SSE and NYSE/Nasdaq. Tokyo, Hong Kong, Shanghai and New York only: those are the sessions the price feed is polled through.";
+  var _fmtCache={};
+  // Venue-local clock parts for an instant: day of week, minutes since midnight, and the local
+  // calendar date. Fixed-offset venues are pure arithmetic; a tz venue asks ICU. If ICU is
+  // unavailable the venue reports dow -1, which no window matches, so it can never show OPEN --
+  // a missing badge is the safe failure, a wrong one is not.
+  function localParts(v,ms){
+    var S2=SESS[v];
+    if(S2.tz){
+      try{
+        var f=_fmtCache[S2.tz]||(_fmtCache[S2.tz]=new Intl.DateTimeFormat("en-US",{timeZone:S2.tz,weekday:"short",year:"numeric",month:"2-digit",day:"2-digit",hour:"numeric",minute:"numeric",hour12:false}));
+        var p={}; f.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value;});
+        var dw={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[p.weekday];
+        if(dw==null) return {dow:-1,mins:0,ymd:""};
+        return {dow:dw, mins:(Number(p.hour)%24)*60+Number(p.minute), ymd:p.year+"-"+p.month+"-"+p.day};
+      }catch(e){ return {dow:-1,mins:0,ymd:""}; }
+    }
+    var d=new Date(ms+S2.off*3600e3);
+    return {dow:d.getUTCDay(), mins:d.getUTCHours()*60+d.getUTCMinutes(), ymd:d.toISOString().slice(0,10)};
+  }
   function inSession(v){
-    var d=venueNow(v), dw=d.getUTCDay();
-    if(dw===0||dw===6) return false;
-    var t=d.getUTCHours()*60+d.getUTCMinutes(), w=SESS[v].win;
-    for(var i=0;i<w.length;i++) if(t>=w[i][0]&&t<w[i][1]) return true;
+    var lp=localParts(v,Date.now());
+    if(lp.dow<1||lp.dow>5) return false;
+    var w=SESS[v].win;
+    for(var i=0;i<w.length;i++) if(lp.mins>=w[i][0]&&lp.mins<w[i][1]) return true;
     return false;
   }
   function inLunch(v){
-    var d=venueNow(v), dw=d.getUTCDay();
-    if(dw===0||dw===6) return false;
-    var t=d.getUTCHours()*60+d.getUTCMinutes(), w=SESS[v].win;
-    return w.length>1&&t>=w[0][1]&&t<w[1][0];
+    var lp=localParts(v,Date.now());
+    if(lp.dow<1||lp.dow>5) return false;
+    var w=SESS[v].win;
+    return w.length>1&&lp.mins>=w[0][1]&&lp.mins<w[1][0];
   }
   function mtOf(sym){
     var m=MACRO&&MACRO.meta&&MACRO.meta.find(function(x){return x.symbol===sym;});
@@ -820,14 +844,25 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   }
   function printedToday(v,t){
     if(t==null) return false;
-    var o=SESS[v].off*3600e3, a=new Date(t+o), b=new Date(Date.now()+o);
-    return a.getUTCFullYear()===b.getUTCFullYear()&&a.getUTCMonth()===b.getUTCMonth()&&a.getUTCDate()===b.getUTCDate();
+    var a=localParts(v,t), b=localParts(v,Date.now());
+    return !!a.ymd&&a.ymd===b.ymd;
   }
   function isVenueOpen(v,t){
-    return !!v&&!!SESS[v]&&inSession(v)&&printedToday(v,t)&&(Date.now()-t)<FRESH_MS;
+    return !!v&&!!SESS[v]&&t!=null&&inSession(v)&&printedToday(v,t)&&(Date.now()-t)<FRESH_MS;
   }
   function symOpen(sym){ var v=VENUE[sym]; return v?isVenueOpen(v,mtOf(sym)):false; }
-  function anyVenueInSession(){ return inSession("TSE")||inSession("HK")||inSession("CN"); }
+  var VENUES=["TSE","HK","CN","US"];
+  function anyVenueInSession(){ return VENUES.some(function(v){return inSession(v);}); }
+  // True only on evidence: some venue is in session AND its own newest print is live.
+  function anyVenueLive(){ return VENUES.some(function(v){return isVenueOpen(v,venueMt(v));}); }
+  // MARKET SUMMARY label. "live" only on evidence -- some venue is in session AND its own newest
+  // print is live -- so a holiday inside session hours reads "as of last close"; and the cadence
+  // named is the one really running. Set from both the state render and the macro load, because
+  // whichever arrives second is the one that knows.
+  function setMsAux(){
+    var el=$("ms-aux"); if(!el) return;
+    el.textContent=(anyVenueLive()?"live":"as of last close")+" \u00b7 "+(anyVenueInSession()?"5":"30")+"-min refresh";
+  }
 
   /* ---------- clock / market status ---------- */
   function tickClock(){
@@ -947,6 +982,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       MACRO={meta:j.meta, by:by};
       renderMacro();
       tickClock();
+      setMsAux();
       if(S) renderWorldChart();
     }).catch(function(e){ console.error(e); });
   }
@@ -2253,7 +2289,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     // Name the cadence that is actually running rather than a fixed string: the macro payload
     // reloads every 5 minutes inside the Asian sessions and every 30 outside them.
-    $("ms-aux").textContent=quotesFresh()?("live \u00b7 "+(anyVenueInSession()?"5":"30")+"-min refresh"):"as of last close";
+    setMsAux();
   }
   function renderExtras(){
     var p=S.players.find(function(x){return x.id===selPid;})||S.players[0];
