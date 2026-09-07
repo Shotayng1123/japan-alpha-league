@@ -367,6 +367,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <a href="#news" data-view="news">NEWS</a>
     <a href="#japan" data-view="japan">MSCI JAPAN</a>
     <a href="#world" data-view="world">MSCI WORLD</a>
+    <a href="#asia" data-view="asia">MSCI ASIA xJ</a>
   </nav>
   <span class="bmq">
     <span id="mktstat" class="mut">TSE —</span>
@@ -638,6 +639,59 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody" style="position:relative"><div id="hmw" style="position:relative;width:100%;height:430px;background:#0a0a0a;overflow:hidden"></div><div id="hmwtip" style="position:absolute;display:none;pointer-events:none;background:#0f1013;border:1px solid var(--bord2);padding:8px 10px;font-size:11px;z-index:10;min-width:185px;border-radius:3px"></div></div>
     </div>
 
+    <div class="panel c12" data-view="asia">
+      <div class="phead"><span class="no">16</span><span class="t">MSCI AC ASIA ex JAPAN — REFERENCE (NET TR ¥)</span><span class="aux" id="ac-ctl"><span class="chip-sm" data-arng="1D">1D</span><span class="chip-sm" data-arng="1W">1W</span><span class="chip-sm" data-arng="1M">1M</span><span class="chip-sm on" data-arng="3M">3M</span><span class="chip-sm" data-arng="6M">6M</span><span class="chip-sm" data-arng="12M">12M</span><span class="chip-sm" data-arng="24M">24M</span><span class="chip-sm" data-arng="36M">36M</span><span class="chip-sm" data-arng="60M">60M</span></span></div>
+      <div class="pbody" style="border-bottom:1px solid var(--bord)">
+        <div class="legend" id="ac-leg"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:stretch">
+          <div style="flex:1 1 56%;min-width:320px"><div id="ac-box"></div></div>
+          <div id="ac-drv" style="flex:1 1 36%;min-width:280px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:8px"></div>
+        </div>
+        <div id="ac-tip"></div>
+      </div>
+      <div class="pbody" style="border-bottom:1px solid var(--bord)">
+        <div class="msg2">
+          <div>
+            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; index-weighted returns &middot; net flow</span></h4>
+            <table class="secT">
+              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th class="l">NET FLOW</th></tr></thead>
+              <tbody id="am-sec"><tr><td class="l empty" colspan="7">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
+            <table class="secT">
+              <thead><tr><th class="l">NAME</th><th>1D</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
+              <tbody id="am-mov"><tr><td class="l empty" colspan="4">Loading…</td></tr></tbody>
+            </table>
+            <div class="hint2" id="am-breadth"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pbody">
+        <div id="ao-tiles" class="mgc"></div>
+        <h4 class="minih" style="margin-top:10px">OFF-BENCHMARK UNIVERSE — MSCI AC ASIA ex JAPAN CONSTITUENTS (LOCAL LISTINGS)</h4>
+        <div class="searchrow">
+          <input id="au-q" placeholder="filter ticker / name / country / sector">
+          <span class="cnt" id="au-cnt"></span>
+        </div>
+        <div style="max-height:420px;overflow:auto;border:1px solid var(--bord);border-radius:3px">
+        <table>
+          <thead><tr>
+            <th class="l">TKR</th><th class="l">NAME</th><th class="l">COUNTRY</th><th class="l">SECTOR</th><th>AXJ WGT%</th><th>LAST LOC</th><th>LAST ¥</th><th>ADV $M</th><th>MY POS</th>
+          </tr></thead>
+          <tbody id="au-body"><tr><td class="l empty" colspan="9">Loading…</td></tr></tbody>
+        </table>
+        </div>
+        <div class="hint2">Same off-benchmark bucket as MSCI World: up to 25% of NAV across both books combined. Each name trades on its home exchange in local currency and is booked in yen at that day's FX. Order cutoff = that exchange's own close, and the fill is booked the same evening (JST: Taiwan 14:30 &middot; Korea 15:30 &middot; China 16:00 &middot; Hong Kong 17:00 &middot; Malaysia 17:50 &middot; Singapore / Indonesia 18:00 &middot; Thailand 18:30 &middot; India 19:00; US-listed ADRs keep the World rule). 1-share lots; same 20%-of-ADV participation cap and cost. Names without a price feed show as not tradable. Click a row to load the ticker into the TRADE ticket.</div>
+      </div>
+    </div>
+
+    <div class="panel c12" data-view="asia">
+      <div class="phead"><span class="no">17</span><span class="t">MSCI AC ASIA ex JAPAN — HEAT MAP</span><span class="aux" id="hma-ctl"><span class="chip-sm on" data-aper="1D">1D</span><span class="chip-sm" data-aper="1W">1W</span><span class="chip-sm" data-aper="1M">1M</span><span class="chip-sm" data-aper="3M">3M</span><span class="chip-sm" data-aper="6M">6M</span><span class="chip-sm" data-aper="12M">12M</span><span style="margin-left:8px">size = index weight · color = period % · top 300 names</span></span></div>
+      <div class="pbody" style="position:relative"><div id="hma" style="position:relative;width:100%;height:430px;background:#0a0a0a;overflow:hidden"></div><div id="hmatip" style="position:absolute;display:none;pointer-events:none;background:#0f1013;border:1px solid var(--bord2);padding:8px 10px;font-size:11px;z-index:10;min-width:185px;border-radius:3px"></div></div>
+    </div>
+
     <div class="panel c12" data-view="japan">
       <div class="phead"><span class="no">09</span><span class="t">MSCI JAPAN — HEAT MAP</span><span class="aux" id="hm-ctl"><span class="chip-sm on" data-hper="1D">1D</span><span class="chip-sm" data-hper="1W">1W</span><span class="chip-sm" data-hper="1M">1M</span><span class="chip-sm" data-hper="3M">3M</span><span class="chip-sm" data-hper="6M">6M</span><span class="chip-sm" data-hper="12M">12M</span><span style="margin-left:8px">size = index weight · color = period % · hover for detail + 1M chart</span></span></div>
       <div class="pbody" style="position:relative"><div id="hm"></div><div id="hmtip"></div></div>
@@ -730,7 +784,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   try{ var saved=localStorage.getItem("jal_cred"); if(saved) me=JSON.parse(saved); }catch(e){}
 
   /* ---------- view router ---------- */
-  var VIEWS=["league","me","trade","market","news","japan","world"];
+  var VIEWS=["league","me","trade","market","news","japan","world","asia"];
   function curView(){ var h=(location.hash||"").replace("#",""); return VIEWS.indexOf(h)>=0?h:"league"; }
   function showView(){
     var v=curView();
@@ -742,8 +796,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
     if(v==="news"){ loadNews(); loadEcon(); }
-    if(v==="japan"||v==="world"){ loadFlow(); }
-    if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="league"||v==="me") renderChart(); }
+    if(v==="japan"||v==="world"||v==="asia"){ loadFlow(); }
+    if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="asia"){ renderAsiaChart(); renderHMA(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
   showView();
@@ -919,7 +973,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     cmpOn=!cmpOn;
     try{ localStorage.setItem("jal_cmp",cmpOn?"1":"0"); }catch(e){}
     applyCmp(cmpOn);
-    if(S){ renderHM(); renderHMW(); }
+    if(S){ renderHM(); renderHMW(); renderHMA(); }
   });
   Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
     c2.addEventListener("click",function(){
@@ -961,7 +1015,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var p=fetch(API+"?action=bars_all&res="+res).then(function(r){return r.json();}).then(function(j){
       BARSC[res]={at:Date.now(),data:(j&&j.bars)||{}};
       renderMacro();
-      if(S){ try{ renderMarketChart(); renderWorldChart(); }catch(e){} }
+      if(S){ try{ renderMarketChart(); renderWorldChart(); renderAsiaChart(); }catch(e){} }
     }).catch(function(){ BARSC[res]={at:Date.now(),data:{}}; });
     BARSC[res]={p:p};
     return null;
@@ -2148,9 +2202,14 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","w2",$("wc-tip"));
     renderDrivers("wc-drv",["^GSPC","^SOX","DGS10","USDJPY=X"],days);
   }
+  // state.world_instruments carries BOTH books (MSCI World rows and MSCI AC Asia ex Japan rows,
+  // a few Hong Kong / Singapore names in both). The World panels take in_universe rows, the Asia
+  // panels in_asxj rows.
+  function worldRows(){ return (S.world_instruments||[]).filter(function(w){return w.in_universe!==false;}); }
+  function asiaRows(){ return (S.world_instruments||[]).filter(function(w){return w.in_asxj===true;}); }
   function renderWorldUniv(){
     var tb=$("wu-body"); if(!tb) return;
-    var rows=S.world_instruments||[];
+    var rows=worldRows();
     var qstr=(($("wu-q")||{}).value||"").toLowerCase();
     var myp=me?S.players.find(function(p){return p.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
     var fx=Number(S.usdjpy)||null;
@@ -2178,6 +2237,99 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   }
   (function(){ var el=$("wu-q"); if(el) el.addEventListener("input",function(){ if(S) renderWorldUniv(); }); })();
 
+  /* ---------- MSCI AC Asia ex Japan tab: same machinery as the World tab, Asia rows and lines ---------- */
+  var asiaRange="3M";
+  Array.prototype.forEach.call(document.querySelectorAll("#ac-ctl [data-arng]"),function(c2){
+    c2.addEventListener("click",function(){ asiaRange=c2.getAttribute("data-arng"); if(S) renderAsiaChart(); });
+  });
+  // Driver tiles: symbols must exist in macro_meta (the eod refreshes them); a symbol that is not
+  // there yet shows a dash under its own name until the row is added.
+  var ASIA_DRV=["^HSI","^TWII","^KS11","^NSEI"];
+  function renderAsiaChart(){
+    var box=$("ac-box"), leg=$("ac-leg");
+    if(!box) return;
+    Array.prototype.forEach.call(document.querySelectorAll("#ac-ctl [data-arng]"),function(c2){
+      c2.className="chip-sm"+(c2.getAttribute("data-arng")===asiaRange?" on":"");
+    });
+    var tl=$("ao-tiles");
+    if(tl&&MACRO){
+      var h2="";
+      ["AAXJ","EEM","MCHI"].map(function(sym){return MACRO.meta.find(function(m){return m.symbol===sym;});}).filter(Boolean).forEach(function(m){
+        var arr=MACRO.by[m.symbol]||[];
+        if(!arr.length){ h2+='<div class="mtile">'+lbLine(m.label,"",m.market_time)+'<div class="vl">&ndash;</div></div>'; return; }
+        var last=arr[arr.length-1], prev=arr.length>1?arr[arr.length-2]:null;
+        var r2=prev?Number(last.close)/Number(prev.close)-1:null;
+        h2+='<div class="mtile">'+lbLine(m.label,"",m.market_time)+'<div class="vl">'+n(Number(last.close),2)+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div>"
+          +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0)+"</div>";
+      });
+      tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
+    }
+    if(asiaRange==="1D"||asiaRange==="1W"){
+      if(!IDATA){ box.innerHTML=I_LOAD; leg.innerHTML=""; loadIntraday(function(){ if(S) renderAsiaChart(); }); return; }
+      var bA=iBuild(asiaRange,[
+        {label:I_A.label,color:I_A.color,pts:iProxyJpy("AAXJ")},
+        {label:I_JP.label,color:I_JP.color,pts:iBasketAbs()},
+        {label:I_W.label,color:I_W.color,pts:iProxyJpy("URTH")}]);
+      if(!bA){ box.innerHTML=I_EMPTY; leg.innerHTML=""; }
+      else drawLineChart(box,leg,bA.labels,bA.keys,bA.series,bA.note,"a2",$("ac-tip"));
+      renderDrivers("ac-drv",ASIA_DRV,asiaRange==="1D"?1:7,asiaRange==="1D"?"30m":"1h");
+      return;
+    }
+    var days={"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[asiaRange]||92;
+    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
+    var ar=(S.benchmark_asia||[]).filter(function(r){return r.d>=startD;});
+    if(ar.length<2){ box.innerHTML='<div class="empty">Not enough MSCI AC Asia ex Japan history for this range yet.</div>'; leg.innerHTML=""; renderDrivers("ac-drv",ASIA_DRV,days); return; }
+    var dates=ar.map(function(r){return r.d;});
+    var idx={}; dates.forEach(function(d,i){idx[d]=i;});
+    function mk(label,color,rows){
+      var arr=new Array(dates.length).fill(null);
+      rows.forEach(function(r){ if(r.d>=startD&&idx[r.d]!=null) arr[idx[r.d]]=Number(r.level); });
+      var base=null; for(var i=0;i<arr.length;i++){ if(arr[i]!=null){base=arr[i];break;} }
+      if(base==null||base<=0) return null;
+      return {label:label,color:color,dash:0,w:1.9,vals:arr.map(function(v){return v==null?null:100*v/base;})};
+    }
+    var series=[];
+    var s1=mk("MSCI ASIA ex JP","#c084fc",S.benchmark_asia||[]); if(s1)series.push(s1);
+    var s2=mk("MSCI JAPAN","#ffa028",S.benchmark); if(s2)series.push(s2);
+    var s3=mk("MSCI WORLD","#38c8ff",S.benchmark_world||[]); if(s3)series.push(s3);
+    drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","a2",$("ac-tip"));
+    renderDrivers("ac-drv",ASIA_DRV,days);
+  }
+  function renderAsiaUniv(){
+    var tb=$("au-body"); if(!tb) return;
+    var rows=asiaRows();
+    var qstr=(($("au-q")||{}).value||"").toLowerCase();
+    var myp=me?S.players.find(function(p){return p.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
+    var fx=Number(S.usdjpy)||null;
+    var list=rows.filter(function(w){
+      if(!qstr) return true;
+      return (w.symbol+" "+(w.name||"")+" "+(w.location||"")+" "+(w.sector||"")).toLowerCase().indexOf(qstr)>=0;
+    }).sort(function(a,b){return (Number(b.asxj_weight)||0)-(Number(a.asxj_weight)||0);});
+    var trad=rows.filter(function(w){return w.tradable!==false;}).length;
+    if(!rows.length){ $("au-cnt").textContent="loads after the first Asia refresh"; tb.innerHTML='<tr><td class="l empty" colspan="9">The MSCI AC Asia ex Japan constituents load with the next nightly refresh.</td></tr>'; return; }
+    $("au-cnt").textContent=list.length+" / "+rows.length+" names ("+trad+" tradable)"+(fx?" · USD/JPY "+fx.toFixed(2):"");
+    if(!list.length){ tb.innerHTML='<tr><td class="l empty" colspan="9">No matches.</td></tr>'; return; }
+    var wcd=S.world_close_d||{};
+    tb.innerHTML=list.slice(0,400).map(function(w){
+      var pu=S.world_closes?S.world_closes[w.symbol]:null;
+      var py=S.world_yen?S.world_yen[w.symbol]:null;
+      var pos=myp?S.positions.find(function(x){return x.player_id===myp.id&&x.code===w.symbol;}):null;
+      var nt=w.tradable===false?' <span class="sub" title="no price feed for this listing yet">not tradable</span>':'';
+      return '<tr class="pick" data-code="'+esc(w.symbol)+'">'
+        +'<td class="l"><b data-snap="'+esc(w.symbol)+'">'+esc(w.symbol)+'</b>'+nt+'</td>'
+        +'<td class="l">'+esc(String(w.name||"").slice(0,22))+'</td>'
+        +'<td class="l">'+esc(String(w.location||"").slice(0,14))+'</td>'
+        +'<td class="l">'+esc(String(w.sector||"").slice(0,16))+'</td>'
+        +'<td class="num">'+(w.asxj_weight!=null?Number(w.asxj_weight).toFixed(2):"–")+'</td>'
+        +'<td class="num"'+(wcd[w.symbol]?' title="close of '+esc(wcd[w.symbol])+'"':'')+'>'+(pu!=null?n(Number(pu),2)+' <span class="sub">'+esc(w.currency||"")+'</span>':"–")+'</td>'
+        +'<td class="num">'+(py!=null?n(Number(py),0):"–")+'</td>'
+        +'<td class="num">'+(w.adv20_value_usd?n(Number(w.adv20_value_usd)/1e6,0):"–")+'</td>'
+        +'<td class="num'+(pos?" warn":"")+'">'+(pos?n(Number(pos.shares)):"–")+'</td>'
+        +'</tr>';
+    }).join("");
+  }
+  (function(){ var el=$("au-q"); if(el) el.addEventListener("input",function(){ if(S) renderAsiaUniv(); }); })();
+
 /* ---------- flow: session turnover + news-tagged codes ---------- */
   var FLOW=null, flowLoading=false;
   function loadFlow(){
@@ -2188,7 +2340,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       FLOW.jpm={}; (FLOW.jp||[]).forEach(function(a){FLOW.jpm[a[0]]=a[1];});
       FLOW.wdm={}; (FLOW.wd||[]).forEach(function(a){FLOW.wdm[a[0]]=a[1];});
       FLOW.nset={}; (FLOW.news||[]).forEach(function(c){FLOW.nset[c]=1;});
-      if(S){ renderMarketSummary(); renderWorldSecMov(); }
+      if(S){ renderMarketSummary(); renderWorldSecMov(); renderAsiaSecMov(); }
     }).catch(function(){ flowLoading=false; });
   }
   function nfBar(v){
@@ -2364,13 +2516,32 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var wy=S.world_yen||{}, wc=S.world_closes||{}, uj=Number(S.usdjpy)||null;
     renderSecMov({
       secId:"wm-sec", movId:"wm-mov", brId:"wm-breadth", cols:7, mcols:4, showPe:false, nsuf:"-US",
-      list:(S.world_instruments||[]).filter(function(w){return Number(w.weight)>0;}),
+      list:worldRows().filter(function(w){return Number(w.weight)>0;}),
       codeOf:function(i){return i.symbol;}, nameOf:function(i){return i.name;},
       wOf:function(i){return Number(i.weight);},
       retOf:function(i,p){ var k={"1d":"chg1d","1w":"chg1w","1m":"chg1m","3m":"chg3m","12m":"chg12m"}[p];
         return (k&&i[k]!=null)?Number(i[k])/100:null; },
       peOf:null,
       advOf:function(i){ return Number(i.adv20_value_usd)>0?Number(i.adv20_value_usd):null; },
+      tconv:function(sym){ if(!uj) return null; var y=Number(wy[sym]), c=Number(wc[sym]);
+        return (y>0&&c>0)?((y/c)/uj):null; },
+      turn:(FLOW&&FLOW.wdm)||{}
+    });
+  }
+  function renderAsiaSecMov(){
+    if(!S||!$("am-sec")) return;
+    var wy=S.world_yen||{}, wc=S.world_closes||{}, uj=Number(S.usdjpy)||null;
+    renderSecMov({
+      secId:"am-sec", movId:"am-mov", brId:"am-breadth", cols:7, mcols:4, showPe:false, nsuf:"-AS",
+      list:asiaRows().filter(function(w){return Number(w.asxj_weight)>0;}),
+      codeOf:function(i){return i.symbol;}, nameOf:function(i){return i.name;},
+      wOf:function(i){return Number(i.asxj_weight);},
+      retOf:function(i,p){ var k={"1d":"chg1d","1w":"chg1w","1m":"chg1m","3m":"chg3m","12m":"chg12m"}[p];
+        return (k&&i[k]!=null)?Number(i[k])/100:null; },
+      peOf:null,
+      advOf:function(i){ return Number(i.adv20_value_usd)>0?Number(i.adv20_value_usd):null; },
+      // turnover arrives in the listing currency (last close x volume); yen-per-local from the
+      // state's world_yen / world_closes pair, then USD/JPY, puts it in the same dollars as ADV
       tconv:function(sym){ if(!uj) return null; var y=Number(wy[sym]), c=Number(wc[sym]);
         return (y>0&&c>0)?((y/c)/uj):null; },
       turn:(FLOW&&FLOW.wdm)||{}
@@ -2944,7 +3115,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     el.innerHTML=html;
   }
-  window.addEventListener("resize",function(){ if(S){ renderHM(); renderHMW(); } });
+  window.addEventListener("resize",function(){ if(S){ renderHM(); renderHMW(); renderHMA(); } });
   Array.prototype.forEach.call(document.querySelectorAll("#hm-ctl [data-hper]"),function(c2){
     c2.addEventListener("click",function(){
       hmPer=c2.getAttribute("data-hper");
@@ -3022,7 +3193,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   }
   function renderHMW(){
     var el=$("hmw"); if(!el) return;
-    var rows=(S.world_instruments||[]).filter(function(w){return w.weight;});
+    var rows=worldRows().filter(function(w){return w.weight;});
     if(!rows.length){ el.innerHTML='<div class="empty">World universe loads after tonight&#39;s refresh.</div>'; return; }
     var W=el.clientWidth||1400,H=el.clientHeight||430;
     var bySec={};
@@ -3065,6 +3236,86 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         +row("LAST",pu!=null?esc(w.currency||"USD")+" "+n(Number(pu),2):"–","")
         +row("1D",w.chg1d!=null?pc(Number(w.chg1d),2):"–",cls(w.chg1d))
         +(hmwPer!=="1D"?row(hmwPer,perV==null?"–":pc(perV,1),cls(perV)):"")
+        +row("3M",w.chg3m!=null?pc(Number(w.chg3m),1):"–",cls(w.chg3m))
+        +row("12M",w.chg12m!=null?pc(Number(w.chg12m),1):"–",cls(w.chg12m));
+      tip.style.display="block";
+      var r=tip.parentElement.getBoundingClientRect();
+      var tx=ev.clientX-r.left+14, ty=ev.clientY-r.top+10;
+      if(tx+200>r.width) tx=ev.clientX-r.left-210;
+      if(ty+150>r.height) ty=ev.clientY-r.top-160;
+      tip.style.left=tx+"px"; tip.style.top=ty+"px";
+    });
+    hm.addEventListener("mouseleave",function(){ tip.style.display="none"; });
+  })();
+
+  /* ---------- Asia heat map: the World map over the AAXJ rows, top 300 by index weight ---------- */
+  var hmaPer="1D";
+  Array.prototype.forEach.call(document.querySelectorAll("#hma-ctl [data-aper]"),function(c2){
+    c2.addEventListener("click",function(){
+      hmaPer=c2.getAttribute("data-aper");
+      Array.prototype.forEach.call(document.querySelectorAll("#hma-ctl [data-aper]"),function(x){
+        x.className="chip-sm"+(x.getAttribute("data-aper")===hmaPer?" on":"");
+      });
+      if(S) renderHMA();
+    });
+  });
+  function hmaRet(w){
+    var f={"1D":"chg1d","1W":"chg1w","1M":"chg1m","3M":"chg3m","6M":"chg6m","12M":"chg12m"}[hmaPer];
+    return f&&w[f]!=null?Number(w[f]):null;
+  }
+  function hmaColor(chg){
+    if(chg==null||isNaN(chg))return "#3a3b3e";
+    var t=Math.max(-1,Math.min(1,chg/(HM_SCALE[hmaPer==="12M"?"12M":hmaPer]||3)));
+    var neu=[58,59,62],pos=[9,112,54],neg=[168,39,36];
+    var to=t>=0?pos:neg,a=Math.abs(t);
+    var c=neu.map(function(nv,i){return Math.round(nv+(to[i]-nv)*a);});
+    return "rgb("+c[0]+","+c[1]+","+c[2]+")";
+  }
+  function renderHMA(){
+    var el=$("hma"); if(!el) return;
+    var rows=asiaRows().filter(function(w){return Number(w.asxj_weight)>0;}).sort(function(a,b){return Number(b.asxj_weight)-Number(a.asxj_weight);}).slice(0,300);
+    if(!rows.length){ el.innerHTML='<div class="empty">The MSCI AC Asia ex Japan constituents load with the next nightly refresh.</div>'; return; }
+    var W=el.clientWidth||1400,H=el.clientHeight||430;
+    var bySec={};
+    rows.forEach(function(r){ (bySec[r.sector||"Other"]=bySec[r.sector||"Other"]||[]).push(r); });
+    var secItems=Object.keys(bySec).map(function(sec){
+      return {v:bySec[sec].reduce(function(a,r){return a+Number(r.asxj_weight);},0),sec:sec,rows:bySec[sec]};
+    }).sort(function(a,b){return b.v-a.v;});
+    var html="";
+    squarify(secItems,0,0,W,H).forEach(function(sr){
+      html+='<div class="hm-sec" style="left:'+sr.x+'px;top:'+sr.y+'px;width:'+sr.w+'px;height:'+sr.h+'px">';
+      if(sr.w>70&&sr.h>26) html+='<div class="hm-sec-label">'+esc(sr.item.sec)+"</div>";
+      var stocks=sr.item.rows.map(function(r){return {v:Number(r.asxj_weight),r:r};}).sort(function(a,b){return b.v-a.v;});
+      squarify(stocks,1,1,sr.w-2,sr.h-2).forEach(function(cell){
+        var r=cell.item.r,chg=hmaRet(r);
+        var big=cell.w>34&&cell.h>20,med=cell.w>48&&cell.h>32;
+        var label="";
+        if(big) label='<span class="c" style="font-size:'+Math.max(8.5,Math.min(14,cell.w/5.5))+'px">'+esc(r.symbol)+"</span>";
+        if(med) label+='<span class="p">'+(chg==null?"–":pc(chg,1))+"</span>";
+        html+='<div class="hm-cell" style="left:'+cell.x.toFixed(1)+"px;top:"+cell.y.toFixed(1)+"px;width:"+cell.w.toFixed(1)+"px;height:"+cell.h.toFixed(1)
+          +"px;background:"+hmaColor(chg)+'" data-asym="'+esc(r.symbol)+'">'+label+"</div>";
+      });
+      html+="</div>";
+    });
+    el.innerHTML=html;
+  }
+  (function(){
+    var hm=$("hma"), tip=$("hmatip");
+    if(!hm) return;
+    hm.addEventListener("mousemove",function(ev){
+      var cell=ev.target&&ev.target.closest?ev.target.closest(".hm-cell"):null;
+      if(!cell||!S){ tip.style.display="none"; return; }
+      var sym=cell.getAttribute("data-asym");
+      var w=(S.world_instruments||[]).find(function(x){return x.symbol===sym;});
+      if(!w){ tip.style.display="none"; return; }
+      function row(k,v2,c){ return '<div class="row" style="display:flex;justify-content:space-between;gap:14px"><span class="mut">'+k+'</span><b class="num '+(c||"")+'">'+v2+"</b></div>"; }
+      var pu=S.world_closes?S.world_closes[sym]:null;
+      var perV=hmaRet(w);
+      tip.innerHTML='<div style="font-weight:700;font-size:12px">'+esc(w.name||sym)+"</div>"
+        +'<div class="mut" style="margin-bottom:5px">'+esc(sym)+" · "+esc(w.location||"")+" · "+esc(w.sector||"")+" · wgt "+Number(w.asxj_weight).toFixed(2)+"%</div>"
+        +row("LAST",pu!=null?esc(w.currency||"")+" "+n(Number(pu),2):"–","")
+        +row("1D",w.chg1d!=null?pc(Number(w.chg1d),2):"–",cls(w.chg1d))
+        +(hmaPer!=="1D"?row(hmaPer,perV==null?"–":pc(perV,1),cls(perV)):"")
         +row("3M",w.chg3m!=null?pc(Number(w.chg3m),1):"–",cls(w.chg3m))
         +row("12M",w.chg12m!=null?pc(Number(w.chg12m),1):"–",cls(w.chg12m));
       tip.style.display="block";
@@ -3578,7 +3829,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       $("bmlvl").innerHTML='MSCI JP <b class="num">'+n(l.level,1)+'</b> <span class="num '+cls(chg)+'">'+pct(chg)+'</span> <span class="mut">'+esc(l.d)+"</span>";
     }
     refreshChip();
-    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); renderWorldSecMov(); tkPrev();
+    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); renderWorldSecMov(); renderAsiaChart(); renderAsiaUniv(); renderHMA(); renderAsiaSecMov(); tkPrev();
     if(NEWS) renderNews();
   }
   setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); } },600000);
