@@ -396,7 +396,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     </div>
 
     <div class="panel c5" data-view="league me">
-      <div class="phead"><span class="no">02</span><span class="t">PERFORMANCE — INDEX=100</span><span class="aux" id="ch-ctl"><span class="chip-sm" data-rng="1D">INTRA</span><span class="chip-sm" data-rng="1W">1W</span><span class="chip-sm" data-rng="1M">1M</span><span class="chip-sm on" data-rng="3M">3M</span><span class="chip-sm" data-rng="6M">6M</span><span class="chip-sm" data-rng="12M">12M</span><span class="chip-sm" data-rng="24M">24M</span><span class="chip-sm" data-rng="36M">36M</span><span class="chip-sm" data-rng="60M">60M</span><span class="chip-sm" data-all="1" title="Overlay all players">ALL</span></span></div>
+      <div class="phead"><span class="no">02</span><span class="t">PERFORMANCE — INDEX=100</span><span class="aux" id="ch-ctl"><span class="chip-sm" data-rng="1D">1D</span><span class="chip-sm" data-rng="1W">1W</span><span class="chip-sm" data-rng="1M">1M</span><span class="chip-sm on" data-rng="3M">3M</span><span class="chip-sm" data-rng="6M">6M</span><span class="chip-sm" data-rng="12M">12M</span><span class="chip-sm" data-rng="24M">24M</span><span class="chip-sm" data-rng="36M">36M</span><span class="chip-sm" data-rng="60M">60M</span><span class="chip-sm" data-all="1" title="Overlay all players">ALL</span></span></div>
       <div class="pbody">
         <div class="legend" id="leg"></div>
         <div id="chartbox"></div>
@@ -514,7 +514,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           <div id="mc-drv" style="flex:1 1 36%;min-width:280px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:8px"></div>
         </div>
         <div id="mc-tip"></div>
-        <div style="margin-top:4px"><span id="mc-ctl"><span class="chip-sm" data-mrng="1W">1W</span><span class="chip-sm" data-mrng="1M">1M</span><span class="chip-sm on" data-mrng="3M">3M</span><span class="chip-sm" data-mrng="6M">6M</span><span class="chip-sm" data-mrng="12M">12M</span><span class="chip-sm" data-mrng="24M">24M</span><span class="chip-sm" data-mrng="36M">36M</span><span class="chip-sm" data-mrng="60M">60M</span></span></div>
+        <div style="margin-top:4px"><span id="mc-ctl"><span class="chip-sm" data-mrng="1D">1D</span><span class="chip-sm" data-mrng="1W">1W</span><span class="chip-sm" data-mrng="1M">1M</span><span class="chip-sm on" data-mrng="3M">3M</span><span class="chip-sm" data-mrng="6M">6M</span><span class="chip-sm" data-mrng="12M">12M</span><span class="chip-sm" data-mrng="24M">24M</span><span class="chip-sm" data-mrng="36M">36M</span><span class="chip-sm" data-mrng="60M">60M</span></span></div>
       </div>
       <div class="pbody" style="border-bottom:1px solid var(--bord)">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -586,7 +586,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     </div>
 
     <div class="panel c12" data-view="world">
-      <div class="phead"><span class="no">14</span><span class="t">MSCI WORLD — REFERENCE (NET TR ¥)</span><span class="aux" id="wc-ctl"><span class="chip-sm" data-wrng="1M">1M</span><span class="chip-sm on" data-wrng="3M">3M</span><span class="chip-sm" data-wrng="6M">6M</span><span class="chip-sm" data-wrng="12M">12M</span><span class="chip-sm" data-wrng="24M">24M</span><span class="chip-sm" data-wrng="36M">36M</span><span class="chip-sm" data-wrng="60M">60M</span></span></div>
+      <div class="phead"><span class="no">14</span><span class="t">MSCI WORLD — REFERENCE (NET TR ¥)</span><span class="aux" id="wc-ctl"><span class="chip-sm" data-wrng="1D">1D</span><span class="chip-sm" data-wrng="1W">1W</span><span class="chip-sm" data-wrng="1M">1M</span><span class="chip-sm on" data-wrng="3M">3M</span><span class="chip-sm" data-wrng="6M">6M</span><span class="chip-sm" data-wrng="12M">12M</span><span class="chip-sm" data-wrng="24M">24M</span><span class="chip-sm" data-wrng="36M">36M</span><span class="chip-sm" data-wrng="60M">60M</span></span></div>
       <div class="pbody" style="border-bottom:1px solid var(--bord)">
         <div class="legend" id="wc-leg"></div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:stretch">
@@ -961,6 +961,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var p=fetch(API+"?action=bars_all&res="+res).then(function(r){return r.json();}).then(function(j){
       BARSC[res]={at:Date.now(),data:(j&&j.bars)||{}};
       renderMacro();
+      if(S){ try{ renderMarketChart(); renderWorldChart(); }catch(e){} }
     }).catch(function(){ BARSC[res]={at:Date.now(),data:{}}; });
     BARSC[res]={p:p};
     return null;
@@ -1418,6 +1419,95 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
   }
 
+  /* ---------- 15-minute intraday data for the 1D / 1W ranges (decision ⑧, 2026-09-07) ----------
+     1D = a rolling 24 hours (Shota's choice), 1W = 7 days, both drawn from 15-minute bars:
+       JP basket  : the tick's 5-minute weighted-basket marks (100 = that day's previous close),
+                    resampled to 15 minutes by the api and chained here onto the daily index closes.
+       Player NAV : the tick's 5-minute NAV marks, resampled to 15 minutes (absolute yen).
+       World/Asia : MSCI publishes no intraday levels, so the lines are the iShares ETFs URTH / AAXJ
+                    (USD, 15-minute) converted with USD/JPY 15-minute bars -- labelled as proxies.
+     Sessions do not overlap (Tokyo 09:00-15:30, New York 22:30-05:00 JST), so the x-axis is the
+     union of the bars that exist, in time order, with closed hours compressed out. Every line is
+     indexed to 100 at its last value before the window opens (= its previous close for 1D). */
+  var IDATA=null, IDATA_AT=0, IDATA_Q=null;
+  function loadIntraday(cb){
+    if(IDATA&&Date.now()-IDATA_AT<240e3){ cb(IDATA); return; }
+    if(IDATA_Q){ IDATA_Q.push(cb); return; }
+    IDATA_Q=[cb];
+    fetch(API+"?action=intraday").then(function(r){return r.json();}).then(function(j){
+      IDATA=(j&&j.bm)?j:{bm:[],navs:{},macro:{}}; IDATA_AT=Date.now();
+      var q=IDATA_Q; IDATA_Q=null; q.forEach(function(f){f(IDATA);});
+    }).catch(function(){
+      IDATA=IDATA||{bm:[],navs:{},macro:{}}; IDATA_AT=Date.now()-200e3;
+      var q=IDATA_Q; IDATA_Q=null; q.forEach(function(f){f(IDATA);});
+    });
+  }
+  function iMs(ts){ return Date.parse(ts); }
+  // basket marks -> absolute level: previous daily close (price index) x mark/100
+  function iBasketAbs(){
+    var bm=(IDATA&&IDATA.bm)||[], daily=bmSeries()||[];
+    if(!bm.length||!daily.length) return [];
+    var out=[], cache={};
+    bm.forEach(function(a){
+      var day=jstDayOf(a[0]), pc=cache[day];
+      if(pc===undefined){ pc=null; for(var i=daily.length-1;i>=0;i--){ if(daily[i].d<day){ pc=Number(daily[i].level); break; } } cache[day]=pc; }
+      if(pc==null||!(pc>0)) return;
+      out.push([iMs(a[0]), pc*Number(a[1])/100]);
+    });
+    return out;
+  }
+  function iNavAbs(pid){ return ((IDATA&&IDATA.navs&&IDATA.navs[pid])||[]).map(function(a){return [iMs(a[0]),Number(a[1])];}); }
+  // ETF (USD) x USD/JPY at the latest FX bar at or before each ETF bar
+  function iProxyJpy(sym){
+    var m=(IDATA&&IDATA.macro)||{}, px=m[sym]||[], fx=m["USDJPY=X"]||[];
+    if(!px.length||!fx.length) return [];
+    var fxs=fx.map(function(a){return [iMs(a[0]),Number(a[1])];}), j=0, out=[];
+    px.forEach(function(a){
+      var t=iMs(a[0]);
+      while(j+1<fxs.length&&fxs[j+1][0]<=t) j++;
+      if(fxs[j][0]<=t&&fxs[j][1]>0) out.push([t, Number(a[1])*fxs[j][1]]);
+    });
+    return out;
+  }
+  // index [[ms,v]] to 100 at the last value before `from` (else the first value inside the window)
+  function iIndexed(pts,from,to){
+    var base=null, out=[];
+    for(var i=0;i<pts.length;i++){ var t=pts[i][0]; if(t<from){ base=pts[i][1]; continue; } if(t>to) break; out.push(pts[i]); }
+    if(!out.length) return null;
+    if(base==null||!(base>0)) base=out[0][1];
+    var map={}; out.forEach(function(q){ map[q[0]]=100*q[1]/base; });
+    return {map:map, keys:out.map(function(q){return q[0];})};
+  }
+  function iLabel(ms,range){
+    var d=new Date(ms+9*3600e3);
+    var hm=("0"+d.getUTCHours()).slice(-2)+":"+("0"+d.getUTCMinutes()).slice(-2);
+    return range==="1D"?hm:(("0"+(d.getUTCMonth()+1)).slice(-2)+"/"+("0"+d.getUTCDate()).slice(-2)+" "+hm);
+  }
+  // defs: [{label,color,dash,w,pts}] -> {keys,labels,series,note}; null when nothing is drawable
+  function iBuild(range,defs){
+    var span=range==="1D"?86400e3:7*86400e3, to=Date.now(), from=to-span;
+    var newest=0; defs.forEach(function(d){ if(d.pts.length) newest=Math.max(newest,d.pts[d.pts.length-1][0]); });
+    var closed="";
+    if(newest&&newest<from){ to=newest; from=to-span; closed=" · markets closed — last session shown"; }
+    var keySet={}, built=[];
+    defs.forEach(function(d){
+      var ix=iIndexed(d.pts,from,to); if(!ix) return;
+      ix.keys.forEach(function(k){keySet[k]=1;}); built.push({def:d,ix:ix});
+    });
+    var keys=Object.keys(keySet).map(Number).sort(function(a,b){return a-b;});
+    if(keys.length<2||!built.length) return null;
+    var series=built.map(function(b){
+      return {label:b.def.label,color:b.def.color,dash:b.def.dash||0,w:b.def.w||1.8,vals:keys.map(function(k){ var v=b.ix.map[k]; return v==null?null:v; })};
+    });
+    var f=new Date(from+9*3600e3), tt=new Date(to+9*3600e3);
+    function md(x){ return ("0"+(x.getUTCMonth()+1)).slice(-2)+"/"+("0"+x.getUTCDate()).slice(-2); }
+    var note=(range==="1D"?"rolling 24h "+md(f)+" "+iLabel(from,"1D")+" → "+md(tt)+" "+iLabel(to,"1D")+" JST":"7 days")+" · 15-min · 100 = last close before window · World/Asia = ETF proxies × USD/JPY"+closed;
+    return {keys:keys, labels:keys.map(function(k){return iLabel(k,range);}), series:series, note:note};
+  }
+  var I_EMPTY='<div class="empty">No 15-minute data in this window yet — the JP basket is marked during TSE hours and the World/Asia proxies during US hours (from the next session).</div>';
+  var I_LOAD='<div class="empty">Loading 15-minute data&hellip;</div>';
+  var I_JP={label:"MSCI JP (basket)",color:"#ffa028"}, I_W={label:"MSCI WORLD (URTH proxy)",color:"#38c8ff"}, I_A={label:"MSCI ASIA ex JP (AAXJ proxy)",color:"#c084fc"};
+
   /* ---------- chart ---------- */
   var chartRange="3M", showAll=false;
   Array.prototype.forEach.call(document.querySelectorAll("#ch-ctl [data-rng]"),function(c){
@@ -1437,7 +1527,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var ab=document.querySelector("#ch-ctl [data-all]");
     if(ab) ab.className="chip-sm"+(showAll?" on":"");
     var selP=S.players.find(function(x){return x.id===selPid;})||S.players[0]||null;
-    if(chartRange==="1D"){ renderIntradayChart(box,leg,selP); return; }
+    if(chartRange==="1D"||chartRange==="1W"){ renderIntradayChart(box,leg,selP,chartRange); return; }
     var days={"1W":7,"1M":31,"3M":91,"6M":182,"12M":365,"24M":730,"36M":1095,"60M":1825}[chartRange]||91;
     var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
     var bmr=S.benchmark.filter(function(r){return r.d>=startD;});
@@ -1482,36 +1572,20 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(!series.length){ box.innerHTML='<div class="empty">No data in this range yet.</div>'; leg.innerHTML=""; return; }
     drawLineChart(box,leg,dates.map(function(d){return d.slice(5).replace("-","/");}),dates,series,"");
   }
-  function renderIntradayChart(box,leg,selP){
-    var bm=S.intraday_bm||[], nv=S.intraday_navs||[];
-    if(!bm.length&&!nv.length){
-      box.innerHTML='<div class="empty">Intraday marks are recorded every 30 min during TSE hours — nothing yet for today.</div>'; leg.innerHTML=""; return;
-    }
-    var lastTs=bm.length?bm[bm.length-1].ts:nv[nv.length-1].ts;
-    var day=jstDayOf(lastTs);
-    var bmD=bm.filter(function(r){return jstDayOf(r.ts)===day;});
-    var ts=bmD.map(function(r){return r.ts;});
-    var series=[];
-    if(selP){
-      var mine=nv.filter(function(r){return r.player_id===selP.id&&jstDayOf(r.ts)===day;});
-      var hist=navRows(selP.id).filter(function(r){return r.d<day;});
-      var baseNav=hist.length?Number(hist[hist.length-1].nav):null;
-      if(baseNav&&mine.length){
-        if(!ts.length) ts=mine.map(function(r){return r.ts;});
-        var map={}; mine.forEach(function(r){map[r.ts]=100*Number(r.nav)/baseNav;});
-        series.push({label:selP.nickname,color:COLORS[S.players.indexOf(selP)%COLORS.length],w:2.4,
-          vals:ts.map(function(t){return map[t]!=null?map[t]:null;})});
-      }
-    }
-    if(bmD.length){
-      var mapB={}; bmD.forEach(function(r){mapB[r.ts]=Number(r.level);});
-      series.push({label:"MSCI JP (NW proxy)",color:"#9b988f",dash:1,w:1.8,
-        vals:ts.map(function(t){return mapB[t]!=null?mapB[t]:null;})});
-    }
-    if(!series.length||!ts.length){
-      box.innerHTML='<div class="empty">Intraday marks appear during TSE hours (every 30 min).</div>'; leg.innerHTML=""; return;
-    }
-    drawLineChart(box,leg,ts.map(jstHM),ts,series,day+" · 100 = prev close · WORLD: daily ranges only");
+  function renderIntradayChart(box,leg,selP,range){
+    if(!IDATA){ box.innerHTML=I_LOAD; leg.innerHTML=""; loadIntraday(function(){ if(S) renderChart(); }); return; }
+    var defs=[];
+    var ps=showAll?S.players:(selP?[selP]:[]);
+    ps.forEach(function(p){
+      var i=S.players.indexOf(p);
+      defs.push({label:p.nickname,color:COLORS[i%COLORS.length],dash:0,w:p.id===selPid?2.4:1.6,pts:iNavAbs(p.id)});
+    });
+    defs.push({label:"MSCI JP (basket)",color:"#9b988f",dash:1,w:1.8,pts:iBasketAbs()});
+    defs.push({label:I_W.label,color:I_W.color,dash:1,w:1.8,pts:iProxyJpy("URTH")});
+    defs.push({label:I_A.label,color:I_A.color,dash:1,w:1.8,pts:iProxyJpy("AAXJ")});
+    var b=iBuild(range,defs);
+    if(!b){ box.innerHTML=I_EMPTY; leg.innerHTML=""; return; }
+    drawLineChart(box,leg,b.labels,b.keys,b.series,b.note);
   }
   function drawLineChart(box,leg,xlabels,xkeys,series,note,pfx,tipEl){
     pfx=pfx||"c";
@@ -1931,14 +2005,31 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         +"</div>";
     }).join("");
   }
-  function renderDrivers(elId, syms, days){
+  function renderDrivers(elId, syms, days, res){
     var el=$(elId); if(!el||!MACRO) return;
+    // res ("30m" for 1D, "1h" for 1W): draw the tile from the shared intraday bar cache when the
+    // symbol has bars; otherwise fall back to at least a week of daily rows so a yield or a symbol
+    // without bars still shows something rather than a dash.
+    var bars=null;
+    if(res){ var bc=BARSC[res]; if(bc&&bc.data) bars=bc.data; else ensureBarsAll(res); if(days<7) days=7; }
     var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
     var h="";
     syms.forEach(function(sym){
       var m=MACRO.meta.find(function(x){return x.symbol===sym;});
-      var arr=(MACRO.by[sym]||[]).filter(function(x){return x.d>=startD;});
       var lbl=m?m.label:sym;
+      var bb=bars&&bars[sym];
+      if(bb&&bb.length>1){
+        var isYb=m&&(m.kind==="yield"||m.kind==="yield10x");
+        var w0=Number(bb[0][1]), w1=Number(bb[bb.length-1][1]);
+        var chb=isYb?((w1-w0)*100):((w1/w0-1)*100);
+        var chTxtb=isYb?((chb>=0?"+":"")+chb.toFixed(0)+"bp"):((chb>=0?"+":"")+chb.toFixed(1)+"%");
+        h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)
+          +'<div class="vl">'+(isYb?w1.toFixed(2)+"%":n(w1,w1<10?3:(w1<100?2:(w1<10000?1:0))))+'</div>'
+          +'<div class="ch '+(chb>=0?"up":"dn")+'">'+chTxtb+' <span class="mut">'+(res==="30m"?"1D":"1W")+'</span></div>'
+          +sparkSvg(bb.map(function(x){return Number(x[1]);}),120,34,chb>=0)+'</div>';
+        return;
+      }
+      var arr=(MACRO.by[sym]||[]).filter(function(x){return x.d>=startD;});
       if(arr.length<2){ h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)+'<div class="vl">&ndash;</div></div>'; return; }
       var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
       var v0=Number(arr[0].close), v1=Number(arr[arr.length-1].close);
@@ -1971,6 +2062,17 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#mc-ctl [data-mrng]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-mrng")===mktRange?" on":"");
     });
+    if(mktRange==="1D"||mktRange==="1W"){
+      if(!IDATA){ box.innerHTML=I_LOAD; leg.innerHTML=""; loadIntraday(function(){ if(S) renderMarketChart(); }); return; }
+      var bI=iBuild(mktRange,[
+        {label:I_JP.label,color:I_JP.color,pts:iBasketAbs()},
+        {label:I_W.label,color:I_W.color,pts:iProxyJpy("URTH")},
+        {label:I_A.label,color:I_A.color,pts:iProxyJpy("AAXJ")}]);
+      if(!bI){ box.innerHTML=I_EMPTY; leg.innerHTML=""; }
+      else drawLineChart(box,leg,bI.labels,bI.keys,bI.series,bI.note,"m",$("mc-tip"));
+      renderDrivers("mc-drv",["USDJPY=X","DGS10","^SOX","^VIX"],mktRange==="1D"?1:7,mktRange==="1D"?"30m":"1h");
+      return;
+    }
     var days={"1W":7,"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[mktRange]||92;
     var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
     var bmr=S.benchmark.filter(function(r){return r.d>=startD;});
@@ -2014,6 +2116,17 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0)+"</div>";
       });
       tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
+    }
+    if(worldRange==="1D"||worldRange==="1W"){
+      if(!IDATA){ box.innerHTML=I_LOAD; leg.innerHTML=""; loadIntraday(function(){ if(S) renderWorldChart(); }); return; }
+      var bW=iBuild(worldRange,[
+        {label:I_W.label,color:I_W.color,pts:iProxyJpy("URTH")},
+        {label:I_JP.label,color:I_JP.color,pts:iBasketAbs()},
+        {label:I_A.label,color:I_A.color,pts:iProxyJpy("AAXJ")}]);
+      if(!bW){ box.innerHTML=I_EMPTY; leg.innerHTML=""; }
+      else drawLineChart(box,leg,bW.labels,bW.keys,bW.series,bW.note,"w2",$("wc-tip"));
+      renderDrivers("wc-drv",["^GSPC","^SOX","DGS10","USDJPY=X"],worldRange==="1D"?1:7,worldRange==="1D"?"30m":"1h");
+      return;
     }
     var days={"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[worldRange]||92;
     var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
