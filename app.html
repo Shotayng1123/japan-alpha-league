@@ -10,7 +10,11 @@
 <style>
 :root{
   --bg:#050505; --panel:#0c0c0c; --panel2:#111214; --bord:#26272b; --bord2:#3a3b40;
-  --amber:#ffa028; --amber-dim:#b06a10; --cyan:#38c8ff; --txt:#e8e5de; --txt2:#9b988f; --mut:#8a877e;
+  /* Secondary and muted text were too dark to read comfortably at 9-10.5px. Contrast against the
+     panel (#0c0c0c) was 6.78:1 for --txt2 and 5.45:1 for --mut -- AA, but not AAA, and these carry
+     labels, company names and the as-of stamps. Lifted to 10.99:1 and 8.93:1, which keeps the three
+     levels clearly ranked (--txt 15.55 > --txt2 10.99 > --mut 8.93) and the warm off-white tint. */
+  --amber:#ffa028; --amber-dim:#b06a10; --cyan:#38c8ff; --txt:#e8e5de; --txt2:#c6c2b7; --mut:#b3afa4;
   --up:#3fd07e; --dn:#ff4d42; --warn:#e8c437; --sel:#14202b;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
   --sans:'IBM Plex Sans JP','IBM Plex Mono',system-ui,sans-serif;
@@ -102,6 +106,11 @@ table.secT tbody tr:hover{background:#101318}
   .secdet td{padding:0!important;background:#0a0c10;border-bottom:1px solid var(--bord)}
   .secdet table{width:100%;border-collapse:collapse}
   .secdet td.c{padding:2px 8px!important;background:transparent;border-bottom:0;font-size:10.5px;white-space:nowrap}
+  /* Ticker and company name were one right-aligned cell, so every row started at a different x
+     and neither column lined up. They are two cells now: the code right-aligned (all TSE codes are
+     4 characters, so they form a solid block) and the name hard left, one gap between them. */
+  .secdet td.c.tk{text-align:right;padding-right:0!important;width:1%}
+  .secdet td.c.nm{text-align:left;padding-left:6px!important}
   .secdet tr:not(:last-child) td.c{border-bottom:1px solid #141518}
   .secdet .hd td.c{color:var(--mut);font-size:9px;letter-spacing:.06em;text-transform:uppercase}
   body.cmp .secdet td.c{padding:1px 6px!important;font-size:10px}
@@ -1368,11 +1377,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var v=tick0+step*t;
       if(v<lo-step*0.01||v>hi+step*0.01) continue;
       svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
-        +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="#8a877e">'+v.toFixed(1)+"</text>";
+        +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="var(--mut)">'+v.toFixed(1)+"</text>";
     }
     var kk=Math.max(1,Math.round((nn-1)/5));
     for(var i2=0;i2<nn;i2+=kk){
-      svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="#8a877e">'+esc(xlabels[i2])+"</text>";
+      svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="var(--mut)">'+esc(xlabels[i2])+"</text>";
     }
     series.forEach(function(s){
       var w6=s.w>=2?1.4:1;
@@ -1973,7 +1982,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(!mem.length) return "";
       var wsum=mem.reduce(function(t,x){return t+(x.w||0);},0);
       var h='<tr class="secdet" id="'+SPFX+si+'" hidden><td colspan="'+cfg.cols+'"><table><tbody>'
-        +'<tr class="hd"><td class="c">name</td><td class="c">wgt</td><td class="c">1d</td>'
+        +'<tr class="hd"><td class="c tk">ticker</td><td class="c nm">name</td><td class="c">wgt</td><td class="c">1d</td>'
         +'<td class="c">contrib</td>'+(cfg.showPe?'<td class="c">p/e fy-e</td>':'')
         +'<td class="c">vol/adv</td><td class="c">driver</td></tr>';
       mem.forEach(function(x){
@@ -1981,7 +1990,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         // w is already in percent and r is a fraction, so w*r is straight percentage points
         // of index return. Do NOT scale by 100 again.
         var contrib=(x.w||0)*x.r;
-        h+='<tr><td class="c"><b data-snap="'+esc(x.code)+'">'+esc(x.code)+'</b> <span class="mut">'+esc(String(x.name||"").slice(0,20))+'</span></td>'
+        h+='<tr><td class="c tk"><b data-snap="'+esc(x.code)+'">'+esc(x.code)+'</b></td>'
+          +'<td class="c nm"><span class="mut">'+esc(String(x.name||"").slice(0,22))+'</span></td>'
           +'<td class="c num">'+(x.w!=null?n(x.w,2)+"%":"&ndash;")+'</td>'
           +'<td class="c num '+cls(x.r)+'">'+pct(x.r)+'</td>'
           +'<td class="c num '+cls(contrib)+'">'+(contrib>=0?"+":"")+contrib.toFixed(3)+'pp</td>'
@@ -1989,7 +1999,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           +'<td class="c num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
           +'<td class="c">'+drv(x)+'</td></tr>';
       });
-      h+='<tr class="hd"><td class="c">'+mem.length+' names</td><td class="c num">'+n(wsum,2)+'%</td>'
+      h+='<tr class="hd"><td class="c nm" colspan="2">'+mem.length+' names</td><td class="c num">'+n(wsum,2)+'%</td>'
         +'<td class="c" colspan="'+(cfg.showPe?5:4)+'">contrib = index weight x 1D return, in percentage points of the index</td></tr>';
       return h+'</tbody></table></td></tr>';
     }
