@@ -492,14 +492,6 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       </div>
     </div>
 
-    <div class="panel c12" data-view="me japan">
-      <div class="phead"><span class="no">12</span><span class="t">EARNINGS CALENDAR — NEXT 3 WEEKS</span><span class="aux" id="er-aux"></span></div>
-      <div class="pbody">
-        <table class="mini"><thead><tr><th class="l">DATE</th><th class="l">TKR</th><th class="l">NAME</th><th class="l">SECTOR</th><th>BM WGT</th><th>MY WGT</th><th>IN</th></tr></thead>
-        <tbody id="er-body"><tr><td class="l empty" colspan="7">Scheduled earnings dates are not available from the current data source.</td></tr></tbody></table>
-      </div>
-    </div>
-
     <div class="panel c12" data-view="market">
       <div class="phead"><span class="no">08</span><span class="t">MARKET SUMMARY</span><span class="aux" id="ms-aux"></span></div>
       <div class="pbody" style="border-bottom:1px solid var(--bord)">
@@ -1477,6 +1469,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var mW={}; world.forEach(function(r){ if(r.d>=startD) mW[r.d]=Number(r.level); });
       var sW=mkSeries("MSCI WORLD","#38c8ff",mW,1,1.8); if(sW) series.push(sW);
     }
+    var asia=S.benchmark_asia||[];
+    if(asia.length){
+      var mA={}; asia.forEach(function(r){ if(r.d>=startD) mA[r.d]=Number(r.level); });
+      var sA=mkSeries("MSCI ASIA ex JP","#c084fc",mA,1,1.8); if(sA) series.push(sA);
+    }
     if(!series.length){ box.innerHTML='<div class="empty">No data in this range yet.</div>'; leg.innerHTML=""; return; }
     drawLineChart(box,leg,dates.map(function(d){return d.slice(5).replace("-","/");}),dates,series,"");
   }
@@ -1542,9 +1539,13 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     for(var i2=0;i2<nn;i2+=kk){
       svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="var(--mut)">'+esc(xlabels[i2])+"</text>";
     }
+    // Every series carries a dash code (0 solid, 1 dashed, 3 dotted) that this renderer had been
+    // ignoring -- the documented "Net TR drawn dotted" was in fact solid. Benchmarks are dashed and
+    // books solid, so a benchmark can share a colour with a player and still be told apart.
+    var DASH={1:' stroke-dasharray="5 3"',2:' stroke-dasharray="2 2"',3:' stroke-dasharray="1.5 2.5"'};
     series.forEach(function(s){
       var w6=s.w>=2?1.4:1;
-      svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+w6+'"'+"/>";
+      svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+w6+'"'+(DASH[s.dash]||"")+"/>";
     });
     svg+='<line id="'+pfx+'xh" x1="0" x2="0" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#3a3b40" style="display:none"/>'
       +'<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
@@ -1981,6 +1982,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var series=[];
     var s1=mk("MSCI JAPAN","#ffa028",S.benchmark,0); if(s1)series.push(s1);
     var s2=mk("MSCI WORLD","#38c8ff",S.benchmark_world||[],0); if(s2)series.push(s2);
+    var s3=mk("MSCI ASIA ex JP","#c084fc",S.benchmark_asia||[],0); if(s3)series.push(s3);
     if(!series.length){ box.innerHTML='<div class="empty">–</div>'; leg.innerHTML=""; return; }
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","m",$("mc-tip"));
     renderDrivers("mc-drv",["USDJPY=X","DGS10","^SOX","^VIX"],days);
@@ -2024,6 +2026,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var series=[];
     var s1=mk("MSCI WORLD","#38c8ff",S.benchmark_world||[]); if(s1)series.push(s1);
     var s2=mk("MSCI JAPAN","#ffa028",S.benchmark); if(s2)series.push(s2);
+    var s3=mk("MSCI ASIA ex JP","#c084fc",S.benchmark_asia||[]); if(s3)series.push(s3);
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","w2",$("wc-tip"));
     renderDrivers("wc-drv",["^GSPC","^SOX","DGS10","USDJPY=X"],days);
   }
@@ -2271,6 +2274,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(wr.length){
       var lw=wr[wr.length-1],pw=wr.length>1?wr[wr.length-2]:null;
       html+=line("MSCI WORLD (Net ¥)", n(Number(lw.level),1), pw?Number(lw.level)/Number(pw.level)-1:null);
+    }
+    var ar=S.benchmark_asia||[];
+    if(ar.length){
+      var la=ar[ar.length-1],pa=ar.length>1?ar[ar.length-2]:null;
+      html+=line("MSCI ASIA ex JP (Net ¥)", n(Number(la.level),1), pa?Number(la.level)/Number(pa.level)-1:null);
     }
     var rb=bmRet();
     if(rb!=null) html+=line("MSCI JP — intraday basket","",rb);
@@ -2631,44 +2639,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   });
 
   /* ---------- earnings calendar ---------- */
-  function renderEarnings(){
-    var tb=$("er-body"); if(!tb) return;
-    var today=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
-    var lim=new Date(Date.now()+9*3600e3+21*86400e3).toISOString().slice(0,10);
-    var myp=me?S.players.find(function(p){return p.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
-    var c=myp?playerCalc(myp):null;
-    var rows=[];
-    var haveAny=false;
-    S.stats.forEach(function(s2){
-      if(s2.next_earnings) haveAny=true;
-      if(!s2.next_earnings||s2.next_earnings<today||s2.next_earnings>lim) return;
-      var inst=instOf(s2.code); if(!inst||!inst.in_universe) return;
-      var w=null;
-      if(myp&&c&&c.nav>0){
-        var pos=S.positions.find(function(x){return x.player_id===myp.id&&x.code===s2.code;});
-        var lc=lastCloseOf(s2.code);
-        if(pos&&lc) w=Number(pos.shares)*lc.px/c.nav;
-      }
-      rows.push({d:s2.next_earnings,code:s2.code,name:inst.name,sector:inst.sector||"",bw:inst.bm_weight||0,w:w});
-    });
-    rows.sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:b.bw-a.bw);});
-    // Yahoo Japan's quote page carries the MOST RECENT announcement date, not the next one, so the
-    // nightly scrape can never fill this. Say so instead of promising a fill that will not come.
-    $("er-aux").textContent=haveAny?(rows.length+" reports in window"):"no scheduled-date source";
-    if(!rows.length){ tb.innerHTML='<tr><td class="l empty" colspan="7">'+(haveAny?"No universe names report in the next 3 weeks.":"Scheduled earnings dates are not available from the current data source.")+'</td></tr>'; return; }
-    tb.innerHTML=rows.map(function(r){
-      var days=Math.round((Date.parse(r.d)-Date.parse(today))/86400e3);
-      return '<tr class="pick" data-code="'+esc(r.code)+'">'
-        +'<td class="l num"><b>'+esc(r.d.slice(5))+'</b> <span class="mut">'+(days<=0?"today":("D-"+days))+'</span></td>'
-        +'<td class="l"><b>'+esc(r.code)+'</b></td>'
-        +'<td class="l">'+esc(String(r.name).slice(0,18))+'</td>'
-        +'<td class="l">'+esc(String(r.sector).slice(0,12))+'</td>'
-        +'<td class="num">'+r.bw.toFixed(2)+'%</td>'
-        +'<td class="num'+(r.w!=null&&r.w>0?" warn":"")+'">'+(r.w==null?"&ndash;":(r.w*100).toFixed(2)+"%")+'</td>'
-        +'<td class="num">'+(days<=2?'<span class="warn">&#9679;</span>':'')+'</td>'
-        +'</tr>';
-    }).join("");
-  }
+
 
   /* ---------- theses feed ---------- */
   function renderTheses(){
@@ -3436,7 +3407,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       $("bmlvl").innerHTML='MSCI JP <b class="num">'+n(l.level,1)+'</b> <span class="num '+cls(chg)+'">'+pct(chg)+'</span> <span class="mut">'+esc(l.d)+"</span>";
     }
     refreshChip();
-    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderEarnings(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); renderWorldSecMov(); tkPrev();
+    renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); renderWorldSecMov(); tkPrev();
     if(NEWS) renderNews();
   }
   setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); } },600000);
