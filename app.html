@@ -844,7 +844,14 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-gper")===gPer?" on":"");
     });
-    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
+    // The order of the GROUPS has always lived here rather than in the database. A third element
+    // may pin the order WITHIN a group by symbol; anything not listed keeps its macro_meta.ord and
+    // follows the pinned ones, so a commodity added later still appears instead of vanishing.
+    // COMMODITIES is pinned because energy is what a Japan macro desk reads first, and crude was
+    // sitting seventh, behind wheat, sugar and uranium.
+    var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],
+      ["COMMODITY","COMMODITIES",["CL=F","BZ=F","NG=F","GC=F","SI=F","HG=F","URA","ZW=F","SB=F"]],
+      ["FX","FX &amp; DOLLAR"]];
     var now=Date.now(), anyClosed=false, latest=0, oldest=0;
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
     var barsData=null;
@@ -873,7 +880,21 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     }
     function baseIdx(arr){
       var last=arr[arr.length-1];
-      if(gPer==="1D") return arr.length>1?arr.length-2:-1;
+      if(gPer==="1D"){
+        // "1 day" has to mean the previous BUSINESS day, not simply the previous stored row.
+        // Instruments that trade around the clock (futures, FX, metals) carry a weekend-dated row
+        // and equities do not -- verified on live data: GC=F is 09-04 Fri 4429.80, 09-06 Sun
+        // 4476.60, 09-07 Mon 4476.60. Comparing to the previous row read that whole weekend gap
+        // as 0.00% when gold's real 1D move was +1.06%; USD/JPY read -0.08% instead of -0.26%.
+        // Skipping weekend-dated rows fixes those and changes nothing for Mon-Fri series, which
+        // have no weekend row to skip. Exchange holidays need no special case: only rows that
+        // actually exist are candidates, so a missing session is skipped by construction.
+        for(var wi=arr.length-2;wi>=0;wi--){
+          var dw=new Date(arr[wi].d+"T00:00:00Z").getUTCDay();
+          if(dw!==0&&dw!==6) return wi;
+        }
+        return arr.length>1?arr.length-2:-1;
+      }
       var days={"1W":7,"1M":31,"3M":92,"6M":183,"12M":365,"24M":730,"36M":1095,"60M":1825}[gPer]||7;
       var cut=new Date(Date.parse(last.d)-days*86400e3).toISOString().slice(0,10);
       for(var i2=arr.length-1;i2>=0;i2--) if(arr[i2].d<=cut) return i2;
@@ -971,6 +992,12 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     groups.forEach(function(g){
       var rows=MACRO.meta.filter(function(m){return m.grp===g[0];});
       if(!rows.length) return;
+      if(g[2]) rows=rows.slice().sort(function(a,b){
+        var ia=g[2].indexOf(a.symbol), ib=g[2].indexOf(b.symbol);
+        if(ia<0) ia=1e6+Number(a.ord||0);
+        if(ib<0) ib=1e6+Number(b.ord||0);
+        return ia-ib;
+      });
       h+='<div class="mgh">'+g[1]+'</div><div class="mgc">';
       rows.forEach(function(m){
         var arr=MACRO.by[m.symbol]||[];
