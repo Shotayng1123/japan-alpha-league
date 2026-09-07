@@ -418,7 +418,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <div class="panel c5" data-view="me trade">
       <div class="phead"><span class="no">07</span><span class="t">ORDER TICKET / BLOTTER</span><span class="aux" id="tk-aux"></span></div>
       <div class="pbody">
-        <div id="tkt-lock" class="locknote">Sign in (top-right) to place orders. Orders start filling at the next TSE close — max 20% of 20-day ADV per day.</div>
+        <div id="tkt-lock" class="locknote">Sign in (top-right) to place orders. Orders start filling at the next TSE close — max 20% of 20-day ADV per day. Each fill is charged the league cost (shown in the preview).</div>
         <form class="tkt" id="tkt" style="display:none" autocomplete="off">
           <div><label class="f">Ticker</label><input id="t-code" placeholder="7203 / NVDA" maxlength="7"></div>
           <div><label class="f">Side</label><select id="t-side"><option>BUY</option><option>SELL</option></select></div>
@@ -1000,14 +1000,12 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-gper")===gPer?" on":"");
     });
-    // The order of the GROUPS has always lived here rather than in the database. A third element
-    // may pin the order WITHIN a group by symbol; anything not listed keeps its macro_meta.ord and
-    // follows the pinned ones, so a commodity added later still appears instead of vanishing.
-    // COMMODITIES is pinned because energy is what a Japan macro desk reads first, and crude was
-    // sitting seventh, behind wheat, sugar and uranium.
+    // The order of the GROUPS lives here; the order WITHIN a group is macro_meta.ord, which the
+    // api already sorts by. (COMMODITIES was briefly pinned here in v7.6 to put energy first; the
+    // same order is now in the database -- CL=F 61 ... SB=F 69 -- so the pin is gone and there is
+    // one source of truth again.)
     var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],
-      ["COMMODITY","COMMODITIES",["CL=F","BZ=F","NG=F","GC=F","SI=F","HG=F","URA","ZW=F","SB=F"]],
-      ["FX","FX &amp; DOLLAR"]];
+      ["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"]];
     var now=Date.now(), anyClosed=false, anyOpen=false, latest=0, oldest=0;
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
     var barsData=null;
@@ -1148,12 +1146,6 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     groups.forEach(function(g){
       var rows=MACRO.meta.filter(function(m){return m.grp===g[0];});
       if(!rows.length) return;
-      if(g[2]) rows=rows.slice().sort(function(a,b){
-        var ia=g[2].indexOf(a.symbol), ib=g[2].indexOf(b.symbol);
-        if(ia<0) ia=1e6+Number(a.ord||0);
-        if(ib<0) ib=1e6+Number(b.ord||0);
-        return ia-ib;
-      });
       h+='<div class="mgh">'+g[1]+'</div><div class="mgc">';
       rows.forEach(function(m){
         var arr=MACRO.by[m.symbol]||[];
@@ -2406,8 +2398,14 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var w=nav>0?cur*lc.px/nav:0, tw=nav>0?tgt*lc.px/nav:0;
     var bw=inst&&inst.bm_weight?inst.bm_weight/100:0;
     var a0=(w-bw)*1e4, a1=(tw-bw)*1e4;
+    // Every fill is charged league.cost_bps of the fill value, on each side (the eod debits
+    // value + cost on a buy and credits value - cost on a sell). Shown here so the number a player
+    // sees in the ticket is the number the book will pay, and the cash check uses the same
+    // multiplier the eod uses for affordability.
+    var cb=Number(S.league&&S.league.cost_bps)||0;
+    var costY=eff*lc.px*cb/1e4;
     var cashNote="";
-    if(side==="BUY"&&c.cash!=null&&eff*lc.px>Number(c.cash)){
+    if(side==="BUY"&&c.cash!=null&&eff*lc.px*(1+cb/1e4)>Number(c.cash)){
       cashNote=' &nbsp;&middot;&nbsp; <span class="warn">EXCEEDS CASH &yen;'+bn(Number(c.cash),2)+'bn &mdash; fills stop at available cash (sell first to fund)</span>';
     }
     var days=null, queueNote="";
@@ -2432,6 +2430,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       }
     }
     el.innerHTML='<b>'+n(eff)+' sh</b> &asymp; &yen;'+bn(eff*lc.px,2)+'bn'
+      +(cb>0?' &nbsp;&middot;&nbsp; cost &asymp; &yen;'+n(costY/1e6,1)+'m <span class="mut">('+cb+'bp per side)</span>':'')
       +' &nbsp;&middot;&nbsp; active bet: <span class="num '+cls(a0)+'">'+(a0>=0?"+":"")+a0.toFixed(0)+'bp</span>'
       +' &rarr; <b class="num '+cls(a1)+'">'+(a1>=0?"+":"")+a1.toFixed(0)+'bp</b> vs BM'
       +(days!=null?' &nbsp;&middot;&nbsp; est. fill &asymp; <b>'+days+'</b> trading day'+(days>1?'s':'')+' <span class="mut">(20% ADV cap)</span>':'')
