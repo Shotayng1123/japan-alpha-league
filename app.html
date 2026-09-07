@@ -260,6 +260,19 @@ tbody tr.pick{cursor:pointer}
 .snap-facts .k{font-size:9.5px;color:var(--mut);letter-spacing:.06em}
 .snap-facts .v{font-size:13px;font-weight:600}
 .snap-rets{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;margin:6px 0}
+#snap-fs{font-size:10.5px;margin-top:10px;border-top:1px solid var(--bord);padding-top:8px}
+#snap-fs .fsh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+#snap-fs .fsh b{font-size:10.5px;letter-spacing:.06em;color:var(--amb)}
+table.fst{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed}
+table.fst th,table.fst td{padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.fst th{color:var(--mut);font-weight:500;font-size:9.5px;letter-spacing:.05em;border-bottom:1px solid var(--bord)}
+table.fst th.l,table.fst td.l{text-align:left;width:13ch}
+table.fst th.num,table.fst td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.fst tr.sep td{border-top:1px solid var(--bord)}
+table.fst td.pct,table.fst th.est{color:var(--mut)}
+table.fst th.est,table.fst td.est{background:rgba(255,160,40,.07)}
+table.fst .fsb{display:inline-block;vertical-align:baseline;height:7px;background:rgba(56,200,255,.55);margin-left:3px}
+#snap-fs .fsn{margin-top:5px;color:var(--mut);font-size:9.5px;line-height:1.5}
 [data-snap]{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(255,160,40,.35);text-underline-offset:2px}
 [data-snap]:hover{color:var(--amber)}
 .hidden-view{display:none!important}
@@ -2546,7 +2559,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       +'<div class="snap-rets" id="snap-r"></div>'
       +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span style="flex:1"></span><span id="snap-vs"></span></div>'
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
-      +'<div class="mut" style="font-size:10.5px;margin-top:10px;border-top:1px solid var(--bord);padding-top:8px" id="snap-fs">5Y FINANCIALS (Sales &rarr; NI, growth, margins) &mdash; not on file yet. The P/E above is company guidance for the current fiscal year, not a consensus estimate.</div>'
+      +'<div id="snap-fs"><span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span></div>'
       +'</div>';
     document.body.appendChild(ov);
     ov.addEventListener("click",function(ev){ if(ev.target===ov) ov.style.display="none"; });
@@ -2593,6 +2606,52 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
        {label:snapIdx==="W"?"MSCI WORLD":"MSCI JAPAN",color:"#5a6b80",vals:sIdx,w:1}],
       "relative, index=100 at range start","sn",$("snap-tip"));
   }
+  /* 5Y financials + company guidance, from the fundamentals table (EDINET DB via the fund job).
+     Amounts arrive in yen; shown in ¥bn. FY label = fiscal year-end year. The "E" column is the
+     company's own full-year guidance from its latest 決算短信 — never a consensus number. */
+  function snapFund(){
+    var el=$("snap-fs"); if(!el||!snapCode) return;
+    var inst=instOf(snapCode);
+    if(!inst){ el.innerHTML='<span class="mut">5Y FINANCIALS &mdash; JP names only (EDINET filings); not available for World names.</span>'; return; }
+    var h=SNAPC[snapCode];
+    if(!h||h.p){ el.innerHTML='<span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span>'; return; }
+    var all=(h.fund||[]).slice().sort(function(a,b){ return a.fy<b.fy?-1:(a.fy>b.fy?1:((a.fc?1:0)-(b.fc?1:0))); });
+    if(!all.length){ el.innerHTML='<span class="mut">5Y FINANCIALS &mdash; not on file yet for this name (EDINET DB load is nightly, ~20 names per run). The P/E above is company guidance for the current fiscal year, not a consensus estimate.</span>'; return; }
+    var act=all.filter(function(r){return !r.fc;}), fc=all.filter(function(r){return r.fc;}).slice(-1)[0]||null;
+    var cols=act.slice(-5).concat(fc?[fc]:[]);
+    var prevOf={}; act.forEach(function(r,i){ if(i>0) prevOf[r.fy]=act[i-1]; });
+    if(fc&&act.length) prevOf[fc.fy+"E"]=act[act.length-1];
+    function yoy(r){ var p=prevOf[r.fc?r.fy+"E":r.fy]; return (p&&p.sales>0&&r.sales!=null)?(r.sales/p.sales-1)*100:null; }
+    function mg(a,b){ return (a!=null&&b>0)?a/b*100:null; }
+    var maxS=Math.max.apply(null,cols.map(function(r){return r.sales||0;}).concat([1]));
+    function bnc(v,est){ return '<td class="num'+(est?" est":"")+'">'+(v==null?"–":bn(v,Math.abs(v)>=1e12?0:1))+'</td>'; }
+    function pct(v,est,signed){ return '<td class="num pct'+(est?" est":"")+'">'+(v==null?"–":(signed?pc(v,1):Number(v).toFixed(1)+"%"))+'</td>'; }
+    function yen(v,est,dp){ return '<td class="num'+(est?" est":"")+'">'+(v==null?"–":"&yen;"+n(v,dp))+'</td>'; }
+    var head='<tr><th class="l">&yen;bn</th>'+cols.map(function(r){ return '<th class="num'+(r.fc?" est":"")+'">FY'+esc(r.fy)+(r.fc?"E":"")+'</th>'; }).join("")+'</tr>';
+    var body=''
+      +'<tr><td class="l">SALES</td>'+cols.map(function(r){return bnc(r.sales,r.fc);}).join("")+'</tr>'
+      +'<tr><td class="l pct">&nbsp; YoY</td>'+cols.map(function(r){return pct(yoy(r),r.fc,true);}).join("")+'</tr>'
+      +'<tr><td class="l pct">&nbsp; trend</td>'+cols.map(function(r){ var w=r.sales>0?Math.max(2,Math.round(r.sales/maxS*40)):0; return '<td class="num'+(r.fc?" est":"")+'">'+(w?'<span class="fsb" style="width:'+w+'px"></span>':"")+'</td>'; }).join("")+'</tr>'
+      +'<tr class="sep"><td class="l">OP INCOME</td>'+cols.map(function(r){return bnc(r.op,r.fc);}).join("")+'</tr>'
+      +'<tr><td class="l pct">&nbsp; margin</td>'+cols.map(function(r){return pct(mg(r.op,r.sales),r.fc,false);}).join("")+'</tr>'
+      +'<tr class="sep"><td class="l">NET INCOME</td>'+cols.map(function(r){return bnc(r.ni,r.fc);}).join("")+'</tr>'
+      +'<tr><td class="l pct">&nbsp; margin</td>'+cols.map(function(r){return pct(mg(r.ni,r.sales),r.fc,false);}).join("")+'</tr>'
+      +'<tr class="sep"><td class="l">EPS</td>'+cols.map(function(r){return yen(r.eps,r.fc,r.eps!=null&&Math.abs(r.eps)<100?2:1);}).join("")+'</tr>';
+    if(cols.some(function(r){return r.dps!=null;})) body+='<tr><td class="l">DPS</td>'+cols.map(function(r){return yen(r.dps,r.fc,r.dps!=null&&r.dps<10?2:1);}).join("")+'</tr>';
+    var lc=lastCloseOf(snapCode);
+    var notes=[];
+    if(fc){
+      var rel=String(fc.src||"").replace(/^EDINET DB\s*/,"");
+      var pe=(lc&&lc.px>0&&fc.eps>0)?lc.px/fc.eps:null;
+      notes.push('FY'+esc(fc.fy)+'E = company guidance'+(rel?' ('+esc(rel)+')':'')+(pe!=null?' &middot; P/E on guidance EPS <b class="num">'+pe.toFixed(1)+'x</b> at &yen;'+n(lc.px,lc.px<1000?1:0):'')+(fc.url?' &middot; <a href="'+esc(fc.url)+'" target="_blank" rel="noopener">短信 PDF</a>':''));
+    }
+    var upd=cols.map(function(r){return r.at||"";}).sort().slice(-1)[0];
+    notes.push('Source: <b>EDINET DB</b> (Cabocia; structured from EDINET filings) &middot; consolidated, &yen;bn &middot; FY = fiscal year-end year'+(upd?' &middot; loaded '+esc(String(upd).slice(0,10)):''));
+    var shown=cols.filter(function(r){return !r.fc;});
+    el.innerHTML='<div class="fsh"><b>FINANCIALS &middot; 5Y + GUIDANCE</b><span class="mut">'+(shown.length?'FY'+esc(shown[0].fy)+'&ndash;FY'+esc(shown[shown.length-1].fy)+(fc?' + FY'+esc(fc.fy)+'E':''):'')+'</span></div>'
+      +'<div style="overflow-x:auto"><table class="fst"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
+      +'<div class="fsn">'+notes.join('<br>')+'</div>';
+  }
   function openSnap(code){
     code=String(code||"").toUpperCase();
     if(!S||!code) return;
@@ -2625,10 +2684,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       SNAPC[code]={p:1};
       fetch(API+"?action=hist&code="+encodeURIComponent(code)).then(function(r){return r.json();}).then(function(j){
         SNAPC[code]=(j&&j.px)?j:{px:[]};
-        snapDraw();
-      }).catch(function(){ SNAPC[code]={px:[]}; snapDraw(); });
+        snapDraw(); snapFund();
+      }).catch(function(){ SNAPC[code]={px:[]}; snapDraw(); snapFund(); });
     }
-    snapDraw();
+    snapDraw(); snapFund();
   }
   document.addEventListener("click",function(ev){
     var t=ev.target&&ev.target.closest?ev.target.closest("[data-snap]"):null;
