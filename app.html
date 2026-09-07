@@ -165,6 +165,24 @@ table.secT tbody tr.sech>td.num>.pen{display:inline-block;box-sizing:border-box;
 #chart{width:100%;display:block}
 .pbody svg[id$="chart"]{width:100%;display:block}
 #ctip,#mc-tip{position:absolute;pointer-events:none;background:#0f1013;border:1px solid var(--bord2);padding:6px 9px;font-size:11px;display:none;z-index:5;min-width:170px}
+/* the one hover readout every chart shares: fixed so no panel can clip it */
+#hvtip{position:fixed;pointer-events:none;background:#0f1013;border:1px solid var(--bord2);padding:5px 8px;font-size:11px;display:none;z-index:200;min-width:120px;border-radius:3px;font-variant-numeric:tabular-nums}
+#hvtip .d{color:var(--mut);font-size:10px;margin-bottom:2px}
+#hvtip .row{display:flex;justify-content:space-between;gap:12px;line-height:1.35}
+svg[data-hv]{cursor:crosshair;touch-action:pan-y}
+svg[data-hv] g.hvg{pointer-events:none}
+/* interactive affordance, Bloomberg style: whatever answers to the cursor -- a link, a name that opens
+   the snapshot, a row that opens, a chip, a chart with a readout, a heat-map cell -- turns amber under
+   it, and clickable things carry the pointer. One rule set for every size. */
+a:hover,[data-snap]:hover,.chip-sm:hover,.cz:hover,.nwc.tk:hover,.ekbq:hover,.locknote b:hover,th.sortable:hover,.nwrow.hasKb:hover .nwh,#topbar .chip:hover{color:var(--amber)}
+/* rows that open something: the text cells go amber, the numbers keep their up/down colours */
+tr.click:hover>td.l,tr.pick:hover>td.l,tr.sech:hover>td.l{color:var(--amber)}
+tr.click:hover>td.mut,tr.click:hover>td.sub,tr.pick:hover>td.mut,tr.pick:hover>td.sub{color:var(--mut)}
+table tbody tr.click:hover,table tbody tr.pick:hover,table tbody tr.sech:hover,tbody.secT-body tr.sech:hover,.nwrow.hasKb:hover,.nwrow:hover{background:#1c1610}
+.chip-sm:hover,#topbar .chip:hover,.mtile:hover,.thcard:hover,.betcard:hover{border-color:var(--amber)}
+svg[data-hv]:hover{filter:brightness(1.25)}
+.hm-cell:hover{outline:1px solid var(--amber);z-index:3}
+[data-snap],tr.click,tr.pick,tr.sech,.chip-sm,.nwc.tk,.ekbq,.hm-cell,.nwrow.hasKb,#nav a,#topbar .chip,th.sortable{cursor:pointer}
 #ctip .d,#mc-tip .d{color:var(--mut)}
 #ctip .row,#mc-tip .row{display:flex;justify-content:space-between;gap:12px}
 .panel .pbody{position:relative}
@@ -252,7 +270,7 @@ tbody tr.pick{cursor:pointer}
 .thl td{padding:4px 8px;border-bottom:1px solid var(--bord);white-space:nowrap}
 .thl td.tx{max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
 .thl tr.click{cursor:pointer}
-.thl tr.click:hover td{background:var(--panel2)}
+.thl tr.click:hover td{background:#1c1610}
 #thmod{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:60}
 .thmod-box{background:var(--panel);border:1px solid var(--bord);border-radius:6px;min-width:320px;max-width:560px;width:92%;max-height:80vh;overflow:auto;padding:14px 16px}
 .thmod-h{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;gap:10px}
@@ -1083,16 +1101,81 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   /* ---------- bars proxy & sparklines ---------- */
   var BARSC={};  // res -> {at,data} macro intraday bars
   var SBARS={};  // code -> {arr} 1M daily bars for JP stocks
-  function sparkSvg(vals,w,hgt,up){
+  /* ---------- chart hover: one readout for every SVG chart ----------
+     A chart registers {W, xs, labels, series:[{name,color,ys,vals,fmt}], vline} under an id and
+     puts data-hv="<id>" on its <svg>. One delegated listener finds the nearest x, draws a guide
+     line and a marker per series inside the svg, and fills the fixed tooltip with the date and the
+     values. Touch works the same way (finger scrub); the page still scrolls vertically. */
+  var HV={}, hvCur=null, hvTip=null, hvSeq=0;
+  function hvSpec(id,spec){ HV[id]=spec; if(++hvSeq%400===0){ Object.keys(HV).forEach(function(k){ if(!document.querySelector('svg[data-hv="'+k+'"]')) delete HV[k]; }); } }
+  function hvTipEl(){ if(!hvTip){ hvTip=document.createElement("div"); hvTip.id="hvtip"; document.body.appendChild(hvTip); } return hvTip; }
+  function hvFmt(v,f){
+    if(v==null||!isFinite(v)) return "\u2013";
+    if(typeof f==="function") return f(v);
+    var a=Math.abs(v);
+    return n(v,a>=10000?0:(a>=100?1:(a>=1?2:4)));
+  }
+  function hvJst(ts){ var j=new Date(ts*1000+9*3600e3), p=function(x){return ("0"+x).slice(-2);}; return p(j.getUTCMonth()+1)+"/"+p(j.getUTCDate())+" "+p(j.getUTCHours())+":"+p(j.getUTCMinutes())+" JST"; }
+  function hvShow(svg,cx,cy){
+    var sp=HV[svg.getAttribute("data-hv")]; if(!sp||!sp.xs||!sp.xs.length) return;
+    var r=svg.getBoundingClientRect(); if(!(r.width>0)) return;
+    var vx=(cx-r.left)/r.width*sp.W, xs=sp.xs, lo=0, hi=xs.length-1;
+    while(hi-lo>1){ var mid=(lo+hi)>>1; if(xs[mid]<vx) lo=mid; else hi=mid; }
+    var i=(vx-xs[lo]<=xs[hi]-vx)?lo:hi, X=xs[i];
+    var g=svg.querySelector("g.hvg");
+    if(!g){ g=document.createElementNS("http://www.w3.org/2000/svg","g"); g.setAttribute("class","hvg"); svg.appendChild(g); }
+    var sx=sp.W/r.width, h="", rows="";
+    if(sp.vline) h+='<line x1="'+X+'" x2="'+X+'" y1="'+sp.vline[0]+'" y2="'+sp.vline[1]+'" stroke="#6a6d75" stroke-width="'+(sx).toFixed(2)+'" vector-effect="non-scaling-stroke"/>';
+    sp.series.forEach(function(s){
+      var y=s.ys[i], v=s.vals[i];
+      if(y!=null) h+='<circle cx="'+X+'" cy="'+y+'" r="'+(sp.r||3)+'" fill="'+s.color+'" stroke="#000" stroke-width="1" vector-effect="non-scaling-stroke"'+(sp.stretch?' transform="translate('+X+' '+y+') scale('+(sx*sp.stretch[0]).toFixed(3)+' '+(sp.stretch[1]).toFixed(3)+') translate('+(-X)+' '+(-y)+')"':'')+'/>';
+      rows+='<div class="row"><span style="color:'+s.color+'">'+esc(s.name||"")+'</span><b>'+esc(hvFmt(v,s.fmt||sp.fmt))+'</b></div>';
+    });
+    g.innerHTML=h;
+    var tip=hvTipEl();
+    tip.innerHTML='<div class="d">'+esc(sp.labels[i]||"")+'</div>'+rows;
+    tip.style.display="block";
+    var tw=tip.offsetWidth, th=tip.offsetHeight, vw=window.innerWidth, vh=window.innerHeight;
+    var tx=cx+14, ty=cy-th-12;
+    if(tx+tw>vw-4) tx=cx-tw-14; if(tx<4) tx=4;
+    if(ty<4) ty=cy+16; if(ty+th>vh-4) ty=vh-th-4;
+    tip.style.left=tx+"px"; tip.style.top=ty+"px";
+  }
+  function hvHide(svg){ if(svg){ var g=svg.querySelector("g.hvg"); if(g) g.innerHTML=""; } if(hvTip) hvTip.style.display="none"; }
+  document.addEventListener("mousemove",function(ev){
+    var t=ev.target, svg=t&&t.closest?t.closest("svg[data-hv]"):null;
+    if(svg){ if(hvCur&&hvCur!==svg) hvHide(hvCur); hvCur=svg; hvShow(svg,ev.clientX,ev.clientY); }
+    else if(hvCur){ hvHide(hvCur); hvCur=null; }
+  });
+  document.addEventListener("touchstart",function(ev){
+    var t=ev.touches&&ev.touches[0]; if(!t) return;
+    var el=document.elementFromPoint(t.clientX,t.clientY), svg=el&&el.closest?el.closest("svg[data-hv]"):null;
+    if(svg){ if(hvCur&&hvCur!==svg) hvHide(hvCur); hvCur=svg; hvShow(svg,t.clientX,t.clientY); }
+  },{passive:true});
+  document.addEventListener("touchmove",function(ev){ var t=ev.touches&&ev.touches[0]; if(hvCur&&t) hvShow(hvCur,t.clientX,t.clientY); },{passive:true});
+  document.addEventListener("touchend",function(){ if(hvCur){ var s=hvCur; hvCur=null; setTimeout(function(){ if(hvCur!==s) hvHide(s); },1500); } });
+  window.addEventListener("scroll",function(){ if(hvCur){ hvHide(hvCur); hvCur=null; } },{passive:true});
+  // Sparkline with an optional readout: opt = {labels:[...], xs:[...] (viewBox x per point,
+  // default evenly spaced), fmt:fn, name:str}. Stretched (preserveAspectRatio none) so the marker
+  // is drawn with a compensating transform.
+  function sparkSvg(vals,w,hgt,up,opt){
     if(!vals||vals.length<2) return "";
+    opt=opt||{};
     var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
     if(!(mx-mn>0)) mx=mn+1e-9;
-    var d="";
+    var d="", xs=[], ys=[];
     for(var i=0;i<vals.length;i++){
-      d+=(i?"L":"M")+(i/(vals.length-1)*w).toFixed(1)+" "+((1-(vals[i]-mn)/(mx-mn))*(hgt-3)+1.5).toFixed(1);
+      var xx=opt.xs?opt.xs[i]:(i/(vals.length-1)*w), yy=(1-(vals[i]-mn)/(mx-mn))*(hgt-3)+1.5;
+      xs.push(xx); ys.push(yy);
+      d+=(i?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
     }
     var col=up===false?"var(--dn)":(up?"var(--up)":"var(--mut)");
-    return '<svg viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none" style="width:100%;height:'+hgt+'px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.1"/></svg>';
+    var id="";
+    if(opt.labels){
+      id="spk"+(++hvSeq);
+      hvSpec(id,{W:w,xs:xs,labels:opt.labels,vline:[0,hgt],r:2.4,stretch:[1,1],series:[{name:opt.name||"",color:col,ys:ys,vals:vals,fmt:opt.fmt}]});
+    }
+    return '<svg viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none"'+(id?' data-hv="'+id+'"':'')+' style="width:100%;height:'+hgt+'px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.1"/></svg>';
   }
   function ensureBarsAll(res){
     var e=BARSC[res];
@@ -1164,9 +1247,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
     var barsData=null;
     if(barsRes){ var bc=BARSC[barsRes]; if(bc&&bc.data){ barsData=bc.data; } else { ensureBarsAll(barsRes); } }
-    function tileSpark(sym,arr,bi,up){
+    function tileSpark(sym,arr,bi,up,fmt){
       if(barsData&&barsData[sym]&&barsData[sym].length>1){
-        return sparkSvg(barsData[sym].map(function(x){return x[1];}),120,22,up);
+        var bs=barsData[sym];
+        return sparkSvg(bs.map(function(x){return x[1];}),120,22,up,{labels:bs.map(function(x){return hvJst(x[0]);}),fmt:fmt});
       }
       if(!arr||arr.length<2) return "";
       var st=bi>=0?bi:Math.max(0,arr.length-2);
@@ -1174,17 +1258,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(seg.length<2) return "";
       var t0=Date.parse(seg[0].d), t1=Date.parse(seg[seg.length-1].d);
       if(!(t1>t0)) return "";
-      var vals=seg.map(function(x){return Number(x.close);});
-      var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
-      if(!(mx-mn>0)) mx=mn+1e-9;
-      var d="";
-      for(var i=0;i<seg.length;i++){
-        var xx=(Date.parse(seg[i].d)-t0)/(t1-t0)*120;
-        var yy=(1-(vals[i]-mn)/(mx-mn))*19+1.5;
-        d+=(i?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
-      }
-      var col=up===false?"var(--dn)":(up?"var(--up)":"var(--mut)");
-      return '<svg viewBox="0 0 120 22" preserveAspectRatio="none" style="width:100%;height:22px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.1"/></svg>';
+      // x follows real time, so a weekend gap or a missing print reads as a gap, not a step
+      return sparkSvg(seg.map(function(x){return Number(x.close);}),120,22,up,{xs:seg.map(function(x){return (Date.parse(x.d)-t0)/(t1-t0)*120;}),labels:seg.map(function(x){return x.d;}),fmt:fmt});
     }
     function baseIdx(arr){
       var last=arr[arr.length-1];
@@ -1237,7 +1312,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         for(var k3=0;k3<4;k3++){ if(vv[k3]==null) return ""; d4+=(k3?"L":"M")+cx(xs[k3]).toFixed(1)+" "+cy(vv[k3]).toFixed(1);}
         return '<path d="'+d4+'" fill="none" stroke="'+color+'" stroke-width="'+w2+'"/>';
       }
-      var svg2='<svg viewBox="0 0 '+CW+' '+CH+'" style="width:100%;max-width:260px;height:auto;display:block">';
+      var ycId="yc"+(++hvSeq);
+      hvSpec(ycId,{W:CW,xs:xs.map(function(x2){return cx(x2);}),labels:ten.map(function(t2){return t2+"Y";}),vline:[cmT,CH-cmB],r:3,fmt:function(v){return v.toFixed(2)+"%";},
+        series:[{name:"now",color:"var(--up)",ys:vals.map(function(v2){return v2==null?null:cy(v2);}),vals:vals},{name:gPer+" ago",color:"#5a6b80",ys:bases.map(function(v2){return v2==null?null:cy(v2);}),vals:bases}]});
+      var svg2='<svg viewBox="0 0 '+CW+' '+CH+'" data-hv="'+ycId+'" style="width:100%;max-width:260px;height:auto;display:block">';
       svg2+='<text x="2" y="'+(cy(hi2)+3)+'" font-size="8" fill="var(--mut)">'+hi2.toFixed(2)+'</text>';
       svg2+='<text x="2" y="'+(cy(lo2)+3)+'" font-size="8" fill="var(--mut)">'+lo2.toFixed(2)+'</text>';
       for(var k4=0;k4<4;k4++){ svg2+='<text x="'+cx(xs[k4]).toFixed(1)+'" y="'+(CH-3)+'" font-size="8" text-anchor="middle" fill="var(--mut)">'+ten[k4]+'Y</text>'; }
@@ -1263,7 +1341,13 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var CW2=560, CH2=150, pL=34, pR=8, pT=10, pB=18;
       function px2(t2){ return pL+(t2-t0)/(t1-t0)*(CW2-pL-pR); }
       function py2(v2){ return pT+(1-(v2-lo3)/(hi3-lo3))*(CH2-pT-pB); }
-      var sv='<svg viewBox="0 0 '+CW2+' '+CH2+'" style="width:100%;height:auto;display:block">';
+      // readout on the union of the three date sets; each series reads as a step (last value at or before the date)
+      var tl={}; series.forEach(function(sr){ sr.pts.forEach(function(p3){ tl[p3[0]]=1; }); });
+      var tks=Object.keys(tl).map(Number).sort(function(a,b){return a-b;});
+      var pcId="pc"+(++hvSeq);
+      hvSpec(pcId,{W:CW2,xs:tks.map(px2),labels:tks.map(function(t2){return new Date(t2).toISOString().slice(0,10);}),vline:[pT,CH2-pB],r:3,fmt:function(v){return v.toFixed(2)+"%";},
+        series:series.map(function(sr){ var j=0, vv=[]; tks.forEach(function(t2){ while(j+1<sr.pts.length&&sr.pts[j+1][0]<=t2) j++; vv.push(sr.pts[j][0]<=t2?sr.pts[j][1]:null); }); return {name:sr.nm,color:sr.col,vals:vv,ys:vv.map(function(v2){return v2==null?null:py2(v2);})}; })});
+      var sv='<svg viewBox="0 0 '+CW2+' '+CH2+'" data-hv="'+pcId+'" style="width:100%;height:auto;display:block">';
       for(var g5=Math.ceil(lo3);g5<=Math.floor(hi3);g5++){
         sv+='<line x1="'+pL+'" x2="'+(CW2-pR)+'" y1="'+py2(g5).toFixed(1)+'" y2="'+py2(g5).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
           +'<text x="'+(pL-4)+'" y="'+(py2(g5)+3).toFixed(1)+'" text-anchor="end" font-size="8.5" fill="var(--mut)">'+g5+'%</text>';
@@ -1320,7 +1404,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           var vl=(Number(last.close)/dv).toFixed(2)+"%";
           var d10=base?(Number(last.close)-Number(base.close))/dv*100:null;
           var chTxt=d10==null?"&ndash;":((d10>=0?"+":"")+d10.toFixed(0)+"bp");
-          h+='<div class="mtile">'+lbLine(m.label,badge,m.market_time)+'<div class="vl">'+vl+'</div><div class="ch '+(d10==null?"":(d10>=0?"up":"dn"))+'">'+chTxt+"</div>"+tileSpark(m.symbol,arr,bi,d10==null?null:d10>=0)+"</div>";
+          h+='<div class="mtile">'+lbLine(m.label,badge,m.market_time)+'<div class="vl">'+vl+'</div><div class="ch '+(d10==null?"":(d10>=0?"up":"dn"))+'">'+chTxt+"</div>"+tileSpark(m.symbol,arr,bi,d10==null?null:d10>=0,(function(dv2){return function(v){return (v/dv2).toFixed(2)+"%";};})(dv))+"</div>";
         } else {
           var p2=Number(last.close);
           var vl2=n(p2, p2<10?3:(p2<100?2:(p2<10000?1:0)));
@@ -1771,27 +1855,13 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var w6=s.w>=2?1.4:1;
       svg+='<path d="'+path(s.vals)+'" fill="none" stroke="'+s.color+'" stroke-width="'+w6+'"'+(DASH[s.dash]||"")+"/>";
     });
-    svg+='<line id="'+pfx+'xh" x1="0" x2="0" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#3a3b40" style="display:none"/>'
-      +'<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
+    svg+='<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
     box.innerHTML=svg;
-    var svgEl=$(pfx+"chart"),tip=tipEl||$("ctip"),xh=$(pfx+"xh");
-    $(pfx+"hv").addEventListener("mousemove",function(ev){
-      var r=svgEl.getBoundingClientRect();
-      var px=(ev.clientX-r.left)*(W/r.width);
-      var i=Math.max(0,Math.min(nn-1,Math.round((px-mL)/iW*(nn-1))));
-      xh.setAttribute("x1",X(i)); xh.setAttribute("x2",X(i)); xh.style.display="block";
-      var html='<div class="d">'+esc(xlabels[i])+"</div>";
-      series.forEach(function(s){
-        var v=s.vals[i];
-        html+='<div class="row"><span style="color:'+s.color+'">'+esc(s.label)+"</span><b>"+(v==null?"–":v.toFixed(2))+"</b></div>";
-      });
-      tip.innerHTML=html; tip.style.display="block";
-      var card=(tip.parentElement||box).getBoundingClientRect();
-      var tx=ev.clientX-card.left+12;
-      if(tx+180>card.width) tx=ev.clientX-card.left-190;
-      tip.style.left=tx+"px"; tip.style.top=(ev.clientY-card.top-6)+"px";
-    });
-    $(pfx+"hv").addEventListener("mouseleave",function(){tip.style.display="none";xh.style.display="none";});
+    // the shared readout: date + every series' value at the nearest point, marker on each line
+    var xsAll=[]; for(var i3=0;i3<nn;i3++) xsAll.push(X(i3));
+    hvSpec(pfx+"chart",{W:W,xs:xsAll,labels:xlabels,vline:[mT,H-mB],r:3.2,fmt:function(v){return v.toFixed(2);},
+      series:series.map(function(s){ return {name:s.label,color:s.color,vals:s.vals,ys:s.vals.map(function(v){return v==null?null:Y(v);})}; })});
+    var svgEl=$(pfx+"chart"); if(svgEl) svgEl.setAttribute("data-hv",pfx+"chart");
   }
 
   /* ---------- portfolio panel ---------- */
@@ -2171,7 +2241,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)
           +'<div class="vl">'+(isYb?w1.toFixed(2)+"%":n(w1,w1<10?3:(w1<100?2:(w1<10000?1:0))))+'</div>'
           +'<div class="ch '+(chb>=0?"up":"dn")+'">'+chTxtb+' <span class="mut">'+(res==="30m"?"1D":"1W")+'</span></div>'
-          +sparkSvg(bb.map(function(x){return Number(x[1]);}),120,34,chb>=0)+'</div>';
+          +sparkSvg(bb.map(function(x){return Number(x[1]);}),120,34,chb>=0,{labels:bb.map(function(x){return hvJst(x[0]);}),fmt:isYb?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
         return;
       }
       var arr=(MACRO.by[sym]||[]).filter(function(x){return x.d>=startD;});
@@ -2182,19 +2252,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var chTxt=isY?((chg>=0?"+":"")+chg.toFixed(0)+"bp"):((chg>=0?"+":"")+chg.toFixed(1)+"%");
       var up=chg>=0;
       var t0=Date.parse(arr[0].d), t1=Date.parse(arr[arr.length-1].d);
-      var vals=arr.map(function(x){return Number(x.close);});
-      var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
-      if(!(mx-mn>0)) mx=mn+1e-9;
-      var d5="";
-      for(var i=0;i<arr.length;i++){
-        var xx=t1>t0?(Date.parse(arr[i].d)-t0)/(t1-t0)*120:0;
-        var yy=(1-(vals[i]-mn)/(mx-mn))*30+2;
-        d5+=(i?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
-      }
       h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)
         +'<div class="vl">'+(isY?v1.toFixed(2)+"%":n(v1,v1<10?3:(v1<100?2:(v1<10000?1:0))))+'</div>'
         +'<div class="ch '+(up?"up":"dn")+'">'+chTxt+'</div>'
-        +'<svg viewBox="0 0 120 34" preserveAspectRatio="none" style="width:100%;height:34px;display:block;margin-top:3px"><path d="'+d5+'" fill="none" stroke="'+(up?"var(--up)":"var(--dn)")+'" stroke-width="1.1"/></svg></div>';
+        +sparkSvg(arr.map(function(x){return Number(x.close);}),120,34,up,{xs:arr.map(function(x){return t1>t0?(Date.parse(x.d)-t0)/(t1-t0)*120:0;}),labels:arr.map(function(x){return x.d;}),fmt:isY?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
     });
     el.innerHTML=h;
   }
@@ -2258,7 +2319,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         var last=arr[arr.length-1], prev=arr.length>1?arr[arr.length-2]:null;
         var r2=prev?Number(last.close)/Number(prev.close)-1:null;
         h2+='<div class="mtile">'+lbLine(m.label,"",m.market_time)+'<div class="vl">'+n(Number(last.close),2)+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div>"
-          +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0)+"</div>";
+          +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0,{labels:arr.slice(-64).map(function(x){return x.d;})})+"</div>";
       });
       tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
     }
@@ -2351,7 +2412,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         var last=arr[arr.length-1], prev=arr.length>1?arr[arr.length-2]:null;
         var r2=prev?Number(last.close)/Number(prev.close)-1:null;
         h2+='<div class="mtile">'+lbLine(m.label,"",m.market_time)+'<div class="vl">'+n(Number(last.close),2)+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div>"
-          +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0)+"</div>";
+          +sparkSvg(arr.slice(-64).map(function(x){return Number(x.close);}),120,22,r2==null?null:r2>=0,{labels:arr.slice(-64).map(function(x){return x.d;})})+"</div>";
       });
       tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
     }
@@ -3254,7 +3315,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         if(!arr||arr.length<2){ el2.innerHTML='<span class="mut" style="font-size:9.5px">1M chart unavailable</span>'; return; }
         var vals=arr.map(function(x){return x[1];});
         var up2=vals[vals.length-1]>=vals[0];
-        el2.innerHTML='<div class="d" style="margin:0 0 1px">1M PRICE</div>'+sparkSvg(vals,180,34,up2);
+        el2.innerHTML='<div class="d" style="margin:0 0 1px">1M PRICE</div>'+sparkSvg(vals,180,34,up2,{labels:arr.map(function(x){return typeof x[0]==="number"?hvJst(x[0]).slice(0,5):String(x[0]).slice(0,10);})});
       });
     });
     hm.addEventListener("mouseleave",function(){ tip.style.display="none"; hmCur=null; });
