@@ -973,7 +973,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var groups=[["EQUITY","EQUITY INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],
       ["COMMODITY","COMMODITIES",["CL=F","BZ=F","NG=F","GC=F","SI=F","HG=F","URA","ZW=F","SB=F"]],
       ["FX","FX &amp; DOLLAR"]];
-    var now=Date.now(), anyClosed=false, latest=0, oldest=0;
+    var now=Date.now(), anyClosed=false, anyOpen=false, latest=0, oldest=0;
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
     var barsData=null;
     if(barsRes){ var bc=BARSC[barsRes]; if(bc&&bc.data){ barsData=bc.data; } else { ensureBarsAll(barsRes); } }
@@ -1131,6 +1131,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         var isOpen=symOpen(m.symbol);
         var closed=(!isOpen)&&(mt?(now-mt>3*3600e3):false);
         if(closed) anyClosed=true;
+        if(isOpen) anyOpen=true;
         var badge=isOpen?'<span class="mopen" title="'+esc(OPEN_TIP)+'">OPEN</span>'
                         :(closed?'<span class="mclosed">CLOSED</span>':"");
         if(m.kind==="yield"||m.kind==="yield10x"){
@@ -1153,6 +1154,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     box.innerHTML=h||'<div class="empty">&ndash;</div>';
     var parts=[];
+    if(anyOpen) parts.push("OPEN = exchange in session and still printing");
     if(anyClosed) parts.push("CLOSED markets show last close");
     // The stamp beside each label is the data point's OWN timestamp, not a download time, and the
     // series legitimately run at different vintages (FRED publishes a day or two behind, 24h FX
@@ -2249,7 +2251,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       advOf:function(i){ var s2=stq(i.code); return Number(s2.adv20_value)>0?Number(s2.adv20_value):null; },
       tconv:null, turn:(FLOW&&FLOW.jpm)||{}
     });
-    $("ms-aux").textContent=quotesFresh()?"live (30-min refresh)":"as of last close";
+    // Name the cadence that is actually running rather than a fixed string: the macro payload
+    // reloads every 5 minutes inside the Asian sessions and every 30 outside them.
+    $("ms-aux").textContent=quotesFresh()?("live \u00b7 "+(anyVenueInSession()?"5":"30")+"-min refresh"):"as of last close";
   }
   function renderExtras(){
     var p=S.players.find(function(x){return x.id===selPid;})||S.players[0];
