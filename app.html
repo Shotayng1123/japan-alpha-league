@@ -96,8 +96,11 @@ body.cmp .nwrow{padding:1px 5px}
 .nwc.neu{color:#9aa8b8;border-color:#3a4450}
 
 /* sectors + movers (market tabs) */
-.msg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:1150px){.msg2{grid-template-columns:1fr}}
+.msg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media(max-width:1150px){.msg2{grid-template-columns:minmax(0,1fr)}}
+.msg2>div{min-width:0}
+/* the mobile-only period chips on the sector tables (see the phone block) */
+.mper{display:none}
 table.secT{width:100%;font-size:11px;border-collapse:collapse}
 table.secT th{font-size:9px;padding:3px 4px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--bord);text-align:right;white-space:nowrap}
 table.secT th.l{text-align:left}
@@ -126,6 +129,7 @@ table.secT tbody tr.sech>td.num>.pen{display:inline-block;box-sizing:border-box;
 .cz.mom{color:var(--up);border-color:#1d5c3a}
 .cz.idio{color:var(--mut);border-color:#2c2d31}
   .secdet td{padding:0!important;background:#0a0c10;border-bottom:1px solid var(--bord)}
+  .secdet .sdw{width:0;min-width:100%;overflow-x:auto}
   .secdet table{width:100%;border-collapse:collapse}
   .secdet td.c{padding:2px 8px!important;background:transparent;border-bottom:0;font-size:10.5px;white-space:nowrap}
   /* Ticker and company name were one right-aligned cell, so every row started at a different x
@@ -159,6 +163,7 @@ table.secT tbody tr.sech>td.num>.pen{display:inline-block;box-sizing:border-box;
 
 #chartbox{position:relative}
 #chart{width:100%;display:block}
+.pbody svg[id$="chart"]{width:100%;display:block}
 #ctip,#mc-tip{position:absolute;pointer-events:none;background:#0f1013;border:1px solid var(--bord2);padding:6px 9px;font-size:11px;display:none;z-index:5;min-width:170px}
 #ctip .d,#mc-tip .d{color:var(--mut)}
 #ctip .row,#mc-tip .row{display:flex;justify-content:space-between;gap:12px}
@@ -225,10 +230,10 @@ tbody tr.pick{cursor:pointer}
 .msgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 @media(max-width:1000px){.msgrid{grid-template-columns:1fr}}
 .mgc{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:8px;margin:2px 0 4px}
-@media(max-width:560px){.mgc{grid-template-columns:repeat(2,1fr)}}
-.mtile{border:1px solid var(--bord);padding:5px 8px 6px;border-radius:2px}
+@media(max-width:560px){.mgc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mtile{border:1px solid var(--bord);padding:5px 8px 6px;border-radius:2px;min-width:0}
 .mtile .lb{font-size:9px;color:var(--mut);letter-spacing:.06em;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
-.mtile .lbtxt{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
+.mtile .lbtxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .mtile .asof{flex:0 0 auto;font-size:8.5px;letter-spacing:.02em;color:var(--mut);opacity:.72;font-variant-numeric:tabular-nums}
 .mtile .asof.old{color:var(--warn);opacity:1}
 .mtile .vl{font-size:13.5px;font-weight:600;margin-top:1px}
@@ -277,15 +282,30 @@ table.fst .fsb{display:inline-block;vertical-align:baseline;height:7px;backgroun
 [data-snap]:hover{color:var(--amber)}
 .hidden-view{display:none!important}
 
-/* mobile (iPhone-width) */
+/* phone width (iPhone 375-430, Android 360-412). Widths are fluid throughout: two-column grids use
+   minmax(0,1fr) so a long label truncates instead of widening its column, and only tables of many
+   columns (universe, leaderboard, blotter, positions) scroll sideways -- inside their own panel. */
 @media(max-width:760px){
   body{font-size:12px}
   #wrap{padding:8px 6px 40px}
   #grid{gap:8px}
-  #topbar{gap:8px;padding:6px 8px}
-  #nav{width:100%;order:3;margin-left:0;flex-wrap:wrap;row-gap:3px}
-  #nav a{flex:1 1 auto;min-width:0;text-align:center;padding:5px 6px;font-size:10px;letter-spacing:.05em}
-  #topbar .bmq{margin-left:0;width:100%;gap:10px;flex-wrap:wrap}
+  /* top bar as a 4-row grid: brand + clock / market status + MSCI JP / DATA time + login + REPORT /
+     the tabs. It scrolls with the page: a sticky header this tall would take a third of the screen. */
+  #topbar{position:static;display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"brand brand clock" "stat bm bm" "upd login rep" "nav nav nav";gap:4px 8px;padding:6px 8px;align-items:center}
+  #topbar .brand{grid-area:brand;font-size:12.5px;letter-spacing:.1em}
+  #topbar .bmq{display:contents}
+  #clock{grid-area:clock;font-size:10.5px}
+  #mktstat{grid-area:stat;font-size:10.5px}
+  #bmlvl{grid-area:bm;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #upd{grid-area:upd;font-size:10px!important}
+  #loginchip{grid-area:login;justify-self:end;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #repbtn{grid-area:rep}
+  #topbar .chip{padding:2px 8px;font-size:10.5px}
+  #sz-ctl,#cmp-ctl{display:none}
+  /* tabs: five equal buttons on the first row, the three MSCI tabs equal on the second */
+  #nav{grid-area:nav;width:100%;margin:2px 0 0;display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px}
+  #nav a{grid-column:span 3;min-width:0;text-align:center;padding:6px 2px;font-size:10px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-color:var(--bord)}
+  #nav a:nth-child(n+6){grid-column:span 5}
   .pbody{padding:6px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{font-size:11px}
   td,th{padding:4px 6px}
@@ -301,13 +321,43 @@ table.fst .fsb{display:inline-block;vertical-align:baseline;height:7px;backgroun
   .phead{flex-wrap:wrap;row-gap:4px}
   .phead .aux{margin-left:0;width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:3px}
   .phead .aux .chip-sm{margin-left:0}
-  /* News + econ rows: on a phone the fixed-width meta columns squeezed .nwh to 0px, so no
-     headline or event name rendered at all. Wrap instead: meta on line 1, title on line 2,
-     source on line 3. */
-  .nwrow{flex-wrap:wrap;white-space:normal;row-gap:1px}
-  .nwrow>*{order:1}
-  .nwh{flex:1 1 100%;order:2;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
-  .nwsrc{order:3;flex:1 1 100%;width:auto;text-align:right;font-size:9px;opacity:.7;overflow:visible}
+  /* chip rows inside a panel body (chart ranges, GLOBAL MARKETS period, heat-map period) wrap
+     within the width instead of running under the edge */
+  .pbody [id$="-ctl"]{display:inline-flex;flex-wrap:wrap;gap:3px;vertical-align:middle}
+  .pbody [id$="-ctl"] .chip-sm{margin-left:0}
+  /* market tiles: two columns that share the width exactly */
+  .mgc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mtile .lb{gap:4px}
+  /* sectors + movers: one column that fits. The five period columns collapse to the one picked with
+     the chips (body.mp-*); the movers' name cell truncates instead of widening the table. */
+  .msg2{gap:10px}
+  .msg2 .minih .mut{display:none}
+  .mper{display:inline-flex;margin-left:6px;vertical-align:middle}
+  .mper .chip-sm{margin-left:3px;padding:0 6px}
+  table.secT .pc{display:none}
+  body.mp-1d table.secT .p1d,body.mp-1w table.secT .p1w,body.mp-1m table.secT .p1m,body.mp-3m table.secT .p3m,body.mp-12m table.secT .p12m{display:table-cell}
+  table.secT td.mnm{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+  table.secT td.l{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+  .nf{width:64px}
+  /* news: one item = one line. Time, headline, then the sentiment/ticker chips and the source, which
+     give way first (they shrink to nothing before the headline loses a character); a headline that is
+     still too long ends in an ellipsis. Asset-class and sector chips are not shown on a phone. */
+  .nwrow{gap:6px;padding:3px 4px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+  .nwt{width:auto;font-size:10px}
+  .nwsig{display:none}
+  .nwh{order:2;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .nwtags{order:3;flex:0 1000 auto;min-width:0;overflow:hidden;display:flex;grid-template-columns:none;gap:3px}
+  .nwtags>span:nth-child(1),.nwtags>span:nth-child(3){display:none}
+  .nwsrc{order:4;flex:0 500 auto;width:auto;min-width:0;font-size:9px;text-align:right;overflow:hidden;text-overflow:ellipsis}
+  /* economic calendar: two lines -- when / where / importance on the first, the release on the second */
+  .ecrow{flex-wrap:wrap;row-gap:1px}
+  .ecrow .nwt{width:auto!important;order:1}
+  .ecrow .nwtags{order:1;flex:none;display:grid;grid-template-columns:auto}
+  .ecrow .nwtags>span:nth-child(1){display:inline-block}
+  .ecrow .nwsig{display:inline;order:1;width:auto}
+  .ecrow .ekbq{order:1}
+  .ecrow .nwh{order:5;flex:1 1 60%;min-width:0}
+  .ecrow .nwsrc{order:6;flex:0 0 auto}
   .icons{grid-template-columns:repeat(8,1fr)}
 }
 
@@ -568,9 +618,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         <table class="mini" style="margin-bottom:10px"><tbody id="ms-idx"><tr><td class="l empty">Loading…</td></tr></tbody></table>
         <div class="msg2">
           <div>
-            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg P/E FY-E, shaded low&ndash;high across sectors &middot; net flow</span></h4>
+            <h4 class="minih">SECTORS <span class="mper"><span class="chip-sm on" data-mper="1d">1D</span><span class="chip-sm" data-mper="1w">1W</span><span class="chip-sm" data-mper="1m">1M</span><span class="chip-sm" data-mper="3m">3M</span><span class="chip-sm" data-mper="12m">12M</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; BM-weighted returns &middot; simple-avg P/E FY-E, shaded low&ndash;high across sectors &middot; net flow</span></h4>
             <table class="secT">
-              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th class="l">NET FLOW</th></tr></thead>
+              <thead><tr><th class="l">SECTOR</th><th class="pc p1d">1D</th><th class="pc p1w">1W</th><th class="pc p1m">1M</th><th class="pc p3m">3M</th><th class="pc p12m">12M</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th class="l">NET FLOW</th></tr></thead>
               <tbody id="ms-sec"><tr><td class="l empty" colspan="8">Loading…</td></tr></tbody>
             </table>
           </div>
@@ -599,9 +649,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody" style="border-bottom:1px solid var(--bord)">
         <div class="msg2">
           <div>
-            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; index-weighted returns &middot; net flow</span></h4>
+            <h4 class="minih">SECTORS <span class="mper"><span class="chip-sm on" data-mper="1d">1D</span><span class="chip-sm" data-mper="1w">1W</span><span class="chip-sm" data-mper="1m">1M</span><span class="chip-sm" data-mper="3m">3M</span><span class="chip-sm" data-mper="12m">12M</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; index-weighted returns &middot; net flow</span></h4>
             <table class="secT">
-              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th class="l">NET FLOW</th></tr></thead>
+              <thead><tr><th class="l">SECTOR</th><th class="pc p1d">1D</th><th class="pc p1w">1W</th><th class="pc p1m">1M</th><th class="pc p3m">3M</th><th class="pc p12m">12M</th><th class="l">NET FLOW</th></tr></thead>
               <tbody id="wm-sec"><tr><td class="l empty" colspan="7">Loading…</td></tr></tbody>
             </table>
           </div>
@@ -652,9 +702,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       <div class="pbody" style="border-bottom:1px solid var(--bord)">
         <div class="msg2">
           <div>
-            <h4 class="minih">SECTORS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; index-weighted returns &middot; net flow</span></h4>
+            <h4 class="minih">SECTORS <span class="mper"><span class="chip-sm on" data-mper="1d">1D</span><span class="chip-sm" data-mper="1w">1W</span><span class="chip-sm" data-mper="1m">1M</span><span class="chip-sm" data-mper="3m">3M</span><span class="chip-sm" data-mper="12m">12M</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; index-weighted returns &middot; net flow</span></h4>
             <table class="secT">
-              <thead><tr><th class="l">SECTOR</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>12M</th><th class="l">NET FLOW</th></tr></thead>
+              <thead><tr><th class="l">SECTOR</th><th class="pc p1d">1D</th><th class="pc p1w">1W</th><th class="pc p1m">1M</th><th class="pc p3m">3M</th><th class="pc p12m">12M</th><th class="l">NET FLOW</th></tr></thead>
               <tbody id="am-sec"><tr><td class="l empty" colspan="7">Loading…</td></tr></tbody>
             </table>
           </div>
@@ -951,8 +1001,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   tickClock(); setInterval(tickClock,15000);
 
   /* ---------- display size ---------- */
+  var phoneMQ=window.matchMedia?window.matchMedia("(max-width:760px)"):null;
+  function isPhone(){ return !!(phoneMQ&&phoneMQ.matches); }
   function applyZoom(z){
-    document.body.style.zoom=z;
+    // the size chips are hidden on a phone, and a zoomed body would overflow the fluid grids there
+    document.body.style.zoom=isPhone()?"1":z;
     Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-sz")===String(z)?" on":"");
     });
@@ -960,6 +1013,38 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   var savedZoom="1";
   try{ savedZoom=localStorage.getItem("jal_zoom")||"1"; }catch(e){}
   applyZoom(savedZoom);
+
+  /* sector-table period on a phone (the desktop shows every column) */
+  var MPERS=["1d","1w","1m","3m","12m"];
+  function applyMper(p){
+    if(MPERS.indexOf(p)<0) p="1d";
+    MPERS.forEach(function(q){ document.body.classList.remove("mp-"+q); });
+    document.body.classList.add("mp-"+p);
+    Array.prototype.forEach.call(document.querySelectorAll(".mper [data-mper]"),function(c2){
+      c2.className="chip-sm"+(c2.getAttribute("data-mper")===p?" on":"");
+    });
+  }
+  var savedMper="1d";
+  try{ savedMper=localStorage.getItem("jal_mper")||"1d"; }catch(e){}
+  applyMper(savedMper);
+  Array.prototype.forEach.call(document.querySelectorAll(".mper [data-mper]"),function(c2){
+    c2.addEventListener("click",function(){
+      var p=c2.getAttribute("data-mper");
+      try{ localStorage.setItem("jal_mper",p); }catch(e){}
+      applyMper(p);
+    });
+  });
+  // a rotation or a window resize changes which layout applies: re-apply the zoom rule and redraw
+  // the charts (their viewBox follows the box width on a phone)
+  var rsT=null;
+  window.addEventListener("resize",function(){
+    if(rsT) clearTimeout(rsT);
+    rsT=setTimeout(function(){
+      rsT=null;
+      applyZoom(savedZoom);
+      if(S){ try{ renderChart(); renderMarketChart(); renderWorldChart(); renderAsiaChart(); }catch(e){} }
+    },250);
+  });
 
   /* compact density (per-device) */
   function applyCmp(on){
@@ -979,6 +1064,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     c2.addEventListener("click",function(){
       var z=c2.getAttribute("data-sz");
       try{ localStorage.setItem("jal_zoom",z); }catch(e){}
+      savedZoom=z;
       applyZoom(z);
       if(S){ renderHM(); }
     });
@@ -1646,7 +1732,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     leg.innerHTML=series.map(function(s){
       return '<span><span class="sw" style="background:'+s.color+'"></span>'+esc(s.label)+"</span>";
     }).join("")+(note?'<span class="mut">'+esc(note)+"</span>":"");
-    var W=560,H=250,mL=40,mR=8,mT=8,mB=20,iW=W-mL-mR,iH=H-mT-mB;
+    // On a phone the viewBox is the box's own width, so axis text keeps its size instead of being
+    // scaled down with the 560-unit desktop canvas; fewer x labels, and the end labels anchored
+    // inward so none is clipped at the edge.
+    var cw=(box&&box.clientWidth)||0, narrow=cw>0&&cw<600;
+    var W=narrow?Math.max(240,Math.round(cw)):560,H=250,mL=40,mR=8,mT=8,mB=20,iW=W-mL-mR,iH=H-mT-mB;
     var all=[]; series.forEach(function(s){s.vals.forEach(function(v){if(v!=null)all.push(v);});});
     var lo=Math.min.apply(null,all),hi=Math.max.apply(null,all);
     var pad=Math.max((hi-lo)*0.08,0.4); lo-=pad;hi+=pad;
@@ -1668,9 +1758,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
         +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="var(--mut)">'+v.toFixed(1)+"</text>";
     }
-    var kk=Math.max(1,Math.round((nn-1)/5));
+    var kk=Math.max(1,Math.round((nn-1)/(narrow?3:5)));
     for(var i2=0;i2<nn;i2+=kk){
-      svg+='<text x="'+X(i2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="var(--mut)">'+esc(xlabels[i2])+"</text>";
+      var xx=X(i2), anc=xx<mL+30?"start":(xx>W-mR-30?"end":"middle");
+      svg+='<text x="'+xx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+anc+'" font-size="9.5" fill="var(--mut)">'+esc(xlabels[i2])+"</text>";
     }
     // Every series carries a dash code (0 solid, 1 dashed, 3 dotted) that this renderer had been
     // ignoring -- the documented "Net TR drawn dotted" was in fact solid. Benchmarks are dashed and
@@ -2401,9 +2492,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     });
     sl.sort(function(a,b){return (b.d1==null?-9:b.d1)-(a.d1==null?-9:a.d1);});
     var secRet={}; sl.forEach(function(s){secRet[s.k]=s.d1;});
-    var cell=function(v,tip){
-      if(v==null) return '<td class="num"><span class="mut">&ndash;</span></td>';
-      return '<td class="num '+cls(v)+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+pct(v,1)+(tip?'<span class="domf">!</span>':'')+'</td>';
+    var cell=function(v,tip,p){
+      var pc=p?' pc p'+p:'';
+      if(v==null) return '<td class="num'+pc+'"><span class="mut">&ndash;</span></td>';
+      return '<td class="num '+cls(v)+pc+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+pct(v,1)+(tip?'<span class="domf">!</span>':'')+'</td>';
     };
     // Cross-sector P/E shading, in the spirit of a spreadsheet colour scale: each cell is placed
     // linearly on today's low-high range of the very same statistic shown in the column, so the
@@ -2433,7 +2525,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       // unshaded and excluded from the range.
       var dpe=mem.map(function(x){return (x.pe!=null&&x.pe>0&&x.pe<200)?x.pe:null;}).filter(function(v){return v!=null;});
       var dLo=dpe.length?Math.min.apply(null,dpe):null, dHi=dpe.length?Math.max.apply(null,dpe):null;
-      var h='<tr class="secdet" id="'+SPFX+si+'" hidden><td colspan="'+cfg.cols+'"><table><tbody>'
+      var h='<tr class="secdet" id="'+SPFX+si+'" hidden><td colspan="'+cfg.cols+'"><div class="sdw"><table><tbody>'
         +'<tr class="hd"><td class="c tk">ticker</td><td class="c nm">name</td><td class="c">wgt</td><td class="c">1d</td>'
         +'<td class="c">contrib</td>'+(cfg.showPe?'<td class="c">p/e fy-e</td>':'')
         +'<td class="c">vol/adv</td><td class="c">driver</td></tr>';
@@ -2453,11 +2545,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       });
       h+='<tr class="hd"><td class="c nm" colspan="2">'+mem.length+' names</td><td class="c num">'+n(wsum,2)+'%</td>'
         +'<td class="c" colspan="'+(cfg.showPe?5:4)+'">contrib = index weight x 1D return, in percentage points of the index</td></tr>';
-      return h+'</tbody></table></td></tr>';
+      return h+'</tbody></table></div></td></tr>';
     }
     secB.innerHTML=sl.length?sl.map(function(s,si){
       return '<tr class="sech" data-sec="'+SPFX+si+'"><td class="l">'+esc(String(s.k).slice(0,18))+'<span class="secx">'+(s.mem?s.mem.length:0)+'</span></td>'
-        +cell(s.d1,s.tip.d1)+cell(s["1w"],s.tip["1w"])+cell(s["1m"],s.tip["1m"])+cell(s["3m"],s.tip["3m"])+cell(s["12m"],s.tip["12m"])
+        +cell(s.d1,s.tip.d1,"1d")+cell(s["1w"],s.tip["1w"],"1w")+cell(s["1m"],s.tip["1m"],"1m")+cell(s["3m"],s.tip["3m"],"3m")+cell(s["12m"],s.tip["12m"],"12m")
         +(cfg.showPe?('<td class="num"'+peBg(s.pe)+(s.pe==null?'':' title="'+esc('simple average of P/E FY-E \u2014 price / company-guidance EPS for the current fiscal year, not FY+1 and not consensus. outliers removed (PE<=0 or >200). median '+n(s.peMed,1)+'x, range '+n(s.peLo,1)+'-'+n(s.peHi,1)+'x, '+s.peCov+' names with data. shading places this sector at '+Math.round(peT(s.pe)*100)+'% of today\'s '+n(secPeLo,1)+'x-'+n(secPeHi,1)+'x spread across sectors \u2014 a level, not a return')+'"')+'>'
             +(s.pe==null?'<span class="mut">&ndash;</span>':n(s.pe,1)+'<span class="mut pen">n'+s.peN+'</span>')+'</td>'):'')
         +'<td class="l">'+nfBar(s.net)+'</td></tr>'+secDetail(s,si);
@@ -2490,7 +2582,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     function mrow(x){
       var va=(x.adv&&x.adv>0&&x.tv>0)?(x.tv/x.adv):null;
       return '<tr class="pick" data-code="'+esc(x.code)+'">'
-        +'<td class="l"><b data-snap="'+esc(x.code)+'">'+esc(x.code)+'</b> <span class="sub">'+esc(String(x.name||"").slice(0,13))+'</span></td>'
+        +'<td class="l mnm"><b data-snap="'+esc(x.code)+'">'+esc(x.code)+'</b> <span class="sub">'+esc(String(x.name||"").slice(0,13))+'</span></td>'
         +'<td class="num '+cls(x.r)+'">'+pct(x.r)+'</td>'
         +(cfg.showPe?('<td class="num">'+((x.pe!=null&&x.pe>0&&x.pe<200)?n(x.pe,1):'<span class="mut">&ndash;</span>')+'</td>'):'')
         +'<td class="num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
@@ -3691,7 +3783,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var sig=Number(r[4])||3, dots="";
       for(var i=0;i<5;i++) dots+=(i<sig?'&#9679;':'<i>&#9679;</i>');
       var kid=ekbFind(r[3],r[2]), kb=kid?EKB[kid]:null, ri=h.length;
-      h.push('<div class="nwrow'+(kb?' hasKb':'')+'"'+(kb?' data-ekb="'+ri+'" style="cursor:pointer'+(past?';opacity:.42':(isToday?';background:#141109':''))+'"':(past?' style="opacity:.42"':(isToday?' style="background:#141109"':'')))+'>'
+      h.push('<div class="nwrow ecrow'+(kb?' hasKb':'')+'"'+(kb?' data-ekb="'+ri+'" style="cursor:pointer'+(past?';opacity:.42':(isToday?';background:#141109':''))+'"':(past?' style="opacity:.42"':(isToday?' style="background:#141109"':'')))+'>'
         +'<span class="nwt" style="width:84px">'+esc(lab)+'</span>'
         +'<span class="nwt" style="width:56px">'+esc(r[1])+'</span>'
         +'<span class="nwtags"><span class="nwc'+(r[2]==="JP"?" tk":"")+'">'+esc(r[2])+'</span></span>'
