@@ -521,10 +521,11 @@ table.fst .fsb{display:inline-block;vertical-align:baseline;height:7px;backgroun
   #repbtn{grid-area:rep}
   #topbar .chip{padding:2px 8px;font-size:10.5px}
   #sz-ctl,#cmp-ctl{display:none}
-  /* tabs: five equal buttons on the first row, the three MSCI tabs equal on the second */
-  #nav{grid-area:nav;width:100%;margin:2px 0 0;display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px}
-  #nav a{grid-column:span 3;min-width:0;text-align:center;padding:6px 2px;font-size:10px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-color:var(--bord)}
-  #nav a:nth-child(n+6){grid-column:span 5}
+  /* tabs: six equal buttons on the first row (LEAGUE … RESEARCH), the three MSCI tabs equal on the second */
+  #nav{grid-area:nav;width:100%;margin:2px 0 0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}
+  #nav a{grid-column:span 1;min-width:0;text-align:center;padding:6px 1px;font-size:9.5px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-color:var(--bord)}
+  #nav a:nth-child(n+7){grid-column:span 2}
+  .rlrow{grid-template-columns:36px 54px minmax(0,1fr) 48px}
   .pbody{padding:6px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{font-size:11px}
   td,th{padding:4px 6px}
@@ -623,6 +624,54 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   #report .rp-sec{margin-bottom:6px}
   #report svg{width:100%;height:auto}
 }
+/* ---- RESEARCH tab (v9.3): JAL AI analyst reports ---- */
+.rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
+.rlrow:hover{background:#1c1610}
+.rlrow.on{background:#1c1610;border-left-color:var(--amber)}
+.rlrow .d{color:var(--mut);font-size:10px;white-space:nowrap}
+.rlrow .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
+.rlrow .t .sub{display:block;font-size:9.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rlrow.on .t,.rlrow:hover .t{color:var(--amber)}
+.rk{display:inline-block;padding:0 4px;border-radius:2px;font-size:8.5px;letter-spacing:.06em;border:1px solid var(--bord2);color:var(--txt2);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rk.deep_dive{color:var(--amber);border-color:var(--amber-dim)}
+.rk.rating_change{color:var(--cyan);border-color:#1f5f78}
+.rt{display:inline-block;padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
+.rt.OVERWEIGHT{background:#123d2a;color:#3fd07e}.rt.NEUTRAL{background:#2a2b30;color:var(--txt2)}.rt.UNDERWEIGHT{background:#4a1a1a;color:#ff6a6a}
+#rl-ctl{display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin-bottom:6px}
+#rl-code{width:64px;background:var(--panel2);border:1px solid var(--bord2);color:var(--txt);font:inherit;font-size:10.5px;padding:1px 5px;border-radius:3px}
+#rl-calls table{width:100%}
+#rr-head{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:2px 0 6px;border-bottom:1px solid var(--bord);margin-bottom:6px}
+#rr-head .tt{font-size:14.5px;color:var(--txt);font-weight:700;flex-basis:100%;line-height:1.3}
+#rr-head .kv{font-size:10.5px;color:var(--mut);white-space:nowrap}#rr-head .kv b{color:var(--txt);font-weight:500}
+#rr-sum{font-size:11.5px;color:var(--txt2);border-left:2px solid var(--amber-dim);padding:2px 8px;margin:0 0 8px;line-height:1.5}
+#rr-tabs{display:flex;gap:3px;margin:0 0 8px}
+.md{font-size:12px;line-height:1.55;color:var(--txt2);max-width:1120px}
+.md h1{font-size:15px;color:var(--txt);margin:6px 0 6px}
+.md h2{font-size:12px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 6px;padding-top:8px;border-top:1px solid var(--bord)}
+.md h3{font-size:11.5px;color:var(--txt);letter-spacing:.04em;margin:12px 0 4px}
+.md p{margin:0 0 8px}.md strong{color:var(--txt)}.md em{color:var(--mut)}
+.md ul,.md ol{padding-left:20px;margin:0 0 8px}.md li{margin:2px 0}
+.md .tw{overflow-x:auto;max-width:100%;margin:6px 0 10px}
+.md table{font-size:10.5px;border-collapse:collapse;width:auto;min-width:0}
+.md th,.md td{padding:2px 7px;border-bottom:1px solid var(--bord);white-space:nowrap;text-align:left}
+.md th{position:static;background:var(--panel2);color:var(--txt2);text-transform:none;letter-spacing:0;font-size:10px}
+.md td.r,.md th.r{text-align:right;font-variant-numeric:tabular-nums}
+.md hr{border:0;border-top:1px solid var(--bord);margin:12px 0}
+.md a{color:var(--cyan)}
+.md code{font-size:11px;background:var(--panel2);padding:0 3px;border-radius:2px}
+.md blockquote{border-left:2px solid var(--bord2);margin:0 0 8px;padding:0 0 0 8px;color:var(--mut)}
+.md .src{color:var(--mut);font-size:10px}
+.rchart{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:8px;margin:4px 0 8px}
+.rchart figure{margin:0;border:1px solid var(--bord);padding:4px 6px 2px;background:var(--panel2)}
+.rchart svg{width:100%;height:auto;display:block}
+.gl{margin:0}.gl dt{color:var(--txt);font-weight:600;margin-top:7px;font-size:11.5px}.gl dd{margin:1px 0 0;color:var(--txt2);font-size:11.5px;line-height:1.5}
+.rsrc{font-size:11px;line-height:1.6}.rsrc .u{color:var(--mut);font-size:10px}
+.rl-empty{color:var(--mut);font-size:11px;padding:8px 4px;line-height:1.5}
+body.term #grid[data-view=research]{grid-template-columns:minmax(0,3fr) minmax(0,9fr);grid-template-rows:minmax(0,1fr)}
+body.term #grid[data-view=research] #p-rl{grid-area:1/1/2/2}
+body.term #grid[data-view=research] #p-rr{grid-area:1/2/2/3}
+body.term .md{font-size:11px}body.term .rlrow{padding:2px 4px;font-size:10.5px}body.term .md table{font-size:10px}
+body.term #rr-head .tt{font-size:13px}
 </style>
 </head>
 <body>
@@ -634,6 +683,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <a href="#trade" data-view="trade">TRADE</a>
     <a href="#market" data-view="market">MARKET</a>
     <a href="#news" data-view="news">NEWS</a>
+    <a href="#research" data-view="research">RESEARCH</a>
     <a href="#japan" data-view="japan">MSCI JAPAN</a>
     <a href="#world" data-view="world">MSCI WORLD</a>
     <a href="#asia" data-view="asia">MSCI ASIA xJ</a>
@@ -645,7 +695,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     <span id="upd" class="mut" style="font-size:10px"></span>
     <span id="sz-ctl"><span class="chip-sm" data-sz="0.85">S</span><span class="chip-sm on" data-sz="1">M</span><span class="chip-sm" data-sz="1.15">L</span><span class="chip-sm" data-sz="1.35">XL</span></span>
     <span id="cmp-ctl" class="chip-sm" title="Terminal layout &mdash; one screen per tab, sized to the window">COMPACT</span>
-    <span id="fs-ctl" class="chip-sm" title="Fullscreen &mdash; hides the header (Esc or click the corner strip to leave; keys 1&ndash;8 switch tabs)">&#9974; FULL</span>
+    <span id="fs-ctl" class="chip-sm" title="Fullscreen &mdash; hides the header (Esc or click the corner strip to leave; keys 1&ndash;9 switch tabs)">&#9974; FULL</span>
     <span class="chip" id="repbtn" title="Download portfolio summary PDF">REPORT</span>
     <span class="chip" id="loginchip">SIGN IN / JOIN</span>
   </span>
@@ -831,6 +881,34 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           <span class="hint2" style="margin:0">Headlines link out &mdash; read with your own subscription.</span>
         </div>
         <div id="nw-list"><div class="empty">Loading news&hellip;</div></div>
+      </div>
+    </div>
+
+    <div id="p-rl" class="panel c4" data-view="research">
+      <div class="phead"><span class="no">13L</span><span class="t">RESEARCH &mdash; JAL AI ANALYST</span><span class="aux" id="rl-aux"></span></div>
+      <div class="pbody">
+        <div id="rl-ctl">
+          <span class="chip-sm on" data-rk="">ALL</span>
+          <span class="chip-sm" data-rk="deep_dive">DEEP DIVE</span>
+          <span class="chip-sm" data-rk="morning_note">MORNING</span>
+          <span class="chip-sm" data-rk="market_wrap">WRAP</span>
+          <span class="chip-sm" data-rk="sector_note">SECTOR</span>
+          <span class="chip-sm" data-rk="long_view">LONG VIEW</span>
+          <span class="chip-sm" data-rk="idea">IDEA</span>
+          <span class="chip-sm" data-rk="rating_change">RATING</span>
+          <input id="rl-code" placeholder="code" maxlength="6" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="rl-list"><div class="empty">Loading research&hellip;</div></div>
+        <h4 class="minih" style="margin-top:10px">TRACK RECORD &mdash; RATED CALLS VS MSCI JAPAN</h4>
+        <div id="rl-calls"><div class="rl-empty">No rated calls yet.</div></div>
+        <div class="hint2">Reports are written by the league&rsquo;s AI analyst (fundamentals-driven, MSCI Japan coverage). Ratings: OVERWEIGHT &ge; +25% upside to the 12-month target, UNDERWEIGHT &le; &minus;15%, NEUTRAL between. Each call is measured from the close on its publication day against MSCI Japan. Not investment advice.</div>
+      </div>
+    </div>
+
+    <div id="p-rr" class="panel c8" data-view="research">
+      <div class="phead"><span class="no">13R</span><span class="t" id="rr-t">REPORT</span><span class="aux" id="rr-aux"></span></div>
+      <div class="pbody" id="rr-body">
+        <div class="empty">Select a report.</div>
       </div>
     </div>
 
@@ -1064,8 +1142,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   try{ var saved=localStorage.getItem("jal_cred"); if(saved) me=JSON.parse(saved); }catch(e){}
 
   /* ---------- view router ---------- */
-  var VIEWS=["league","me","trade","market","news","japan","world","asia"];
-  function curView(){ var h=(location.hash||"").replace("#",""); return VIEWS.indexOf(h)>=0?h:"league"; }
+  var RS={list:null,loading:false,cur:null,doc:{},kind:"",code:"",tab:"report"};   // research tab state (declared before the router runs)
+  var RK_LABEL={deep_dive:"Deep dive",sector_note:"Sector note",market_wrap:"Market wrap",morning_note:"Morning note",long_view:"Long view",idea:"Idea",rating_change:"Rating change"};
+  var VIEWS=["league","me","trade","market","news","research","japan","world","asia"];
+  function curView(){ var h=(location.hash||"").replace("#","").split("/")[0]; return VIEWS.indexOf(h)>=0?h:"league"; }
   function showView(){
     var v=curView();
     $("grid").setAttribute("data-view",v);
@@ -1077,6 +1157,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
     if(v==="news"){ loadNews(); loadEcon(); }
+    if(v==="research"){ loadResearch(); }
     if(v==="japan"||v==="world"||v==="asia"){ loadFlow(); }
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderJapanChart(); renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="asia"){ renderAsiaChart(); renderHMA(); } if(v==="league"||v==="me") renderChart(); }
   }
@@ -1331,7 +1412,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(tag==="input"||tag==="textarea"||tag==="select"||(t&&t.isContentEditable)) return;
     if(ev.key==="Escape"){ if(document.body.classList.contains("full")) setFull(false); return; }
     if(!isTerm()) return;
-    if(ev.key>="1"&&ev.key<="8"&&ev.key.length===1){ location.hash="#"+VIEWS[Number(ev.key)-1]; }
+    if(ev.key>="1"&&ev.key<="9"&&ev.key.length===1){ location.hash="#"+VIEWS[Number(ev.key)-1]; }
   });
   Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
     c2.addEventListener("click",function(){
@@ -3457,7 +3538,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       ["ADV20", advTxt],
       ["P/E FY-E", st2&&st2.per_fwd!=null?Number(st2.per_fwd).toFixed(1)+"x":"–"],
       ["P/E BASIS", st2&&st2.per_fwd!=null?'<span class="mut" style="font-size:9px">company guidance, current FY</span>':"&ndash;"],
-      ["MY POS", pos?n(Number(pos.shares))+" sh":"–"]
+      ["MY POS", pos?n(Number(pos.shares))+" sh":"–"],
+      ["RESEARCH", rsCallCell(code)]
     ];
     $("snap-f").innerHTML=f.map(function(x){return '<div><div class="k">'+x[0]+'</div><div class="v num">'+x[1]+'</div></div>';}).join("");
     function rr(k,v){ return v==null?'':'<span><span class="mut">'+k+'</span> <b class="num '+cls(Number(v))+'">'+pc(Number(v),1)+'</b></span>'; }
@@ -3479,6 +3561,183 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     ev.stopPropagation(); ev.preventDefault();
     openSnap(t.getAttribute("data-snap"));
   });
+
+  /* ---------- RESEARCH (v9.3): JAL AI analyst reports ---------- */
+  function rsWanted(){ var m=(location.hash||"").match(/^#research\/(\d+)/); return m?Number(m[1]):null; }
+  function rsDate(iso){ if(!iso) return "–"; var d=new Date(Date.parse(iso)+9*3600e3); return d.toISOString().slice(0,16).replace("T"," "); }
+  function rsDateShort(iso){ if(!iso) return "–"; var d=new Date(Date.parse(iso)+9*3600e3); return d.toISOString().slice(5,10).replace("-","/"); }
+  function bmLast(){ var b=S&&S.benchmark; return b&&b.length?Number(b[b.length-1].level):null; }
+  // Return since publication for a rated call: stock vs MSCI Japan (both from the publication-day stamps).
+  function rsPerf(r){
+    if(!S||!r||!r.code||r.px_at==null) return null;
+    var lc=lastCloseOf(r.code); var px=lc&&lc.px>0?lc.px:null; var bm=bmLast();
+    if(px==null) return null;
+    var ret=px/Number(r.px_at)-1, idx=(bm!=null&&r.bm_at)?bm/Number(r.bm_at)-1:null;
+    return {px:px,ret:ret,idx:idx,ex:idx==null?null:ret-idx};
+  }
+  function rsCallCell(code){
+    var calls=(S&&S.ai_calls)||[]; var c=calls.find(function(x){return x.code===code;});
+    if(!c) return '<span class="mut" style="font-size:9.5px">no rating yet</span>';
+    return '<span class="rt '+esc(c.rating)+'">'+esc(c.rating)+'</span> <span class="num">TP &yen;'+n(Number(c.tp))+'</span> <span class="mut" style="font-size:9.5px">'+esc(rsDateShort(c.published_at))+'</span> <a href="#research/'+Number(c.id)+'" data-rep="'+Number(c.id)+'" style="font-size:9.5px">open</a>';
+  }
+  function loadResearch(force){
+    if(RS.list&&!force){ renderRList(); renderCalls(); var w0=rsWanted(); if(w0&&w0!==RS.cur) openReport(w0); return; }
+    if(RS.loading) return;
+    RS.loading=true;
+    fetch(API+"?action=reports&n=150").then(function(r){return r.json();}).then(function(j){
+      RS.loading=false; RS.list=(j&&j.rows)||[]; RS.pending=j&&j.pending;
+      renderRList(); renderCalls();
+      var want=rsWanted();
+      if(want) openReport(want); else if(RS.list.length&&!RS.cur) openReport(RS.list[0].id);
+    }).catch(function(){ RS.loading=false; var el=$("rl-list"); if(el) el.innerHTML='<div class="empty">Research unavailable right now.</div>'; });
+  }
+  function renderRList(){
+    var el=$("rl-list"); if(!el) return;
+    if(!RS.list){ el.innerHTML='<div class="empty">Loading research&hellip;</div>'; return; }
+    var code=(RS.code||"").toUpperCase();
+    var rows=RS.list.filter(function(r){
+      if(RS.kind&&r.kind!==RS.kind) return false;
+      if(code&&!(String(r.code||"").indexOf(code)===0||(r.codes||[]).some(function(c){return String(c).indexOf(code)===0;}))) return false;
+      return true;
+    });
+    var aux=$("rl-aux"); if(aux) aux.textContent=rows.length+" / "+RS.list.length+" reports";
+    if(!RS.list.length){ el.innerHTML='<div class="rl-empty">'+(RS.pending?'The research desk is being set up &mdash; the first reports land here.':'No reports yet.')+'</div>'; return; }
+    if(!rows.length){ el.innerHTML='<div class="rl-empty">No reports match.</div>'; return; }
+    el.innerHTML=rows.map(function(r){
+      var p=rsPerf(r);
+      var right=r.rating?('<span class="rt '+esc(r.rating)+'" title="12-month target &yen;'+n(Number(r.tp))+(p?' &middot; since publication '+pc(p.ret*100,1)+(p.ex!=null?' ('+pc(p.ex*100,1)+' vs index)':''):'')+'">'+esc(r.rating.slice(0,2)==="OV"?"OW":(r.rating.slice(0,2)==="UN"?"UW":"N"))+'</span>'+(p&&p.ex!=null?'<div class="num '+cls(p.ex)+'" style="font-size:9.5px">'+pc(p.ex*100,1)+'</div>':'')):'';
+      return '<div class="rlrow'+(RS.cur===r.id?' on':'')+'" data-rep="'+Number(r.id)+'"><span class="d">'+esc(rsDateShort(r.published_at))+'</span><span class="rk '+esc(r.kind)+'" title="'+esc(RK_LABEL[r.kind]||r.kind)+'">'+esc(RK_LABEL[r.kind]||r.kind)+'</span><span class="t" title="'+esc(r.title)+'">'+esc(r.title)+(r.code||(r.codes&&r.codes.length)?'<span class="sub">'+esc(r.code?r.code:(r.codes||[]).slice(0,4).join(" "))+(r.tp?' &middot; TP &yen;'+n(Number(r.tp)):'')+'</span>':'')+'</span><span style="text-align:right">'+right+'</span></div>';
+    }).join("");
+  }
+  function renderCalls(){
+    var el=$("rl-calls"); if(!el||!S) return;
+    var calls=(S.ai_calls||[]).slice();
+    if(!calls.length){ el.innerHTML='<div class="rl-empty">No rated calls yet.</div>'; return; }
+    var h=['<table class="mini"><thead><tr><th class="l">CODE</th><th class="l">CALL</th><th>TP</th><th>AT</th><th>NOW</th><th>RET</th><th>VS IDX</th><th class="l">DATE</th></tr></thead><tbody>'];
+    calls.forEach(function(c){
+      var p=rsPerf(c);
+      h.push('<tr class="click" data-rep="'+Number(c.id)+'"><td class="l"><b data-snap="'+esc(c.code)+'">'+esc(c.code)+'</b></td><td class="l"><span class="rt '+esc(c.rating)+'">'+esc(c.rating.slice(0,2)==="OV"?"OW":(c.rating.slice(0,2)==="UN"?"UW":"N"))+'</span></td><td class="num">'+n(Number(c.tp))+'</td><td class="num">'+(c.px_at!=null?n(Number(c.px_at)):"–")+'</td><td class="num">'+(p?n(p.px):"–")+'</td><td class="num '+(p?cls(p.ret):"")+'">'+(p?pc(p.ret*100,1):"–")+'</td><td class="num '+(p&&p.ex!=null?cls(p.ex):"")+'">'+(p&&p.ex!=null?pc(p.ex*100,1):"–")+'</td><td class="l mut">'+esc(rsDateShort(c.published_at))+'</td></tr>');
+    });
+    h.push('</tbody></table>');
+    el.innerHTML=h.join("");
+  }
+  function openReport(id){
+    id=Number(id); if(!(id>0)) return;
+    RS.cur=id; RS.tab="report";
+    if(curView()==="research"&&rsWanted()!==id){ try{ history.replaceState(null,"","#research/"+id); }catch(e){} }
+    Array.prototype.forEach.call(document.querySelectorAll("#rl-list .rlrow"),function(r){ r.classList.toggle("on",Number(r.getAttribute("data-rep"))===id); });
+    if(RS.doc[id]){ renderReport(); return; }
+    var body=$("rr-body"); if(body) body.innerHTML='<div class="empty">Loading report&hellip;</div>';
+    fetch(API+"?action=report&id="+id).then(function(r){return r.json();}).then(function(j){
+      if(!j||!j.report){ if(body) body.innerHTML='<div class="empty">Report not found.</div>'; return; }
+      RS.doc[id]=j.report; if(RS.cur===id) renderReport();
+    }).catch(function(){ if(body) body.innerHTML='<div class="empty">Report unavailable right now.</div>'; });
+  }
+  function renderReport(){
+    var body=$("rr-body"), r=RS.doc[RS.cur]; if(!body||!r) return;
+    var p=rsPerf(r);
+    var t=$("rr-t"); if(t) t.textContent=(RK_LABEL[r.kind]||"REPORT").toUpperCase()+(r.code?" — "+r.code:"");
+    var aux=$("rr-aux"); if(aux) aux.textContent=rsDate(r.published_at)+" JST";
+    var kv=[];
+    if(r.rating) kv.push('<span class="kv"><span class="rt '+esc(r.rating)+'">'+esc(r.rating)+'</span></span>');
+    if(r.tp) kv.push('<span class="kv">12M TARGET <b class="num">&yen;'+n(Number(r.tp))+'</b></span>');
+    if(r.px_at!=null) kv.push('<span class="kv">PRICE AT PUBLICATION <b class="num">&yen;'+n(Number(r.px_at))+'</b>'+(r.tp?' <span class="num '+cls(Number(r.tp)/Number(r.px_at)-1)+'">('+pc((Number(r.tp)/Number(r.px_at)-1)*100,0)+')</span>':'')+'</span>');
+    if(p) kv.push('<span class="kv">NOW <b class="num">&yen;'+n(p.px)+'</b> <span class="num '+cls(p.ret)+'">'+pc(p.ret*100,1)+'</span>'+(p.ex!=null?' <span class="mut">vs MSCI JP</span> <span class="num '+cls(p.ex)+'">'+pc(p.ex*100,1)+'</span>':'')+'</span>');
+    if(r.codes&&r.codes.length) kv.push('<span class="kv">NAMES '+r.codes.slice(0,8).map(function(c){return '<b data-snap="'+esc(c)+'">'+esc(c)+'</b>';}).join(" ")+'</span>');
+    if(r.sectors&&r.sectors.length) kv.push('<span class="kv">'+esc(r.sectors.join(" · "))+'</span>');
+    if(r.engine) kv.push('<span class="kv">BY <b>'+esc(r.engine)+'</b></span>');
+    var hasCharts=!!(r.valuation&&r.valuation.charts&&r.valuation.charts.length);
+    var hasGl=!!(r.glossary&&r.glossary.length), hasSrc=!!(r.sources&&r.sources.length);
+    var tabs='<div id="rr-tabs"><span class="chip-sm'+(RS.tab==="report"?" on":"")+'" data-rtab="report">REPORT</span>'+(hasCharts?'<span class="chip-sm'+(RS.tab==="charts"?" on":"")+'" data-rtab="charts">CHARTS</span>':'')+(hasGl?'<span class="chip-sm'+(RS.tab==="glossary"?" on":"")+'" data-rtab="glossary">GLOSSARY</span>':'')+(hasSrc?'<span class="chip-sm'+(RS.tab==="sources"?" on":"")+'" data-rtab="sources">SOURCES</span>':'')+'</div>';
+    var doc="";
+    if(RS.tab==="charts"&&hasCharts) doc='<div class="rchart">'+r.valuation.charts.map(function(c){return '<figure>'+rsChart(c)+'</figure>';}).join("")+'</div>';
+    else if(RS.tab==="glossary"&&hasGl) doc='<dl class="gl">'+r.glossary.map(function(g){return '<dt>'+esc(g.term)+'</dt><dd>'+esc(g.plain)+'</dd>';}).join("")+'</dl>';
+    else if(RS.tab==="sources"&&hasSrc) doc='<div class="rsrc">'+r.sources.map(function(x){return '<div>'+(x.url?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.title||x.url)+'</a>':esc(x.title||""))+(x.used_for?' <span class="u">&mdash; '+esc(x.used_for)+'</span>':'')+'</div>';}).join("")+'</div>';
+    else doc='<div class="md">'+mdRender(r.body_md||"")+'</div>';
+    body.innerHTML='<div id="rr-head"><div class="tt">'+esc(r.title)+'</div>'+kv.join("")+'</div>'+(r.summary&&RS.tab==="report"?'<div id="rr-sum">'+esc(r.summary).replace(/\n/g,"<br>")+'</div>':'')+tabs+doc;
+    body.scrollTop=0;
+  }
+  // Minimal Markdown → HTML for the reports: headings, paragraphs, bold/italic/code/links, lists, block
+  // quotes, rules and pipe tables (right-aligned columns from ---: separators). Everything is escaped first.
+  function mdInline(t){
+    t=esc(t);
+    t=t.replace(/`([^`]+)`/g,'<code>$1</code>');
+    t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    t=t.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g,'$1<em>$2</em>');
+    t=t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    return t;
+  }
+  function mdRender(md){
+    var lines=String(md||"").replace(/\r/g,"").split("\n"), out=[], i=0, para=[];
+    function flushP(){ if(para.length){ out.push('<p>'+mdInline(para.join(" "))+'</p>'); para=[]; } }
+    while(i<lines.length){
+      var ln=lines[i];
+      if(/^\s*$/.test(ln)){ flushP(); i++; continue; }
+      var hm=ln.match(/^(#{1,6})\s+(.*)$/);
+      if(hm){ flushP(); var lv=Math.min(hm[1].length,4); out.push('<h'+lv+'>'+mdInline(hm[2].replace(/\s+#+$/,""))+'</h'+lv+'>'); i++; continue; }
+      if(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(ln)){ flushP(); out.push('<hr>'); i++; continue; }
+      if(/^\s*\|/.test(ln)&&i+1<lines.length&&/^\s*\|?\s*:?-{2,}/.test(lines[i+1])){
+        flushP();
+        var cells=function(x){ x=x.trim(); if(x.charAt(0)==="|") x=x.slice(1); if(x.charAt(x.length-1)==="|") x=x.slice(0,-1); return x.split("|").map(function(c){return c.trim();}); };
+        var head=cells(ln), al=cells(lines[i+1]).map(function(c){return /:$/.test(c)&&!/^:/.test(c)?"r":(/^:.*:$/.test(c)?"c":"l");});
+        var h='<div class="tw"><table><thead><tr>'+head.map(function(c,k){return '<th class="'+(al[k]||"l")+'">'+mdInline(c)+'</th>';}).join("")+'</tr></thead><tbody>';
+        i+=2;
+        while(i<lines.length&&/^\s*\|/.test(lines[i])){ var cs=cells(lines[i]); h+='<tr>'+cs.map(function(c,k){return '<td class="'+(al[k]||"l")+'">'+mdInline(c)+'</td>';}).join("")+'</tr>'; i++; }
+        out.push(h+'</tbody></table></div>'); continue;
+      }
+      if(/^\s*[-*]\s+/.test(ln)){ flushP(); var ul=[]; while(i<lines.length&&/^\s*[-*]\s+/.test(lines[i])){ var it=lines[i].replace(/^\s*[-*]\s+/,""); i++; while(i<lines.length&&/^\s{2,}\S/.test(lines[i])&&!/^\s*[-*]\s+/.test(lines[i])){ it+=" "+lines[i].trim(); i++; } ul.push('<li>'+mdInline(it)+'</li>'); } out.push('<ul>'+ul.join("")+'</ul>'); continue; }
+      if(/^\s*\d+[.)]\s+/.test(ln)){ flushP(); var ol=[]; while(i<lines.length&&/^\s*\d+[.)]\s+/.test(lines[i])){ var it2=lines[i].replace(/^\s*\d+[.)]\s+/,""); i++; while(i<lines.length&&/^\s{2,}\S/.test(lines[i])&&!/^\s*\d+[.)]\s+/.test(lines[i])){ it2+=" "+lines[i].trim(); i++; } ol.push('<li>'+mdInline(it2)+'</li>'); } out.push('<ol>'+ol.join("")+'</ol>'); continue; }
+      if(/^\s*>\s?/.test(ln)){ flushP(); var q=[]; while(i<lines.length&&/^\s*>\s?/.test(lines[i])){ q.push(lines[i].replace(/^\s*>\s?/,"")); i++; } out.push('<blockquote>'+mdInline(q.join(" "))+'</blockquote>'); continue; }
+      para.push(ln.trim()); i++;
+    }
+    flushP();
+    return out.join("\n");
+  }
+  // Bar + line chart from a report's valuation.charts entry: {title, cats[], bars:[{name,data[]}], lines:[{name,data[]}], fmt:"n|pct|yen", fmt2}.
+  function rsChart(c){
+    var w=520,h=250,P={l:52,r:(c.lines&&c.lines.length)?54:12,t:30,b:34},iw=w-P.l-P.r,ih=h-P.t-P.b;
+    var cats=c.cats||[],nn=cats.length||1,bw=iw/nn;
+    var bars=c.bars||[],lines=c.lines||[];
+    var vals=[].concat.apply([],bars.map(function(b){return b.data;})); if(!vals.length) vals=[0];
+    var nice=function(v){ if(!(v>0)) return 1; var p=Math.pow(10,Math.floor(Math.log10(v))), s2=v/p; return (s2<=1?1:s2<=2?2:s2<=2.5?2.5:s2<=5?5:10)*p; };
+    var yMax=nice(Math.max.apply(null,vals.concat([0]))*1.08), yMin=Math.min.apply(null,vals)<0?-nice(-Math.min.apply(null,vals)*1.08):0;
+    var ys=function(v){ return P.t+ih-(v-yMin)/(yMax-yMin||1)*ih; };
+    var f1=function(v){ return c.fmt==="pct"?(v.toFixed(0)+"%"):(c.fmt==="yen"?"¥"+n(v):n(v)); };
+    var f2=function(v){ return c.fmt2==="pct"?(v.toFixed(0)+"%"):(c.fmt2==="tn"?(v/1000).toFixed(0)+"tn":n(v)); };
+    var o='<svg viewBox="0 0 '+w+' '+h+'" style="font-family:inherit;font-size:10px">';
+    o+='<text x="'+P.l+'" y="16" font-size="11" fill="#e8e5de" font-weight="600">'+esc(c.title||"")+'</text>';
+    for(var k=0;k<=4;k++){ var v=yMin+(yMax-yMin)*k/4, y=ys(v); o+='<line x1="'+P.l+'" x2="'+(w-P.r)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#26272b"/><text x="'+(P.l-5)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" fill="#b3afa4">'+f1(v)+'</text>'; }
+    var nb=bars.length||1, BCOL=["#6b6e78","#b06a10","#1f7fa3","#2e8f5e","#6f5bbf","#a34a6e"];
+    var bcol=function(bi){ return nb>1?BCOL[bi%BCOL.length]:"#6b6e78"; };
+    bars.forEach(function(b,bi){ (b.data||[]).forEach(function(v,i2){ if(v==null) return; var x=P.l+i2*bw+bw*0.15+(bw*0.7/nb)*bi, y0=ys(0), y1=ys(v); var est=/E$/.test(String(cats[i2]||"")); o+='<rect x="'+x.toFixed(1)+'" y="'+Math.min(y0,y1).toFixed(1)+'" width="'+(bw*0.7/nb).toFixed(1)+'" height="'+Math.abs(y1-y0).toFixed(1)+'" fill="'+bcol(bi)+'"'+(est?' opacity=".55"':'')+'/>'; }); });
+    cats.forEach(function(ct,i2){ o+='<text x="'+(P.l+i2*bw+bw/2).toFixed(1)+'" y="'+(h-P.b+13)+'" text-anchor="middle" fill="#b3afa4" font-size="9">'+esc(ct)+'</text>'; });
+    if(lines.length){
+      var lv=[].concat.apply([],lines.map(function(l){return l.data;})).filter(function(x){return x!=null;});
+      var lMax=nice(Math.max.apply(null,lv.concat([0]))*1.1), lMin=Math.min.apply(null,lv)<0?-nice(-Math.min.apply(null,lv)*1.1):0;
+      var ys2=function(v){ return P.t+ih-(v-lMin)/(lMax-lMin||1)*ih; };
+      for(var k2=0;k2<=4;k2++){ var v2=lMin+(lMax-lMin)*k2/4; o+='<text x="'+(w-P.r+5)+'" y="'+(ys2(v2)+3.5).toFixed(1)+'" fill="#b3afa4">'+f2(v2)+'</text>'; }
+      lines.forEach(function(l,li){ var col=li?"#38c8ff":"#ffa028"; var pts=[]; (l.data||[]).forEach(function(v,i2){ if(v!=null) pts.push((P.l+i2*bw+bw/2).toFixed(1)+","+ys2(v).toFixed(1)); }); o+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+col+'" stroke-width="1.6"/>'; (l.data||[]).forEach(function(v,i2){ if(v!=null) o+='<circle cx="'+(P.l+i2*bw+bw/2).toFixed(1)+'" cy="'+ys2(v).toFixed(1)+'" r="2.2" fill="'+col+'"/>'; }); });
+    }
+    var lx=P.l, ly=h-4;
+    bars.forEach(function(b,bi){ o+='<rect x="'+lx+'" y="'+(ly-8)+'" width="9" height="9" fill="'+bcol(bi)+'"/><text x="'+(lx+13)+'" y="'+ly+'" fill="#c6c2b7">'+esc(b.name||"")+'</text>'; lx+=13+String(b.name||"").length*5.6+12; });
+    lines.forEach(function(l,li){ var col=li?"#38c8ff":"#ffa028"; o+='<line x1="'+lx+'" x2="'+(lx+12)+'" y1="'+(ly-4)+'" y2="'+(ly-4)+'" stroke="'+col+'" stroke-width="2"/><text x="'+(lx+16)+'" y="'+ly+'" fill="#c6c2b7">'+esc(l.name||"")+'</text>'; lx+=16+String(l.name||"").length*5.6+12; });
+    return o+'</svg>';
+  }
+  document.addEventListener("click",function(ev){
+    var t=ev.target&&ev.target.closest?ev.target.closest("[data-rep]"):null;
+    if(t&&!(ev.target.closest&&ev.target.closest("[data-snap]"))){
+      ev.preventDefault(); ev.stopPropagation();
+      var id=Number(t.getAttribute("data-rep"));
+      if(snapCode&&$("snapmod")){ $("snapmod").style.display="none"; }
+      if(curView()!=="research"){ location.hash="#research/"+id; } else { openReport(id); }
+      return;
+    }
+    var tb=ev.target&&ev.target.closest?ev.target.closest("[data-rtab]"):null;
+    if(tb){ RS.tab=tb.getAttribute("data-rtab"); renderReport(); return; }
+    var kc=ev.target&&ev.target.closest?ev.target.closest("#rl-ctl [data-rk]"):null;
+    if(kc){ RS.kind=kc.getAttribute("data-rk"); Array.prototype.forEach.call(document.querySelectorAll("#rl-ctl [data-rk]"),function(c2){ c2.classList.toggle("on",c2===kc); }); renderRList(); }
+  });
+  (function(){ var inp=$("rl-code"); if(inp) inp.addEventListener("input",function(){ RS.code=inp.value.trim(); renderRList(); }); })();
 
   /* ---------- earnings calendar ---------- */
 
@@ -4331,8 +4590,10 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     refreshChip();
     renderLB(); renderChart(); renderPF(); renderExtras(); renderActiveBets(); renderTheses(); renderWatchlist(); renderMarketSummary(); renderMarketChart(); renderJapanChart(); renderBlot(); renderHM(); renderUniv(); renderWorldChart(); renderWorldUniv(); renderHMW(); renderWorldSecMov(); renderAsiaChart(); renderAsiaUniv(); renderHMA(); renderAsiaSecMov(); tkPrev();
     if(NEWS) renderNews();
+    if(RS.list){ renderRList(); renderCalls(); if(RS.cur&&RS.doc[RS.cur]&&curView()==="research") renderReport(); }
   }
   setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); } },600000);
+  setInterval(function(){ if(curView()==="research"){ RS.list=null; loadResearch(true); } },900000);
 })();
 </script>
 </body>
