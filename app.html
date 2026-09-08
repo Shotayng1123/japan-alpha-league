@@ -624,7 +624,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   #report .rp-sec{margin-bottom:6px}
   #report svg{width:100%;height:auto}
 }
-/* ---- RESEARCH tab (v9.3): JAL AI analyst reports ---- */
+/* ---- RESEARCH tab (v9.4): JAL AI analyst reports ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#1c1610}
 .rlrow.on{background:#1c1610;border-left-color:var(--amber)}
@@ -667,7 +667,37 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 .gl{margin:0}.gl dt{color:var(--txt);font-weight:600;margin-top:7px;font-size:11.5px}.gl dd{margin:1px 0 0;color:var(--txt2);font-size:11.5px;line-height:1.5}
 .rsrc{font-size:11px;line-height:1.6}.rsrc .u{color:var(--mut);font-size:10px}
 .rl-empty{color:var(--mut);font-size:11px;padding:8px 4px;line-height:1.5}
-body.term #grid[data-view=research]{grid-template-columns:minmax(0,3fr) minmax(0,9fr);grid-template-rows:minmax(0,1fr)}
+
+/* ---- v9.4: one row per report, six fields; the list never scrolls with the report ---- */
+#rl-tbl{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed}
+#rl-tbl th{position:sticky;top:0;z-index:2;background:var(--panel);color:var(--mut);font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:9px;text-align:left;padding:3px 5px;border-bottom:1px solid var(--bord2)}
+#rl-tbl td{padding:4px 5px;border-bottom:1px solid var(--bord);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rl-tbl tr.rrow{cursor:pointer;border-left:2px solid transparent}
+#rl-tbl tr.rrow:hover td{background:#1c1610}
+#rl-tbl tr.rrow.on td{background:#1c1610}
+#rl-tbl tr.rrow.on td.tk{box-shadow:inset 2px 0 0 var(--amber)}
+#rl-tbl td.tk{color:var(--amber);font-weight:600;font-variant-numeric:tabular-nums}
+#rl-tbl td.ti{color:var(--txt)}
+#rl-tbl tr.rrow:hover td.ti{color:var(--amber)}
+#rl-tbl td.au{color:var(--txt2)}
+#rl-tbl td.dt{color:var(--mut);font-variant-numeric:tabular-nums}
+#rl-tbl td.dl{text-align:center}
+.dlb{display:inline-block;padding:0 6px;border:1px solid var(--bord2);border-radius:3px;color:var(--txt2);font-size:9px;letter-spacing:.05em;text-decoration:none;white-space:nowrap;line-height:15px}
+.dlb:hover{border-color:var(--amber-dim);color:var(--amber);background:#1c1610}
+.dlb.off{opacity:.32;pointer-events:none}
+#rr-dl{display:flex;gap:5px;align-items:center;margin-left:auto}
+#rr-dl .dlb{font-size:9.5px;line-height:17px;padding:0 8px}
+/* report figures sit in the JAL format: the charts ship in the terminal palette, so they only need a frame */
+.md .fig{margin:10px 0 12px;border:1px solid var(--bord);border-radius:3px;padding:6px 8px 4px;background:var(--panel2);max-width:920px}
+.md .fig svg{width:100%;height:auto;display:block}
+.md .figmiss{color:var(--mut);font-size:10.5px;padding:6px}
+body.term #grid[data-view=research]{grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:minmax(0,1fr)}
+/* non-terminal (page-scroll) mode: pin the list so it stays put while the report scrolls.
+   --tb is the sticky top bar's height, measured at runtime. */
+@media (min-width:900px){
+  #grid[data-view=research] #p-rl{position:sticky;top:calc(var(--tb,44px) + 8px);align-self:start;max-height:calc(100vh - var(--tb,44px) - 20px);z-index:5}
+  #grid[data-view=research] #p-rl .pbody{overflow:auto;min-height:0}
+}
 body.term #grid[data-view=research] #p-rl{grid-area:1/1/2/2}
 body.term #grid[data-view=research] #p-rr{grid-area:1/2/2/3}
 body.term .md{font-size:11px}body.term .rlrow{padding:2px 4px;font-size:10.5px}body.term .md table{font-size:10px}
@@ -884,7 +914,7 @@ body.term #rr-head .tt{font-size:13px}
       </div>
     </div>
 
-    <div id="p-rl" class="panel c4" data-view="research">
+    <div id="p-rl" class="panel c5" data-view="research">
       <div class="phead"><span class="no">13L</span><span class="t">RESEARCH &mdash; JAL AI ANALYST</span><span class="aux" id="rl-aux"></span></div>
       <div class="pbody">
         <div id="rl-ctl">
@@ -905,7 +935,7 @@ body.term #rr-head .tt{font-size:13px}
       </div>
     </div>
 
-    <div id="p-rr" class="panel c8" data-view="research">
+    <div id="p-rr" class="panel c7" data-view="research">
       <div class="phead"><span class="no">13R</span><span class="t" id="rr-t">REPORT</span><span class="aux" id="rr-aux"></span></div>
       <div class="pbody" id="rr-body">
         <div class="empty">Select a report.</div>
@@ -1145,6 +1175,10 @@ body.term #rr-head .tt{font-size:13px}
   var RS={list:null,loading:false,cur:null,doc:{},kind:"",code:"",tab:"report"};   // research tab state (declared before the router runs)
   var RK_LABEL={deep_dive:"Deep dive",sector_note:"Sector note",market_wrap:"Market wrap",morning_note:"Morning note",long_view:"Long view",idea:"Idea",rating_change:"Rating change"};
   var VIEWS=["league","me","trade","market","news","research","japan","world","asia"];
+  // Height of the sticky top bar, so the pinned research list clears it.
+  function syncTopbarVar(){ var t=$("topbar"); if(!t) return; var h=Math.round(t.getBoundingClientRect().height)||44;
+    document.documentElement.style.setProperty("--tb", h+"px"); }
+  window.addEventListener("resize", syncTopbarVar);
   function curView(){ var h=(location.hash||"").replace("#","").split("/")[0]; return VIEWS.indexOf(h)>=0?h:"league"; }
   function showView(){
     var v=curView();
@@ -1157,7 +1191,7 @@ body.term #rr-head .tt{font-size:13px}
       a.className=a.getAttribute("data-view")===v?"on":"";
     });
     if(v==="news"){ loadNews(); loadEcon(); }
-    if(v==="research"){ loadResearch(); }
+    if(v==="research"){ syncTopbarVar(); loadResearch(); }
     if(v==="japan"||v==="world"||v==="asia"){ loadFlow(); }
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderJapanChart(); renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="asia"){ renderAsiaChart(); renderHMA(); } if(v==="league"||v==="me") renderChart(); }
   }
@@ -3562,7 +3596,7 @@ body.term #rr-head .tt{font-size:13px}
     openSnap(t.getAttribute("data-snap"));
   });
 
-  /* ---------- RESEARCH (v9.3): JAL AI analyst reports ---------- */
+  /* ---------- RESEARCH (v9.4): one row per report, pinned list, PDF + model downloads, inline figures ---------- */
   function rsWanted(){ var m=(location.hash||"").match(/^#research\/(\d+)/); return m?Number(m[1]):null; }
   function rsDate(iso){ if(!iso) return "–"; var d=new Date(Date.parse(iso)+9*3600e3); return d.toISOString().slice(0,16).replace("T"," "); }
   function rsDateShort(iso){ if(!iso) return "–"; var d=new Date(Date.parse(iso)+9*3600e3); return d.toISOString().slice(5,10).replace("-","/"); }
@@ -3603,11 +3637,36 @@ body.term #rr-head .tt{font-size:13px}
     var aux=$("rl-aux"); if(aux) aux.textContent=rows.length+" / "+RS.list.length+" reports";
     if(!RS.list.length){ el.innerHTML='<div class="rl-empty">'+(RS.pending?'The research desk is being set up &mdash; the first reports land here.':'No reports yet.')+'</div>'; return; }
     if(!rows.length){ el.innerHTML='<div class="rl-empty">No reports match.</div>'; return; }
-    el.innerHTML=rows.map(function(r){
+    var h=['<table id="rl-tbl"><colgroup><col style="width:46px"><col><col style="width:74px"><col style="width:46px"><col style="width:46px"><col style="width:42px"><col style="width:42px"></colgroup>',
+           '<thead><tr><th>Ticker</th><th>Report</th><th>Author</th><th>Date</th><th>Report</th><th>PDF</th><th>Model</th></tr></thead><tbody>'];
+    rows.forEach(function(r){
+      var tk=r.code?String(r.code):((r.codes||[])[0]||"\u2014");
+      var kind=(r.kind==="deep_dive"?"Initiation Report":(RK_LABEL[r.kind]||r.kind||""));
+      var name=rsShortName(r);
       var p=rsPerf(r);
-      var right=r.rating?('<span class="rt '+esc(r.rating)+'" title="12-month target &yen;'+n(Number(r.tp))+(p?' &middot; since publication '+pc(p.ret*100,1)+(p.ex!=null?' ('+pc(p.ex*100,1)+' vs index)':''):'')+'">'+esc(r.rating.slice(0,2)==="OV"?"OW":(r.rating.slice(0,2)==="UN"?"UW":"N"))+'</span>'+(p&&p.ex!=null?'<div class="num '+cls(p.ex)+'" style="font-size:9.5px">'+pc(p.ex*100,1)+'</div>':'')):'';
-      return '<div class="rlrow'+(RS.cur===r.id?' on':'')+'" data-rep="'+Number(r.id)+'"><span class="d">'+esc(rsDateShort(r.published_at))+'</span><span class="rk '+esc(r.kind)+'" title="'+esc(RK_LABEL[r.kind]||r.kind)+'">'+esc(RK_LABEL[r.kind]||r.kind)+'</span><span class="t" title="'+esc(r.title)+'">'+esc(r.title)+(r.code||(r.codes&&r.codes.length)?'<span class="sub">'+esc(r.code?r.code:(r.codes||[]).slice(0,4).join(" "))+(r.tp?' &middot; TP &yen;'+n(Number(r.tp)):'')+'</span>':'')+'</span><span style="text-align:right">'+right+'</span></div>';
-    }).join("");
+      var rtip=r.rating?(r.rating+' \u00b7 TP \u00a5'+n(Number(r.tp))+(p?' \u00b7 since publication '+pc(p.ret*100,1)+(p.ex!=null?' ('+pc(p.ex*100,1)+' vs index)':''):'')):'';
+      var badge=r.rating?' <span class="rt '+esc(r.rating)+'" title="'+esc(rtip)+'">'+esc(r.rating.slice(0,2)==="OV"?"OW":(r.rating.slice(0,2)==="UN"?"UW":"N"))+'</span>':'';
+      var pdf=r.pdf_url?'<a class="dlb" href="'+esc(r.pdf_url)+'" target="_blank" rel="noopener noreferrer" download title="Download the report as a PDF">PDF</a>':'<span class="dlb off" title="No PDF attached">PDF</span>';
+      var mdl=r.model_url?'<a class="dlb" href="'+esc(r.model_url)+'" target="_blank" rel="noopener noreferrer" download title="Download the Excel model (live formulas)">XLS</a>':'<span class="dlb off" title="No model attached">XLS</span>';
+      h.push('<tr class="rrow'+(RS.cur===r.id?' on':'')+'" data-rep="'+Number(r.id)+'">'+
+        '<td class="tk" title="'+esc(tk)+'">'+esc(tk)+'</td>'+
+        '<td class="ti" title="'+esc(r.title)+'">'+esc(name)+': '+esc(kind)+badge+'</td>'+
+        '<td class="au" title="JAL AI analyst">'+esc(r.author||"Emma Sato")+'</td>'+
+        '<td class="dt">'+esc(rsDateShort(r.published_at))+'</td>'+
+        '<td class="dl"><a class="dlb" href="#research/'+Number(r.id)+'" data-rep="'+Number(r.id)+'" title="Open the report in the reader">OPEN</a></td>'+
+        '<td class="dl">'+pdf+'</td>'+
+        '<td class="dl">'+mdl+'</td>'+
+      '</tr>');
+    });
+    h.push('</tbody></table>');
+    el.innerHTML=h.join("");
+  }
+  // Company name for the list: the report title up to the first colon, with the ticker in brackets removed.
+  function rsShortName(r){
+    var t=String(r.title||"");
+    var cut=t.split(":")[0];
+    cut=cut.replace(/\s*\(\s*\d{4}\s*\)\s*$/,"").trim();
+    return cut||t;
   }
   function renderCalls(){
     var el=$("rl-calls"); if(!el||!S) return;
@@ -3645,7 +3704,11 @@ body.term #rr-head .tt{font-size:13px}
     if(p) kv.push('<span class="kv">NOW <b class="num">&yen;'+n(p.px)+'</b> <span class="num '+cls(p.ret)+'">'+pc(p.ret*100,1)+'</span>'+(p.ex!=null?' <span class="mut">vs MSCI JP</span> <span class="num '+cls(p.ex)+'">'+pc(p.ex*100,1)+'</span>':'')+'</span>');
     if(r.codes&&r.codes.length) kv.push('<span class="kv">NAMES '+r.codes.slice(0,8).map(function(c){return '<b data-snap="'+esc(c)+'">'+esc(c)+'</b>';}).join(" ")+'</span>');
     if(r.sectors&&r.sectors.length) kv.push('<span class="kv">'+esc(r.sectors.join(" · "))+'</span>');
-    if(r.engine) kv.push('<span class="kv">BY <b>'+esc(r.engine)+'</b></span>');
+    kv.push('<span class="kv">BY <b>'+esc(r.author||"Emma Sato")+'</b>'+(r.engine?' <span class="mut">&middot; '+esc(r.engine)+'</span>':'')+'</span>');
+    var dl='<span id="rr-dl">'+
+      (r.pdf_url?'<a class="dlb" href="'+esc(r.pdf_url)+'" target="_blank" rel="noopener noreferrer" download title="'+esc(r.pdf_name||"Report PDF")+'">&darr; REPORT PDF</a>':'<span class="dlb off">&darr; REPORT PDF</span>')+
+      (r.model_url?'<a class="dlb" href="'+esc(r.model_url)+'" target="_blank" rel="noopener noreferrer" download title="'+esc(r.model_name||"Excel model")+'">&darr; MODEL (XLSX)</a>':'<span class="dlb off">&darr; MODEL (XLSX)</span>')+
+    '</span>';
     var hasCharts=!!(r.valuation&&r.valuation.charts&&r.valuation.charts.length);
     var hasGl=!!(r.glossary&&r.glossary.length), hasSrc=!!(r.sources&&r.sources.length);
     var tabs='<div id="rr-tabs"><span class="chip-sm'+(RS.tab==="report"?" on":"")+'" data-rtab="report">REPORT</span>'+(hasCharts?'<span class="chip-sm'+(RS.tab==="charts"?" on":"")+'" data-rtab="charts">CHARTS</span>':'')+(hasGl?'<span class="chip-sm'+(RS.tab==="glossary"?" on":"")+'" data-rtab="glossary">GLOSSARY</span>':'')+(hasSrc?'<span class="chip-sm'+(RS.tab==="sources"?" on":"")+'" data-rtab="sources">SOURCES</span>':'')+'</div>';
@@ -3653,8 +3716,8 @@ body.term #rr-head .tt{font-size:13px}
     if(RS.tab==="charts"&&hasCharts) doc='<div class="rchart">'+r.valuation.charts.map(function(c){return '<figure>'+rsChart(c)+'</figure>';}).join("")+'</div>';
     else if(RS.tab==="glossary"&&hasGl) doc='<dl class="gl">'+r.glossary.map(function(g){return '<dt>'+esc(g.term)+'</dt><dd>'+esc(g.plain)+'</dd>';}).join("")+'</dl>';
     else if(RS.tab==="sources"&&hasSrc) doc='<div class="rsrc">'+r.sources.map(function(x){return '<div>'+(x.url?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.title||x.url)+'</a>':esc(x.title||""))+(x.used_for?' <span class="u">&mdash; '+esc(x.used_for)+'</span>':'')+'</div>';}).join("")+'</div>';
-    else doc='<div class="md">'+mdRender(r.body_md||"")+'</div>';
-    body.innerHTML='<div id="rr-head"><div class="tt">'+esc(r.title)+'</div>'+kv.join("")+'</div>'+(r.summary&&RS.tab==="report"?'<div id="rr-sum">'+esc(r.summary).replace(/\n/g,"<br>")+'</div>':'')+tabs+doc;
+    else doc='<div class="md">'+rsFigures(mdRender(r.body_md||""),r)+'</div>';
+    body.innerHTML='<div id="rr-head"><div class="tt">'+esc(r.title)+'</div>'+kv.join("")+dl+'</div>'+(r.summary&&RS.tab==="report"?'<div id="rr-sum">'+esc(r.summary).replace(/\n/g,"<br>")+'</div>':'')+tabs+doc;
     body.scrollTop=0;
   }
   // Minimal Markdown → HTML for the reports: headings, paragraphs, bold/italic/code/links, lists, block
@@ -3666,6 +3729,15 @@ body.term #rr-head .tt{font-size:13px}
     t=t.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g,'$1<em>$2</em>');
     t=t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     return t;
+  }
+  // Replace [[chart:id]] markers left in the body with the SVG the report shipped in valuation.figures.
+  function rsFigures(html,r){
+    var figs=(r&&r.valuation&&r.valuation.figures)||null;
+    return String(html).replace(/(?:<p>\s*)?\[\[chart:([a-z0-9_]+)\]\](?:\s*<\/p>)?/g,function(_,id){
+      var f=figs&&figs[id];
+      if(!f||!f.svg) return '<div class="figmiss">[figure '+esc(id)+']</div>';
+      return '<figure class="fig" id="fig-'+esc(id)+'">'+f.svg+'</figure>';
+    });
   }
   function mdRender(md){
     var lines=String(md||"").replace(/\r/g,"").split("\n"), out=[], i=0, para=[];
