@@ -20,6 +20,13 @@
   --sans:'IBM Plex Sans JP','IBM Plex Mono',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
+/* scrollbars: thin and dark, on every scroll box (the default light bar was loud on a black screen) */
+*{scrollbar-width:thin;scrollbar-color:#2a2b30 transparent}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:#2a2b30;border-radius:3px}
+*::-webkit-scrollbar-thumb:hover{background:#3a3b40}
+*::-webkit-scrollbar-corner{background:transparent}
 html,body{background:var(--bg);color:var(--txt);margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.45}
 ::selection{background:#2b4a66}
 a{color:var(--cyan)}
@@ -81,10 +88,11 @@ body.cmp .nwrow{padding:1px 5px}
 body.term{font-size:11px;line-height:1.28;height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction:column}
 body.term #topbar{position:static;flex:none;padding:2px 8px;gap:8px;min-height:0}
 body.term #topbar .brand{font-size:11px;letter-spacing:.1em}
-body.term #topbar .bmq{gap:9px;font-size:11px}
-body.term #topbar .chip{padding:1px 7px;font-size:10px}
-body.term #nav{gap:1px}
-body.term #nav a{padding:2px 8px;font-size:10px;letter-spacing:.06em}
+body.term #topbar .bmq{gap:7px;font-size:10.5px}
+body.term #topbar .chip{padding:1px 6px;font-size:9.5px}
+body.term #topbar .chip-sm{padding:0 5px;margin-left:2px}
+body.term #nav{gap:1px;margin-left:2px}
+body.term #nav a{padding:2px 6px;font-size:9.5px;letter-spacing:.04em}
 body.term #upd{font-size:9.5px!important}
 body.term #fs-ctl{display:inline-block}
 body.full #topbar{display:none}
@@ -137,6 +145,8 @@ body.term .chrow{flex-direction:column;flex-wrap:nowrap;gap:4px;flex:1 1 auto;mi
 body.term .chrow .chbox{flex:1 1 auto;min-height:0;min-width:0;display:flex;overflow:hidden}
 body.term .chrow .chbox>div{flex:1 1 auto;min-height:0;min-width:0}
 body.term .chrow .drvgrid{flex:none;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:auto;gap:4px;min-width:0}
+body.term .chrow .drvgrid .mtile{padding:2px 5px 3px}
+body.term .chrow .drvgrid .mtile svg.spk{height:20px!important}
 
 /* LEAGUE: leaderboard across the top; performance chart over the theses feed; active bets on the right */
 body.term #grid[data-view=league]{grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:auto minmax(0,1fr) minmax(0,1fr)}
@@ -166,34 +176,45 @@ body.term #grid[data-view=trade] #p-theses{grid-area:1/2/2/3}
 
 /* MARKET: eight core tiles over the summary chart on the left; every group as small square-ish
    tiles on the right, flowed into three balanced columns (a group never splits) */
+/* MARKET (Shota 09-08): four quadrants. Top-left = index chart + period table | core 2x2;
+   bottom-left = the next eight, 4x2; the right half = every other indicator as an edge-to-edge
+   grid of tiles (8 columns, no gaps, one header cell per group, rows sized to the height). */
 body.term #grid[data-view=market]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
-body.term #p-mkt{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:auto minmax(0,1fr)}
+body.term #p-mkt{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
 body.term #p-mkt>.phead{grid-column:1/-1}
-body.term #mk-b1{grid-area:2/1/3/2;display:flex;flex-direction:column;overflow:hidden;border-bottom:0!important;border-right:1px solid var(--bord)}
-body.term #mk-b2{grid-area:2/2/3/3;border-bottom:0!important}
-body.term #mc-row{display:contents}
-body.term #mc-drv{order:1;flex:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:auto;gap:4px;margin-bottom:4px;min-width:0}
-body.term #mc-drv .mtile .lb{font-size:9.5px}
-body.term #mc-drv .mtile .vl{font-size:17px}
-body.term #mc-drv .mtile .ch{font-size:11px}
-body.term #mc-drv .mtile svg.spk{height:38px!important}
-body.term #mc-leg{order:2}
-body.term #mk-b1 .chbox{order:3;flex:1 1 auto;min-height:0;min-width:0;display:flex;overflow:hidden}
-body.term #mc-box{flex:1 1 auto;min-height:0;min-width:0}
-body.term #mc-ctlw{order:4;flex:none;margin-top:3px!important}
-body.term #mg-box{column-count:3;column-gap:6px}
-body.term .mgg{break-inside:avoid;page-break-inside:avoid}
-body.term .mgh{margin:2px 0 2px;font-size:9.5px;padding-bottom:1px;letter-spacing:.1em}
-body.term #mg-box .mgc{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin:0 0 3px}
-body.term #mg-box .mtile svg.spk{height:32px!important}
-/* a small tile has no room for label + badge + stamp on one line: the stamp takes a second line */
-body.term #mg-box .mtile .lb{display:grid;grid-template-columns:minmax(0,1fr) auto;white-space:nowrap}
+body.term #mk-b1{grid-area:2/1/3/2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,11fr) minmax(0,9fr);gap:0;padding:0;overflow:hidden;border-bottom:0!important;border-right:1px solid var(--bord)}
+body.term #mk-b2{grid-area:2/2/3/3;display:flex;flex-direction:column;overflow:hidden;padding:3px 0 0 5px;border-bottom:0!important}
+body.term #mc-main{grid-area:1/1/2/2;display:flex;flex-direction:column;min-height:0;min-width:0;padding:4px 6px 3px;border-right:1px solid var(--bord);border-bottom:1px solid var(--bord)}
+body.term #mc-box{flex:1 1 auto;min-height:0;min-width:0;overflow:hidden}
+body.term table.pertab{margin-top:3px;font-size:10px}
+body.term table.pertab td,body.term table.pertab th{padding:1px 4px}
+body.term #mc-ctlw{flex:none;margin-top:3px!important}
+body.term #mc-drv{grid-area:1/2/2/3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:0;min-width:0;min-height:0;border-bottom:1px solid var(--bord)}
+body.term #mc-drv2{grid-area:2/1/3/3;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:0;min-width:0;min-height:0}
+body.term #mc-drv .mtile,body.term #mc-drv2 .mtile,body.term #mg-box .mtile,body.term #mg-box .mgh{border:0;border-right:1px solid var(--bord);border-bottom:1px solid var(--bord);border-radius:0;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;margin:0}
+body.term #mc-drv .mtile:nth-child(2n),body.term #mc-drv2 .mtile:nth-child(4n){border-right:0}
+body.term #mc-drv .mtile:nth-child(n+3),body.term #mc-drv2 .mtile:nth-child(n+5){border-bottom:0}
+body.term #mc-drv .mtile{padding:6px 9px 6px}
+body.term #mc-drv .mtile .lb{font-size:10px;gap:5px}
+body.term #mc-drv .mtile .asof{font-size:8.5px}
+body.term #mc-drv .mtile .vl{font-size:22px;margin-top:3px}
+body.term #mc-drv .mtile .ch{font-size:12px;margin-top:2px}
+body.term #mc-drv2 .mtile{padding:4px 8px 5px}
+body.term #mc-drv2 .mtile .lb{font-size:9.5px}
+body.term #mc-drv2 .mtile .vl{font-size:17px;margin-top:2px}
+body.term #mc-drv2 .mtile .ch{font-size:11px}
+body.term #mc-drv .mtile svg.spk,body.term #mc-drv2 .mtile svg.spk,body.term #mg-box .mtile svg.spk{flex:1 1 auto;min-height:12px;height:auto!important;margin-top:3px!important}
+body.term #mg-box{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:0;border-top:1px solid var(--bord);border-left:1px solid var(--bord);margin-top:2px}
+body.term #mg-box .mgg{display:contents}
+body.term #mg-box .mgc{display:contents}
+body.term #mg-box .mgh{justify-content:center;padding:2px 5px;margin:0;font-size:9px;letter-spacing:.08em;line-height:1.3;white-space:normal;background:#09090b;color:var(--amber)}
+body.term #mg-box .mtile{padding:3px 5px}
+body.term #mg-box .mtile .lb{display:grid;grid-template-columns:minmax(0,1fr) auto;white-space:nowrap;font-size:8.5px}
 body.term #mg-box .mtile .lb .asof{grid-column:1/-1;font-size:7.5px;opacity:.6}
 body.term #mg-box .mtile .lb .mopen,body.term #mg-box .mtile .lb .mclosed{font-size:7px;margin-left:3px;padding:0 2px}
-body.term #mg-box .mgg.g-FXX .mgc{grid-template-columns:repeat(4,minmax(0,1fr))}
-body.term #mg-box .mtile.yc{grid-column:span 2}
-body.term #mg-box .mtile.pol{grid-column:1/-1!important}
-body.term #mg-box .mtile.yc svg{max-width:none}
+body.term #mg-box .mtile.yc svg,body.term #mg-box .mtile.pol svg{flex:1 1 auto;min-height:0;height:auto;max-width:none;width:100%}
+body.term #mg-box .mtile.pol .legend{padding:0 0 1px;font-size:9.5px;gap:8px}
+body.term #mg-box .empty{grid-column:1/-1}
 
 /* NEWS: calendar (two-line rows) | news, one line each */
 body.term #grid[data-view=news]{grid-template-columns:minmax(0,3fr) minmax(0,9fr);grid-template-rows:minmax(0,1fr)}
@@ -218,7 +239,7 @@ body.term #grid[data-view=japan] #p-hm{grid-area:1/2/2/3}
 body.term #grid[data-view=japan] #p-univ{grid-area:2/2/3/3}
 body.term #p-jp .msg2{grid-template-columns:minmax(0,1fr);gap:6px}
 body.term #jc-row{flex:none}
-body.term #jc-row .chbox{flex:none;height:calc(25vh / var(--z,1))}
+body.term #jc-row .chbox{flex:none;height:calc(22vh / var(--z,1))}
 body.term #jc-ctlw{margin:3px 0 5px!important}
 body.term #p-hm .pbody,body.term #p-hmw .pbody,body.term #p-hma .pbody{flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden;padding:0}
 body.term #hm,body.term #hmw,body.term #hma{flex:1 1 auto;height:auto;min-height:0}
@@ -401,6 +422,15 @@ button.ghost{background:none;border:none;color:var(--dn);cursor:pointer;font-siz
 .uwrap{max-height:420px;overflow:auto;border:1px solid var(--bord);border-radius:3px}
 .chrow{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
 .chbox{flex:1 1 56%;min-width:320px}
+#mc-main{flex:1 1 56%;min-width:320px;display:flex;flex-direction:column;min-height:0}
+#mc-drv2{display:none}
+table.pertab{margin-top:6px}
+table.pertab td.l .sw{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:5px}
+.mgc .mtile.yc{grid-column:span 2}
+.mgc .mtile.pol{grid-column:1/-1}
+/* driver tiles stand as tall as the chart beside them: the sparkline takes the room (34px at least) */
+.drvgrid .mtile{display:flex;flex-direction:column;min-height:0}
+.drvgrid .mtile svg.spk{flex:1 1 auto;min-height:34px;height:auto!important}
 .drvgrid{flex:1 1 36%;min-width:280px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:8px}
 
 .dvagrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -749,14 +779,16 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 
     <div id="p-mkt" class="panel c12" data-view="market">
       <div class="phead"><span class="no">08</span><span class="t">MARKET SUMMARY</span><span class="aux" id="ms-aux"></span></div>
-      <div class="pbody" id="mk-b1" style="border-bottom:1px solid var(--bord)">
-        <div class="legend" id="mc-leg"></div>
-        <div id="mc-row" class="chrow">
-          <div class="chbox"><div id="mc-box"></div></div>
-          <div id="mc-drv" class="drvgrid"></div>
+      <div class="pbody chrow" id="mk-b1" style="border-bottom:1px solid var(--bord)">
+        <div id="mc-main">
+          <div class="legend" id="mc-leg"></div>
+          <div id="mc-box"></div>
+          <table class="mini pertab"><thead><tr><th class="l">INDEX (NET TR &yen;)</th><th>LEVEL</th><th>1D</th><th>1W</th><th>1M</th><th>3M</th><th>6M</th><th>12M</th></tr></thead><tbody id="mc-per"><tr><td class="l empty" colspan="8">Loading&hellip;</td></tr></tbody></table>
+          <div id="mc-tip"></div>
+          <div id="mc-ctlw" style="margin-top:4px"><span id="mc-ctl"><span class="chip-sm" data-mrng="1D">1D</span><span class="chip-sm" data-mrng="1W">1W</span><span class="chip-sm" data-mrng="1M">1M</span><span class="chip-sm on" data-mrng="3M">3M</span><span class="chip-sm" data-mrng="6M">6M</span><span class="chip-sm" data-mrng="12M">12M</span><span class="chip-sm" data-mrng="24M">24M</span><span class="chip-sm" data-mrng="36M">36M</span><span class="chip-sm" data-mrng="60M">60M</span></span></div>
         </div>
-        <div id="mc-tip"></div>
-        <div id="mc-ctlw" style="margin-top:4px"><span id="mc-ctl"><span class="chip-sm" data-mrng="1D">1D</span><span class="chip-sm" data-mrng="1W">1W</span><span class="chip-sm" data-mrng="1M">1M</span><span class="chip-sm on" data-mrng="3M">3M</span><span class="chip-sm" data-mrng="6M">6M</span><span class="chip-sm" data-mrng="12M">12M</span><span class="chip-sm" data-mrng="24M">24M</span><span class="chip-sm" data-mrng="36M">36M</span><span class="chip-sm" data-mrng="60M">60M</span></span></div>
+        <div id="mc-drv" class="drvgrid"></div>
+        <div id="mc-drv2" class="drvgrid"></div>
       </div>
       <div class="pbody" id="mk-b2" style="border-bottom:1px solid var(--bord)">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -1206,9 +1238,13 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   function zf(){ return Number(document.body.style.zoom)||1; }
   function isTerm(){ return document.body.classList.contains("term"); }
   function applyZoom(z){
-    // the size chips are hidden on a phone, and a zoomed body would overflow the fluid grids there
-    document.body.style.zoom=isPhone()?"1":z;
-    document.body.style.setProperty("--z",isPhone()?"1":String(z));
+    // the size chips are hidden on a phone, and a zoomed body would overflow the fluid grids there.
+    // The terminal is drawn for 1920x1080 and scaled to the window: a 13-inch laptop sees the same
+    // one-screen layout smaller, a 4K wall sees it larger; S/M/L/XL multiply on top of that.
+    var fit=isTerm()?Math.min(window.innerWidth/1920,window.innerHeight/1080):1;
+    var eff=isPhone()?1:Number(z)*fit;
+    document.body.style.zoom=String(Math.round(eff*1000)/1000);
+    document.body.style.setProperty("--z",String(Math.round(eff*1000)/1000));
     Array.prototype.forEach.call(document.querySelectorAll("#sz-ctl [data-sz]"),function(c2){
       c2.className="chip-sm"+(c2.getAttribute("data-sz")===String(z)?" on":"");
     });
@@ -1258,6 +1294,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     if(term) document.body.classList.add("term"); else document.body.classList.remove("term");
     if(!term&&document.body.classList.contains("full")) setFull(false);
     var c=$("cmp-ctl"); if(c) c.className="chip-sm"+(on?" on":"");
+    applyZoom(savedZoom);
   }
   // every chart and heat map takes its size from its box, so a layout change redraws them all
   function rerenderAll(){
@@ -1282,7 +1319,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       if(on&&!document.fullscreenElement&&document.documentElement.requestFullscreen){ var p=document.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(function(){}); }
       else if(!on&&document.fullscreenElement&&document.exitFullscreen){ var q=document.exitFullscreen(); if(q&&q.catch) q.catch(function(){}); }
     }catch(e){}
-    if(was!==on) setTimeout(rerenderAll,80);
+    if(was!==on) setTimeout(function(){ applyZoom(savedZoom); rerenderAll(); },80);
   }
   if($("fs-ctl")) $("fs-ctl").addEventListener("click",function(){ setFull(!document.body.classList.contains("full")); });
   if($("fsx")) $("fsx").addEventListener("click",function(){ setFull(false); });
@@ -1395,7 +1432,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       id="spk"+(++hvSeq);
       hvSpec(id,{W:w,xs:xs,labels:opt.labels,vline:[0,hgt],r:2.4,stretch:[1,1],series:[{name:opt.name||"",color:col,ys:ys,vals:vals,fmt:opt.fmt}]});
     }
-    return '<svg class="spk" viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none"'+(id?' data-hv="'+id+'"':'')+' style="width:100%;height:'+hgt+'px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.1"/></svg>';
+    return '<svg class="spk" viewBox="0 0 '+w+' '+hgt+'" preserveAspectRatio="none"'+(id?' data-hv="'+id+'"':'')+' style="width:100%;height:'+hgt+'px;display:block;margin-top:3px"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg>';
   }
   function ensureBarsAll(res){
     var e=BARSC[res];
@@ -1507,7 +1544,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       var vals=[], bases=[], curMt=newestMt(syms);
       for(var k2=0;k2<syms.length;k2++){
         var a2=MACRO.by[syms[k2]]||[];
-        if(!a2.length) return "";
+        if(!a2.length) return [];
         vals.push(Number(a2[a2.length-1].close));
         var b3=baseIdx(a2);
         bases.push(b3>=0?Number(a2[b3].close):null);
@@ -1543,8 +1580,8 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       svg2+=pline(vals,"var(--up)",1.5);
       for(var k5=0;k5<4;k5++){ svg2+='<circle cx="'+cx(xs[k5]).toFixed(1)+'" cy="'+cy(vals[k5]).toFixed(1)+'" r="2" fill="var(--up)"/>'; }
       svg2+="</svg>";
-      return spTile("YC 10Y&minus;1Y",s10_1,b10_1)+spTile("YC 30Y&minus;10Y",s30_10,b30_10)
-        +'<div class="mtile yc" style="grid-column:span 2">'+lbLineRaw("YIELD CURVE &mdash; NOW vs "+gPer+" AGO (%)","",'',curMt)+svg2+"</div>";
+      return [{html:'<div class="mtile yc">'+lbLineRaw("YIELD CURVE &mdash; NOW vs "+gPer+" AGO (%)","",'',curMt)+svg2+"</div>",w:2,h:1},
+        {html:spTile("YC 10Y&minus;1Y",s10_1,b10_1),w:1,h:1},{html:spTile("YC 30Y&minus;10Y",s30_10,b30_10),w:1,h:1}];
     }
     function policyChart(){
       var defs=[["DFEDTARU","US FED (UPPER)","#38c8ff"],["ECBDFR","ECB DEPOSIT","#9a7dff"],["BOJTARGET","BOJ TARGET","#ffa028"]];
@@ -1598,16 +1635,43 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
         var lastV=sr.pts[sr.pts.length-1][1];
         return '<span style="margin-right:12px"><span class="sw" style="background:'+sr.col+'"></span>'+sr.nm+' <b class="num">'+lastV.toFixed(2)+'%</b></span>';
       }).join("");
-      return '<div class="mtile pol" style="grid-column:1/-1">'+lbLineRaw("CENTRAL BANK POLICY RATES &mdash; 10 YEARS","",'',newestMt(["DFEDTARU","ECBDFR","BOJTARGET"]))+'<div class="legend" style="padding:2px 0 3px;font-size:10.5px">'+lg2+'</div>'+sv+"</div>";
+      return '<div class="mtile pol">'+lbLineRaw("CENTRAL BANK POLICY RATES &mdash; 10 YEARS","",'',newestMt(["DFEDTARU","ECBDFR","BOJTARGET"]))+'<div class="legend" style="padding:2px 0 3px;font-size:10.5px">'+lg2+'</div>'+sv+"</div>";
     }
-    var h="";
+    // Dense placement for the terminal's right half: 8 columns, row-major first fit from the earliest
+    // free cell, so a 2- or 4-wide chart never leaves a hole (a group's own tiles fill it: the wide
+    // items come right after the group's header cell). Returns the html with grid-area on every item.
+    function placeDense(items,cols){
+      var occ=[], out="", rows=0;
+      function free(r,c){ return !(occ[r]&&occ[r][c]); }
+      function fits(r,c,w,h){ if(c+w>cols) return false; for(var i=0;i<h;i++) for(var j=0;j<w;j++) if(!free(r+i,c+j)) return false; return true; }
+      var sr=0, sc=0;
+      items.forEach(function(it){
+        var w=it.w||1, hh=it.h||1, r=sr, c=sc;
+        while(!fits(r,c,w,hh)){ c++; if(c+w>cols){ c=0; r++; } }
+        for(var i=0;i<hh;i++){ occ[r+i]=occ[r+i]||[]; for(var j=0;j<w;j++) occ[r+i][c+j]=1; }
+        rows=Math.max(rows,r+hh);
+        out+=it.html.replace(/^<div /,'<div style="grid-area:'+(r+1)+'/'+(c+1)+'/span '+hh+'/span '+w+'" ');
+        // next search starts at the earliest free cell
+        sr=0; sc=0; while(!free(sr,sc)){ sc++; if(sc>=cols){ sc=0; sr++; } }
+      });
+      // empty cells at the end of the last row: fillers, so the grid lines close
+      for(var fc=0;fc<cols;fc++){ if(!free(rows-1,fc)) continue; out+='<div style="grid-area:'+rows+'/'+(fc+1)+'/span 1/span 1" class="mtile filler"></div>'; }
+      return {html:out,rows:rows};
+    }
+    var h="", items=[], term=isTerm(), left={};
+    if(term) CORE4.concat(TIER8).forEach(function(s){ left[s]=1; });
     groups.forEach(function(g){
-      var rows=MACRO.meta.filter(function(m){return m.grp===g[0];});
-      if(!rows.length) return;
-      h+='<div class="mgg g-'+esc(g[0])+'"><div class="mgh">'+g[1]+'</div><div class="mgc">';
+      // the terminal's left half already carries the core and second-tier tiles: the right half is the rest
+      var rows=MACRO.meta.filter(function(m){return m.grp===g[0]&&!(term&&left[m.symbol]);});
+      var extras=[];
+      if(g[0]==="RATES_US") extras=ycHtml(["DGS1","DGS3","DGS10","DGS30"]);
+      if(g[0]==="RATES_JP") extras=ycHtml(["JGB1Y","JGB3Y","JGB10Y","JGB30Y"]);
+      if(g[0]==="RATES_POLICY"){ var pcH=policyChart(); if(pcH) extras=[{html:pcH,w:4,h:2}]; }
+      if(!rows.length&&!extras.length) return;
+      var tiles=[];
       rows.forEach(function(m){
         var arr=MACRO.by[m.symbol]||[];
-        if(!arr.length){ h+='<div class="mtile">'+lbLine(m.label,"",m.market_time)+'<div class="vl">&ndash;</div><div class="ch"></div></div>'; return; }
+        if(!arr.length){ tiles.push('<div class="mtile">'+lbLine(m.label,"",m.market_time)+'<div class="vl">&ndash;</div><div class="ch"></div></div>'); return; }
         var last=arr[arr.length-1], bi=baseIdx(arr);
         var base=bi>=0?arr[bi]:null;
         var mt=m.market_time?Date.parse(m.market_time):null;
@@ -1624,21 +1688,32 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
           var vl=(Number(last.close)/dv).toFixed(2)+"%";
           var d10=base?(Number(last.close)-Number(base.close))/dv*100:null;
           var chTxt=d10==null?"&ndash;":((d10>=0?"+":"")+d10.toFixed(0)+"bp");
-          h+='<div class="mtile">'+lbLine(m.label,badge,m.market_time)+'<div class="vl">'+vl+'</div><div class="ch '+(d10==null?"":(d10>=0?"up":"dn"))+'">'+chTxt+"</div>"+tileSpark(m.symbol,arr,bi,d10==null?null:d10>=0,(function(dv2){return function(v){return (v/dv2).toFixed(2)+"%";};})(dv))+"</div>";
+          tiles.push('<div class="mtile">'+lbLine(m.label,badge,m.market_time)+'<div class="vl">'+vl+'</div><div class="ch '+(d10==null?"":(d10>=0?"up":"dn"))+'">'+chTxt+"</div>"+tileSpark(m.symbol,arr,bi,d10==null?null:d10>=0,(function(dv2){return function(v){return (v/dv2).toFixed(2)+"%";};})(dv))+"</div>");
         } else {
           var p2=Number(last.close);
           var vl2=n(p2, p2<10?3:(p2<100?2:(p2<10000?1:0)));
           var r2=base?p2/Number(base.close)-1:null;
-          h+='<div class="mtile">'+lbLine(m.label,badge,m.market_time)+'<div class="vl">'+vl2+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div>"+tileSpark(m.symbol,arr,bi,r2==null?null:r2>=0)+"</div>";
+          tiles.push('<div class="mtile">'+lbLine(m.label,badge,m.market_time)+'<div class="vl">'+vl2+'</div><div class="ch '+cls(r2)+'">'+(r2==null?"&ndash;":pct(r2))+"</div>"+tileSpark(m.symbol,arr,bi,r2==null?null:r2>=0)+"</div>");
         }
       });
-      if(g[0]==="RATES_US") h+=ycHtml(["DGS1","DGS3","DGS10","DGS30"]);
-      if(g[0]==="RATES_JP") h+=ycHtml(["JGB1Y","JGB3Y","JGB10Y","JGB30Y"]);
-      if(g[0]==="RATES_POLICY") h+=policyChart();
-      h+="</div></div>";
+      // normal layout: header row + a grid per group (spreads before the curve, the chart last)
+      var wide=extras.filter(function(e){return e.w>1;}), narrow=extras.filter(function(e){return e.w===1;});
+      h+='<div class="mgg g-'+esc(g[0])+'"><div class="mgh">'+g[1]+'</div><div class="mgc">'+tiles.join("")+narrow.map(function(e){return e.html;}).join("")+wide.map(function(e){return e.html;}).join("")+"</div></div>";
+      // terminal: one header cell, the wide items right after it (their own tiles fill any gap), then the tiles
+      items.push({html:'<div class="mgh">'+g[1]+'</div>',w:1,h:1});
+      wide.forEach(function(e){ items.push(e); });
+      tiles.forEach(function(t){ items.push({html:t,w:1,h:1}); });
+      narrow.forEach(function(e){ items.push(e); });
     });
-    box.innerHTML=h||'<div class="empty">&ndash;</div>';
-    if(isTerm()) renderCore();
+    if(term){
+      var dense=placeDense(items,8);
+      box.innerHTML=dense.html||'<div class="empty">&ndash;</div>';
+      box.style.gridTemplateRows=dense.rows?"repeat("+dense.rows+",minmax(0,1fr))":"";
+    } else {
+      box.innerHTML=h||'<div class="empty">&ndash;</div>';
+      box.style.gridTemplateRows="";
+    }
+    if(term) renderCore();
     var parts=[];
     if(anyOpen) parts.push("OPEN = exchange in session and still printing");
     if(anyClosed) parts.push("CLOSED markets show last close");
@@ -2445,9 +2520,38 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   }
   // the eight core indicators of the terminal MARKET tab (Shota 09-07): USD/JPY, US 10Y, JGB 10Y,
   // S&P 500, NASDAQ, Nikkei 225, VIX, SOX. They follow the GLOBAL MARKETS period chips.
-  var CORE8=["USDJPY=X","DGS10","JGB10Y","^GSPC","^IXIC","^N225","^VIX","^SOX"];
+  // Shota 09-08: top-left core = USD/JPY · TOPIX (1306 ETF) · JGB 10Y · S&P 500; the next eight
+  // (bottom-left) = Nikkei 225 · NASDAQ · US 10Y · SOX · VIX · Hang Seng · DXY · WTI [仮].
+  // Both follow the GLOBAL MARKETS period chips.
+  var CORE4=["USDJPY=X","1306.T","JGB10Y","^GSPC"];
+  var TIER8=["^N225","^IXIC","DGS10","^SOX","^VIX","^HSI","DX-Y.NYB","CL=F"];
   function gDays(p){ return {"1D":1,"1W":7,"1M":31,"3M":92,"6M":183,"12M":365,"24M":730,"36M":1095,"60M":1825}[p]||1; }
-  function renderCore(){ renderDrivers("mc-drv",CORE8,gDays(gPer),gPer==="1D"?"30m":(gPer==="1W"?"1h":null),gPer); }
+  function renderCore(){
+    var res=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
+    renderDrivers("mc-drv",CORE4,gDays(gPer),res,gPer);
+    renderDrivers("mc-drv2",TIER8,gDays(gPer),res,gPer);
+  }
+  // the three indices' returns over the standard periods, under the summary chart (both layouts)
+  function renderMcPer(){
+    var tb=$("mc-per"); if(!tb||!S) return;
+    var defs=[["MSCI JAPAN","#ffa028",S.benchmark||[]],["MSCI WORLD","#38c8ff",S.benchmark_world||[]],["MSCI ASIA ex JP","#c084fc",S.benchmark_asia||[]]];
+    function ret(rows,days){
+      if(rows.length<2) return null;
+      var last=rows[rows.length-1], lv=Number(last.level);
+      if(days===1){ var p=rows[rows.length-2]; return Number(p.level)>0?lv/Number(p.level)-1:null; }
+      var cut=new Date(Date.parse(last.d)-days*86400e3).toISOString().slice(0,10);
+      for(var i=rows.length-1;i>=0;i--){ if(rows[i].d<=cut) return Number(rows[i].level)>0?lv/Number(rows[i].level)-1:null; }
+      return null;
+    }
+    var out=defs.map(function(d){
+      var rows=d[2].filter(function(r){return r&&r.d&&r.level!=null;}).slice().sort(function(a,b){return a.d<b.d?-1:1;});
+      if(!rows.length) return "";
+      var last=rows[rows.length-1];
+      return '<tr><td class="l"><span class="sw" style="background:'+d[1]+'"></span>'+d[0]+' <span class="mut">'+esc(last.d.slice(5).replace("-","/"))+'</span></td><td class="num">'+n(Number(last.level),1)+'</td>'
+        +[1,7,31,92,183,366].map(function(dd){ var r=ret(rows,dd); return '<td class="num '+cls(r)+'">'+(r==null?"&ndash;":pct(r,dd===1?2:1))+'</td>'; }).join("")+'</tr>';
+    }).join("");
+    tb.innerHTML=out||'<tr><td class="l empty" colspan="8">&ndash;</td></tr>';
+  }
   function renderDrivers(elId, syms, days, res, per){
     var el=$(elId); if(!el||!MACRO) return;
     // res ("30m" for 1D, "1h" for 1W): draw the tile from the shared intraday bar cache when the
@@ -2456,31 +2560,34 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
     var bars=null;
     if(res){ var bc=BARSC[res]; if(bc&&bc.data) bars=bc.data; else ensureBarsAll(res); if(days<7) days=7; }
     var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
-    var h="";
+    var h="", now=Date.now();
     syms.forEach(function(sym){
       var m=MACRO.meta.find(function(x){return x.symbol===sym;});
       var lbl=m?m.label:sym;
+      // the same OPEN / CLOSED evidence as the GLOBAL MARKETS tiles
+      var mt=m&&m.market_time?Date.parse(m.market_time):null, isOpen=symOpen(sym);
+      var badge=isOpen?'<span class="mopen" title="'+esc(OPEN_TIP)+'">OPEN</span>':(((!isOpen)&&mt&&(now-mt>3*3600e3))?'<span class="mclosed">CLOSED</span>':"");
       var bb=bars&&bars[sym];
       if(bb&&bb.length>1){
         var isYb=m&&(m.kind==="yield"||m.kind==="yield10x");
         var w0=Number(bb[0][1]), w1=Number(bb[bb.length-1][1]);
         var chb=isYb?((w1-w0)*100):((w1/w0-1)*100);
         var chTxtb=isYb?((chb>=0?"+":"")+chb.toFixed(0)+"bp"):((chb>=0?"+":"")+chb.toFixed(1)+"%");
-        h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)
+        h+='<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)
           +'<div class="vl">'+(isYb?w1.toFixed(2)+"%":n(w1,w1<10?3:(w1<100?2:(w1<10000?1:0))))+'</div>'
           +'<div class="ch '+(chb>=0?"up":"dn")+'">'+chTxtb+' <span class="mut">'+(res==="30m"?"1D":"1W")+'</span></div>'
           +sparkSvg(bb.map(function(x){return Number(x[1]);}),120,34,chb>=0,{labels:bb.map(function(x){return hvJst(x[0]);}),fmt:isYb?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
         return;
       }
       var arr=(MACRO.by[sym]||[]).filter(function(x){return x.d>=startD;});
-      if(arr.length<2){ h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)+'<div class="vl">&ndash;</div></div>'; return; }
+      if(arr.length<2){ h+='<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)+'<div class="vl">&ndash;</div></div>'; return; }
       var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
       var v0=Number(arr[0].close), v1=Number(arr[arr.length-1].close);
       var chg=isY?((v1-v0)*100):((v1/v0-1)*100);
       var chTxt=isY?((chg>=0?"+":"")+chg.toFixed(0)+"bp"):((chg>=0?"+":"")+chg.toFixed(1)+"%");
       var up=chg>=0;
       var t0=Date.parse(arr[0].d), t1=Date.parse(arr[arr.length-1].d);
-      h+='<div class="mtile">'+lbLine(lbl,"",m&&m.market_time)
+      h+='<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)
         +'<div class="vl">'+(isY?v1.toFixed(2)+"%":n(v1,v1<10?3:(v1<100?2:(v1<10000?1:0))))+'</div>'
         +'<div class="ch '+(up?"up":"dn")+'">'+chTxt+(per?' <span class="mut">'+esc(per)+'</span>':'')+'</div>'
         +sparkSvg(arr.map(function(x){return Number(x.close);}),120,34,up,{xs:arr.map(function(x){return t1>t0?(Date.parse(x.d)-t0)/(t1-t0)*120:0;}),labels:arr.map(function(x){return x.d;}),fmt:isY?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
@@ -2498,7 +2605,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
       c2.addEventListener("click",function(){ IDXC[k].range=c2.getAttribute(IDXC[k].attr); if(S) renderIdxChart(k); });
     });
   });
-  function renderMarketChart(){ renderIdxChart("m"); }
+  function renderMarketChart(){ renderIdxChart("m"); renderMcPer(); }
   function renderJapanChart(){ renderIdxChart("j"); }
   function renderIdxChart(k){
     var C=IDXC[k], box=$(C.box), leg=$(C.leg), rng=C.range;
