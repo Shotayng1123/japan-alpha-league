@@ -630,6 +630,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 }
 /* ---- RESEARCH tab (v9.4): JAL AI analyst reports ---- */
 /* ---- v9.5: Japan / World / Asia tab charts are one series each at index levels (see renderMktChart) ---- */
+/* ---- v9.7: those charts pan (click-hold-drag back through sessions; double-click = latest) ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#1c1610}
 .rlrow.on{background:#1c1610;border-left-color:var(--amber)}
@@ -1531,6 +1532,7 @@ body.term #rr-head .tt{font-size:13px}
   }
   function hvHide(svg){ if(svg){ var g=svg.querySelector("g.hvg"); if(g) g.innerHTML=""; } if(hvTip) hvTip.style.display="none"; }
   document.addEventListener("mousemove",function(ev){
+    if(window.__mkDrag) return;   // v9.7: a chart is being dragged (pan) -- no readout until the button is released
     var t=ev.target, svg=t&&t.closest?t.closest("svg[data-hv]"):null;
     if(svg){ if(hvCur&&hvCur!==svg) hvHide(hvCur); hvCur=svg; hvShow(svg,ev.clientX,ev.clientY); }
     else if(hvCur){ hvHide(hvCur); hvCur=null; }
@@ -2869,48 +2871,112 @@ body.term #rr-head .tt{font-size:13px}
     renderMktChart("asia");
   }
 
-  /* ---------- v9.5: the three tab charts as ONE series each, drawn as index levels ----------
-     Shota, 2026-09-15: no index=100 and no comparison lines on the MSCI JAPAN / WORLD / ASIA ex JP
-     tabs -- each shows its own market. 1D = the latest session from its open at ONE-MINUTE bars,
-     held after the close until the next session's first print, with the previous close as a
-     dashed line; 1W = five-minute bars over the last sessions; 1M-12M = hourly bars (bars_1h,
-     accruing from the first `bars` night, daily closes shown until then); 24M+ = daily closes
-     from state. Levels come from api ?action=chart, which chains each session's intraday proxy
-     (JP basket / URTH x USD/JPY / Asian venue-index composite) onto the MSCI Net TR close before
-     it and anchors finished sessions to their own close -- so the y-axis is the same number as
-     the header and the benchmark table. */
+  /* ---------- v9.7: the three tab charts — one series at index levels, and PANNABLE ----------
+     Shota, 2026-09-16 21:40 JST: keep the selected range, but let a click-hold-drag scroll the
+     chart back through earlier sessions, smoothly (1D selected → drag → yesterday, the day
+     before …). Each market keeps a TIMELINE per resolution and shows a viewport of it:
+       1D     : one-minute slots on the session grid (open→close, breaks compressed) for every
+                session in the hourly history; sessions inside the nine-day minute retention carry
+                their 1-minute points (api range=1D&days=9), older sessions carry the hourly closes
+                placed at the bucket end (a sparse line — the legend says "hourly closes");
+       1W     : the same grid at five minutes (api range=1W = 5-min buckets, 8 days; hourly beyond);
+       1M–12M : the hourly bars (api range=12M, a year);
+       24M+   : daily closes from state.
+     The viewport is the last W slots — one session for 1D, five sessions for 1W, the sessions of
+     the last N days for the hourly ranges, N days for the daily ranges. Dragging with the mouse
+     shifts the viewport by whole slots (the finger keeps scrubbing the readout on a phone);
+     double-click, or picking a range chip, returns to the latest. Levels come from the api (each
+     session chained onto the MSCI Net TR close before it, anchored to its own close once it is
+     published), so the y-axis is the same number as the header and the benchmark table. */
   var MKCFG={
-    jp:   {box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:function(){return ["^N225","1306.T","USDJPY=X","JGB10Y"];},color:"#ffa028",name:"MSCI JAPAN (NET TR ¥)",pfx:"j",daily:function(){return S.benchmark||[];},range:function(){return IDXC.j.range;}},
-    world:{box:"wc-box",leg:"wc-leg",tip:"wc-tip",sel:"#wc-ctl [data-wrng]",attr:"data-wrng",drv:"wc-drv",drvSyms:function(){return ["^GSPC","^SOX","DGS10","USDJPY=X"];},color:"#38c8ff",name:"MSCI WORLD (NET TR ¥)",pfx:"w2",daily:function(){return S.benchmark_world||[];},range:function(){return worldRange;}},
-    asia: {box:"ac-box",leg:"ac-leg",tip:"ac-tip",sel:"#ac-ctl [data-arng]",attr:"data-arng",drv:"ac-drv",drvSyms:function(){return ASIA_DRV;},color:"#c084fc",name:"MSCI AC ASIA ex JP (NET TR ¥)",pfx:"a2",daily:function(){return S.benchmark_asia||[];},range:function(){return asiaRange;}}
+    jp:   {box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:function(){return ["^N225","1306.T","USDJPY=X","JGB10Y"];},color:"#ffa028",name:"MSCI JAPAN (NET TR ¥)",pfx:"j",tz:"JST",blocks:[[540,690],[750,930]],daily:function(){return S.benchmark||[];},range:function(){return IDXC.j.range;}},
+    world:{box:"wc-box",leg:"wc-leg",tip:"wc-tip",sel:"#wc-ctl [data-wrng]",attr:"data-wrng",drv:"wc-drv",drvSyms:function(){return ["^GSPC","^SOX","DGS10","USDJPY=X"];},color:"#38c8ff",name:"MSCI WORLD (NET TR ¥)",pfx:"w2",tz:"ET",blocks:[[570,960]],daily:function(){return S.benchmark_world||[];},range:function(){return worldRange;}},
+    asia: {box:"ac-box",leg:"ac-leg",tip:"ac-tip",sel:"#ac-ctl [data-arng]",attr:"data-arng",drv:"ac-drv",drvSyms:function(){return ASIA_DRV;},color:"#c084fc",name:"MSCI AC ASIA ex JP (NET TR ¥)",pfx:"a2",tz:"JST",blocks:[[540,1140]],daily:function(){return S.benchmark_asia||[];},range:function(){return asiaRange;}}
   };
-  var MKC={};
-  function mkTtl(range){ return range==="1D"?120e3:(range==="1W"?300e3:900e3); }
-  function loadMktChart(mkt,range,cb){
-    var key=mkt+"|"+range, c=MKC[key];
-    if(c&&c.data&&Date.now()-c.at<mkTtl(range)){ cb(c.data); return; }
+  var MKC={};     // fetch cache  mkt|kind -> {at,data,q}
+  var MKPAN={};   // pan state    mkt -> {rng,off,tl,Wslots,svgW,iW,maxOff,raf}
+  function mkTtl(kind){ return kind==="1D"?120e3:(kind==="1W"?300e3:900e3); }
+  function mkQuery(kind){ return kind==="1D"?"range=1D&days=9":"range="+kind; }
+  function loadMktChart(mkt,kind,cb){
+    var key=mkt+"|"+kind, c=MKC[key];
+    if(c&&c.data&&Date.now()-c.at<mkTtl(kind)){ cb(c.data); return; }
     if(c&&c.q){ c.q.push(cb); return; }
     MKC[key]=c={at:0,data:c?c.data:null,q:[cb]};
-    var done=function(d,failed){ c.data=d; c.at=failed?Date.now()-mkTtl(range)+60e3:Date.now(); var q=c.q; c.q=null; q.forEach(function(f){f(d);}); };
-    fetch(API+"?action=chart&mkt="+mkt+"&range="+range).then(function(r){return r.json();})
+    var done=function(d,failed){ c.data=d; c.at=failed?Date.now()-mkTtl(kind)+60e3:Date.now(); var q=c.q; c.q=null; q.forEach(function(f){f(d);}); };
+    fetch(API+"?action=chart&mkt="+mkt+"&"+mkQuery(kind)).then(function(r){return r.json();})
       .then(function(j){ done((j&&j.ok&&Array.isArray(j.points))?j:{ok:false,points:[],days:[],session:null},false); })
       .catch(function(){ done(c.data||{ok:false,points:[],days:[],session:null},true); });
   }
+  function loadMany(mkt,kinds,cb){ var out={}, left=kinds.length; kinds.forEach(function(k){ loadMktChart(mkt,k,function(d){ out[k]=d; if(--left===0) cb(out); }); }); }
+  function mkCached(mkt,kinds){ return kinds.every(function(k){ var c=MKC[mkt+"|"+k]; return c&&c.data; }); }
   function jstParts(ms){ var d=new Date(ms+9*3600e3), p=function(x){return ("0"+x).slice(-2);}; return {hm:p(d.getUTCHours())+":"+p(d.getUTCMinutes()),md:p(d.getUTCMonth()+1)+"/"+p(d.getUTCDate()),min:d.getUTCHours()*60+d.getUTCMinutes(),ymd:d.toISOString().slice(0,10)}; }
   function lvl(v){ return v==null?"–":n(v,1); }
-  // Level chart: `o` = {pfx,tipEl,color,name,vals (nulls allowed, one per x slot),labels (one per slot,
-  // for the readout),ticks [{i,text}],seps [i],hline {v,text}|null,note}. Same geometry rules as
-  // drawLineChart (phone / terminal fit), nice-rounded y ticks with thousands separators.
+  // ---- session bounds in the app (the same rules as the api: JST fixed, New York via ICU) ----
+  var NYF=(function(){ try{ return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit",hour:"numeric",minute:"numeric",hour12:false}); }catch(e){ return null; } })();
+  function mkLocal(tz,ms){ if(tz==="JST"){ var j=new Date(ms+9*3600e3); return {d:j.toISOString().slice(0,10),m:j.getUTCHours()*60+j.getUTCMinutes()}; } if(!NYF) return null; var p={}; NYF.formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value;}); return {d:p.year+"-"+p.month+"-"+p.day,m:(Number(p.hour)%24)*60+Number(p.minute)}; }
+  function mkInstant(tz,d,m){ var mid=Date.parse(d+"T00:00:00Z"); if(tz==="JST") return mid-9*3600e3+m*60e3; var pr=mkLocal(tz,mid+12*3600e3); if(!pr) return null; var off=(pr.d===d?pr.m:(pr.d<d?pr.m-1440:pr.m+1440))-720; return mid+(m-off)*60e3; }
+  function mkSess(C,d){ var b=C.blocks; var o=mkInstant(C.tz,d,b[0][0]); if(o==null) return null; return {d:d,open:o,close:mkInstant(C.tz,d,b[b.length-1][1]),breaks:b.slice(1).map(function(blk,i){return [mkInstant(C.tz,d,b[i][1]),mkInstant(C.tz,d,blk[0])];})}; }
+  function inBreak(s,ms){ for(var i=0;i<s.breaks.length;i++){ if(ms>s.breaks[i][0]&&ms<s.breaks[i][1]) return i; } return -1; }
+  // ---- timelines ----
+  // intraday grid at `step` minutes: minute points where a session has them, hourly closes (at the
+  // bucket end, capped at the close / the break) where it does not
+  function buildIntra(C,step,minute,hourly,prevMap){
+    var dates={}, minuteDays={};
+    (minute.points||[]).forEach(function(p){ var l=mkLocal(C.tz,Date.parse(p[0])); if(l){ dates[l.d]=1; minuteDays[l.d]=1; } });
+    (hourly.points||[]).forEach(function(p){ var l=mkLocal(C.tz,Date.parse(p[0])); if(l) dates[l.d]=1; });
+    var ds=Object.keys(dates).sort(), slots=[], vals=[], starts=[], sess=[], kind=[], stepMs=step*60e3;
+    ds.forEach(function(d){
+      var s=mkSess(C,d); if(!s) return;
+      starts.push(slots.length); sess.push(s); kind.push(minuteDays[d]?(step===1?"1-min":"5-min"):"hourly");
+      for(var ms=s.open;ms<=s.close;ms+=stepMs){ if(inBreak(s,ms)>=0) continue; slots.push(ms); vals.push(null); }
+    });
+    var idx={}; for(var i=0;i<slots.length;i++) idx[slots[i]]=i;
+    (minute.points||[]).forEach(function(p){ var i=idx[Date.parse(p[0])]; if(i!=null) vals[i]=p[1]; });
+    var byD={}; sess.forEach(function(s){ byD[s.d]=s; });
+    (hourly.points||[]).forEach(function(p){
+      var ms=Date.parse(p[0]), l=mkLocal(C.tz,ms); if(!l||minuteDays[l.d]) return;
+      var s=byD[l.d]; if(!s) return;
+      var e=ms+3600e3, bi=inBreak(s,e); if(bi>=0) e=s.breaks[bi][0]; if(e>s.close) e=s.close;
+      e=Math.round(e/stepMs)*stepMs; var i=idx[e]; if(i!=null) vals[i]=p[1];
+    });
+    return {step:step,slots:slots,vals:vals,starts:starts,sess:sess,kind:kind,prev:prevMap,intra:true};
+  }
+  function buildHourly(C,hourly,prevMap){
+    var pts=(hourly.points||[]).slice().sort(function(a,b){return a[0]<b[0]?-1:1;});
+    var slots=[], vals=[], starts=[], sess=[], kind=[], last=null;
+    pts.forEach(function(p,i){ var ms=Date.parse(p[0]), l=mkLocal(C.tz,ms), d=l?l.d:p[0].slice(0,10); if(d!==last){ starts.push(i); sess.push({d:d}); kind.push("hourly"); last=d; } slots.push(ms); vals.push(p[1]); });
+    return {step:60,slots:slots,vals:vals,starts:starts,sess:sess,kind:kind,prev:prevMap,intra:false};
+  }
+  function buildDaily(C){
+    var rows=C.daily().filter(function(r){return r&&r.d&&r.level!=null;}).slice().sort(function(a,b){return a.d<b.d?-1:1;});
+    var slots=[], vals=[], starts=[], sess=[], kind=[];
+    rows.forEach(function(r,i){ slots.push(Date.parse(r.d+"T00:00:00Z")); vals.push(Number(r.level)); starts.push(i); sess.push({d:r.d}); kind.push("daily"); });
+    return {step:1440,slots:slots,vals:vals,starts:starts,sess:sess,kind:kind,prev:{},intra:false,daily:true};
+  }
+  // the minute payloads (1D / 1W) describe the current session best (live / not yet anchored), so they win over the hourly history
+  function prevMapOf(payloads){ var m={}, order=["1D","1W"].concat(Object.keys(payloads).filter(function(k){return k!=="1D"&&k!=="1W";})); order.forEach(function(k){ if(!payloads[k]) return; (payloads[k].days||[]).forEach(function(x){ if(x&&x.d&&x.prev!=null&&m[x.d]==null) m[x.d]={prev:x.prev,anchored:!!x.anchored,live:!!x.live}; }); }); return m; }
+  // viewport width in slots for a range
+  function viewWidth(tl,rng){
+    var total=tl.slots.length, n=tl.starts.length;
+    if(rng==="1D") return n?total-tl.starts[n-1]:total;
+    if(rng==="1W") return n>5?total-tl.starts[n-5]:total;
+    var days={"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[rng]||92;
+    var cut=Date.now()-days*86400e3, w=0; for(var i=total-1;i>=0&&tl.slots[i]>=cut;i--) w++;
+    return Math.max(2,w);
+  }
+  // Level chart: `o` = {pfx,color,name,vals (nulls allowed, one per x slot),labels (one per slot),
+  // ticks [{i,text}],seps [i],hsegs [{i0,i1,v,text}] dashed level segments,note}. Same geometry
+  // rules as drawLineChart (phone / terminal fit), nice-rounded y ticks with thousands separators.
   function drawLevelChart(box,leg,o){
     var pfx=o.pfx||"c";
     leg.innerHTML='<span><span class="sw" style="background:'+o.color+'"></span>'+esc(o.name)+"</span>"
-      +(o.hline?'<span><span class="sw" style="background:transparent;border-top:1px dashed #8a877e;height:0"></span>'+esc(o.hline.text)+"</span>":"")
+      +((o.hsegs&&o.hsegs.length)?'<span><span class="sw" style="background:transparent;border-top:1px dashed #8a877e;height:0"></span>prev close</span>':"")
       +(o.note?'<span class="mut">'+esc(o.note)+"</span>":"");
     var cw=(box&&box.clientWidth)||0, ch=(box&&box.clientHeight)||0, narrow=cw>0&&cw<600;
     var fit=isTerm()&&cw>120&&ch>80;
     var W=fit?Math.round(cw):(narrow?Math.max(240,Math.round(cw)):560),H=fit?Math.round(ch):250,mL=54,mR=8,mT=8,mB=20,iW=W-mL-mR,iH=H-mT-mB;
-    var all=[]; o.vals.forEach(function(v){if(v!=null)all.push(v);}); if(o.hline&&o.hline.v!=null) all.push(o.hline.v);
-    if(!all.length){ box.innerHTML='<div class="empty">–</div>'; return; }
+    var all=[]; o.vals.forEach(function(v){if(v!=null)all.push(v);}); (o.hsegs||[]).forEach(function(h){ if(h.v!=null) all.push(h.v); });
+    if(!all.length){ box.innerHTML='<div class="empty">–</div>'; return null; }
     var lo=Math.min.apply(null,all),hi=Math.max.apply(null,all);
     var pad=Math.max((hi-lo)*0.08,Math.abs(hi)*0.0015,0.01); lo-=pad;hi+=pad;
     var nn=o.vals.length;
@@ -2924,19 +2990,18 @@ body.term #rr-head .tt{font-size:13px}
       svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
         +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="var(--mut)">'+n(v,dp)+"</text>";
     }
-    // session separators: drawn while they still read as boundaries (1D lunch, 1W, 1M); a 3M+ chart has too many
+    // session separators: drawn while they still read as boundaries; a 3M+ chart has too many
     if((o.seps||[]).length<=25) (o.seps||[]).forEach(function(i){ var xx=X(i); svg+='<line x1="'+xx.toFixed(1)+'" x2="'+xx.toFixed(1)+'" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#23242a" stroke-width="1"/>'; });
     var ticks=o.ticks||[], maxT=narrow?4:(fit?Math.max(4,Math.floor(W/90)):8);
     if(ticks.length>maxT){ var k=Math.ceil(ticks.length/maxT), t2=[]; for(var q=0;q<ticks.length;q+=k) t2.push(ticks[q]); if(t2[t2.length-1]!==ticks[ticks.length-1]&&ticks.length>1) t2.push(ticks[ticks.length-1]); ticks=t2; }
-    // the opening and closing labels win: drop any other label within 58 units of either (a 30-minute
-    // head or tail on the session grid, e.g. 22:30/23:00 or 15:00/15:30)
+    // the first and last labels win: drop any other label within 58 units of either
     if(ticks.length>2){ var x0=X(ticks[0].i), xe=X(ticks[ticks.length-1].i), nT=ticks.length; ticks=ticks.filter(function(t,qi){ return qi===0||qi===nT-1||(X(t.i)-x0>58&&xe-X(t.i)>58); }); }
     ticks.forEach(function(t){ var xx=X(t.i), anc=xx<mL+30?"start":(xx>W-mR-30?"end":"middle"); svg+='<text x="'+xx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+anc+'" font-size="9.5" fill="var(--mut)">'+esc(t.text)+"</text>"; });
-    if(o.hline&&o.hline.v!=null){
-      var yh=Y(o.hline.v);
-      svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+yh.toFixed(1)+'" y2="'+yh.toFixed(1)+'" stroke="#8a877e" stroke-width="1" stroke-dasharray="4 3"/>'
-        +'<text x="'+(W-mR-2)+'" y="'+(yh-3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#8a877e">'+esc(o.hline.short||o.hline.text)+"</text>";
-    }
+    (o.hsegs||[]).forEach(function(h){
+      if(h.v==null) return; var yh=Y(h.v), xa=X(h.i0), xb=X(h.i1);
+      svg+='<line x1="'+xa.toFixed(1)+'" x2="'+xb.toFixed(1)+'" y1="'+yh.toFixed(1)+'" y2="'+yh.toFixed(1)+'" stroke="#8a877e" stroke-width="1" stroke-dasharray="4 3"/>'
+        +(h.text?'<text x="'+(xb-2).toFixed(1)+'" y="'+(yh-3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#8a877e">'+esc(h.text)+"</text>":"");
+    });
     var d="",st=false;
     for(var i=0;i<nn;i++){ var vv=o.vals[i]; if(vv==null) continue; d+=(st?"L":"M")+X(i).toFixed(1)+","+Y(vv).toFixed(1); st=true; }
     svg+='<path d="'+d+'" fill="none" stroke="'+o.color+'" stroke-width="1.4"/>';
@@ -2948,88 +3013,100 @@ body.term #rr-head .tt{font-size:13px}
     hvSpec(pfx+"chart",{W:W,xs:xs,labels:o.labels,vline:[mT,H-mB],r:3.2,fmt:function(v){return n(v,1);},
       series:[{name:o.name,color:o.color,vals:o.vals,ys:o.vals.map(function(v){return v==null?null:Y(v);})}]});
     var svgEl=$(pfx+"chart"); if(svgEl) svgEl.setAttribute("data-hv",pfx+"chart");
+    return {W:W,iW:iW};
   }
-  // 1D: the session grid (one slot per minute, breaks compressed out), the line from the open
-  function mkSession(C,box,leg,d){
-    var open=Date.parse(d.session.open), close=Date.parse(d.session.close);
-    var brk=(d.session.breaks||[]).map(function(b){return [Date.parse(b[0]),Date.parse(b[1])];});
-    var grid=[];
-    for(var ms=open;ms<=close;ms+=60e3){ var inB=false; for(var i=0;i<brk.length;i++){ if(ms>brk[i][0]&&ms<brk[i][1]){ inB=true; break; } } if(!inB) grid.push(ms); }
-    var byMs={}; d.points.forEach(function(p){ byMs[Date.parse(p[0])]=p[1]; });
-    var vals=grid.map(function(ms){ var v=byMs[ms]; return v==null?null:v; });
-    var labels=grid.map(function(ms){ var j=jstParts(ms); return j.md+" "+j.hm+" JST"; });
-    var ticks=[]; grid.forEach(function(ms,i){ var j=jstParts(ms); if(i===0||i===grid.length-1||j.min%60===0||(i>0&&ms-grid[i-1]>60e3)) ticks.push({i:i,text:j.hm}); });
-    var seps=[]; brk.forEach(function(b){ var i=grid.indexOf(b[1]); if(i>0) seps.push(i); });
+  // ---- the viewport: the last W slots shifted back by `off`, drawn with per-slice ticks / seps / prev-close segments ----
+  function drawTimeline(mkt,tl,rng){
+    var C=MKCFG[mkt], box=$(C.box), leg=$(C.leg), st=MKPAN[mkt];
+    var total=tl.slots.length; if(!total){ box.innerHTML='<div class="empty">No index history for this range yet.</div>'; leg.innerHTML=""; return; }
+    var W=Math.min(total,viewWidth(tl,rng)), maxOff=Math.max(0,total-W);
+    st.off=Math.max(0,Math.min(maxOff,st.off||0)); st.maxOff=maxOff; st.tl=tl; st.Wslots=W;
+    var a=total-W-st.off, b=total-st.off;   // [a,b)
+    var vals=tl.slots.slice(a,b).map(function(_,i){return tl.vals[a+i];});
+    var labels=[], ticks=[], seps=[], hsegs=[], visSess=[];
+    var oneSession=tl.intra&&rng==="1D";
+    for(var i=a;i<b;i++){
+      var ms=tl.slots[i], j=jstParts(ms);
+      labels.push(tl.daily?tl.sess[i].d:(j.md+" "+j.hm+" JST"));
+    }
+    // sessions touching the slice
+    var sIdx=[]; for(var s=0;s<tl.starts.length;s++){ var s0=tl.starts[s], s1=(s+1<tl.starts.length?tl.starts[s+1]:total); if(s1>a&&s0<b) sIdx.push(s); }
+    var multi=sIdx.length>1, startSet={}; tl.starts.forEach(function(v){ startSet[v]=1; });
+    sIdx.forEach(function(s){
+      var s0=tl.starts[s], s1=(s+1<tl.starts.length?tl.starts[s+1]:total), i0=Math.max(s0,a), i1=Math.min(s1,b)-1;
+      visSess.push({s:s,d:tl.sess[s].d,i0:i0-a,i1:i1-a,kind:tl.kind[s],full:s0>=a&&s1<=b});
+      if(s0>a) seps.push(s0-a);
+      // one whole session in view: its start reads as a time; two or more (a pan mid-session): every session start reads as a date
+      if(!tl.daily){ ticks.push({i:Math.max(s0,a)-a,text:(oneSession&&!multi&&s0>=a)?jstParts(tl.slots[s0]).hm:jstParts(tl.slots[Math.max(s0,a)]).md}); }
+      if(tl.intra&&rng==="1D"&&tl.prev[tl.sess[s].d]){ var pv=tl.prev[tl.sess[s].d].prev; hsegs.push({i0:i0-a,i1:i1-a,v:pv,text:(i1===Math.min(s1,b)-1&&s===sIdx[sIdx.length-1])?"prev "+lvl(pv):""}); }
+    });
+    if(oneSession){ for(var q=a;q<b;q++){ var jj=jstParts(tl.slots[q]); if(jj.min%60===0&&!startSet[q]&&q!==a) ticks.push({i:q-a,text:jj.hm}); } ticks.sort(function(x,y){return x.i-y.i;}); if(ticks.length&&ticks[ticks.length-1].i!==b-1-a) ticks.push({i:b-1-a,text:jstParts(tl.slots[b-1]).hm}); }
+    if(tl.daily){ var kk=Math.max(1,Math.round((W-1)/6)); for(var z=0;z<W;z+=kk) ticks.push({i:z,text:(rng==="24M"||rng==="36M"||rng==="60M")?tl.sess[a+z].d.slice(2,7).replace("-","/"):tl.sess[a+z].d.slice(5).replace("-","/")}); }
+    // note
     var first=null,last=null; vals.forEach(function(v){ if(v!=null){ if(first==null) first=v; last=v; } });
-    var prev=d.prev_close, chg=(prev&&last!=null)?last/prev-1:null;
-    var o=jstParts(open), c=jstParts(close);
-    var note=(d.session.d||"")+" session "+o.hm+"–"+c.hm+" JST"+(d.tz==="ET"?" (NY 09:30–16:00 ET)":"")+" · 1-min · open "+lvl(first)+" · last "+lvl(last)+(chg==null?"":" ("+pct(chg)+" vs prev close)")
-      +(d.session.live?" · live":" · closed — held until the next open")+(d.days&&d.days.length&&d.days[d.days.length-1].anchored?" · anchored to the MSCI close":"")+" · "+(d.proxy||"");
-    drawLevelChart(box,leg,{pfx:C.pfx,tipEl:$(C.tip),color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,
-      hline:prev!=null?{v:prev,text:"prev close "+lvl(prev),short:"prev "+lvl(prev)}:null,note:note});
+    var lastS=visSess.length?visSess[visSess.length-1]:null, firstS=visSess.length?visSess[0]:null;
+    var kinds={}; visSess.forEach(function(v){ kinds[v.kind]=1; });
+    var kindTxt=Object.keys(kinds).map(function(k){return k==="hourly"&&tl.intra?"hourly closes":k;}).join(" + ");   // short: "1-min", "hourly closes + 5-min"
+    var kindLong=Object.keys(kinds).map(function(k){return k==="hourly"?(tl.intra?"hourly closes":"hourly bars"):(k==="daily"?"daily":k+" bars");}).join(" + ");   // "hourly closes + 5-min bars"
+    var note;
+    if(oneSession&&lastS){
+      var sd=tl.sess[lastS.s], o=jstParts(sd.open), c=jstParts(sd.close), pinfo=tl.prev[sd.d]||{}, chg=(pinfo.prev&&last!=null)?last/pinfo.prev-1:null;
+      note=(visSess.length>1?firstS.d+" → ":"")+sd.d+" session "+o.hm+"–"+c.hm+" JST"+(C.tz==="ET"?" (NY 09:30–16:00 ET)":"")+" · "+kindTxt+" · open "+lvl(first)+" · last "+lvl(last)+(chg==null?"":" ("+pct(chg)+" vs prev close)")
+        +(pinfo.live?" · live":(st.off?"":" · closed — held until the next open"))+(pinfo.anchored?" · anchored to the MSCI close":"");
+    } else {
+      note=rng+" · "+kindLong+" · "+visSess.length+" sessions"+(tl.intra||tl.step===60?" · finished sessions anchored to the MSCI close":"")+(first!=null&&last!=null?" · "+pct(last/first-1)+" over the view":"");
+    }
+    if(kinds.hourly&&tl.intra) note+=" · 1-minute bars accrue from the next sessions";
+    var back=0; for(var sb=tl.starts.length-1;sb>=0&&tl.starts[sb]>=b;sb--) back++;
+    note+=(st.off?" · ⬅ "+(back?back+" session"+(back>1?"s":"")+" back":"earlier")+" · double-click for latest":" · drag ↔ to pan");
+    var g=drawLevelChart(box,leg,{pfx:C.pfx,color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,hsegs:hsegs,note:note});
+    if(g){ st.svgW=g.W; st.iW=g.iW; }
   }
-  // 1W / hourly: sessions concatenated, a separator and a date label at each session start
-  function mkChained(C,box,leg,d,rng){
-    var vals=d.points.map(function(p){return p[1];});
-    var labels=d.points.map(function(p){ var j=jstParts(Date.parse(p[0])); return j.md+" "+j.hm+" JST"; });
-    var ticks=[], seps=[], lastD=null;
-    d.points.forEach(function(p,i){ var dd=p[0].slice(0,10); if(d.tz!=="ET") dd=jstParts(Date.parse(p[0])).ymd; if(dd!==lastD){ if(lastD!==null) seps.push(i); ticks.push({i:i,text:jstParts(Date.parse(p[0])).md}); lastD=dd; } });
-    var first=vals.length?vals[0]:null, last=vals.length?vals[vals.length-1]:null;
-    var note=rng+" · "+(d.res==="5m"?"5-min":(d.res==="1h"?"hourly":"1-min"))+" bars · "+(d.days||[]).length+" sessions · finished sessions anchored to the MSCI close · "+(d.proxy||"")+(first!=null&&last!=null?" · "+pct(last/first-1)+" over the range":"");
-    drawLevelChart(box,leg,{pfx:C.pfx,tipEl:$(C.tip),color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,hline:null,note:note});
-  }
-  // 24M+ (and the fallback while hourly history accrues): daily Net TR closes from state
-  function mkDaily(C,box,leg,rng,days,extra){
-    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
-    var rows=C.daily().filter(function(r){return r.d>=startD;});
-    if(rows.length<2){ box.innerHTML='<div class="empty">Not enough index history for this range yet.</div>'; leg.innerHTML=""; return; }
-    var vals=rows.map(function(r){return Number(r.level);});
-    var labels=rows.map(function(r){return r.d;});
-    var ticks=[]; var kk=Math.max(1,Math.round((rows.length-1)/6));
-    for(var i=0;i<rows.length;i+=kk) ticks.push({i:i,text:(days>200?rows[i].d.slice(2,7):rows[i].d.slice(5)).replace("-","/")});
-    var note=rng+" · daily closes · "+pct(vals[vals.length-1]/vals[0]-1)+" over the range"+(extra?" · "+extra:"");
-    drawLevelChart(box,leg,{pfx:C.pfx,tipEl:$(C.tip),color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:[],hline:null,note:note});
+  // ---- mouse pan: hold and drag shifts the viewport; double-click returns to the latest ----
+  function bindPan(mkt){
+    var C=MKCFG[mkt], box=$(C.box); if(!box||box.__pan) return; box.__pan=true;
+    box.style.cursor="grab";
+    box.addEventListener("mousedown",function(ev){
+      if(ev.button!==0) return; var st=MKPAN[mkt]; if(!st||!st.tl||!st.svgW) return;
+      ev.preventDefault(); window.__mkDrag=true; if(hvCur){ hvHide(hvCur); hvCur=null; }
+      var x0=ev.clientX, off0=st.off, svg=box.querySelector("svg"), r=(svg||box).getBoundingClientRect();
+      var pxPerSlot=(r.width*(st.iW/st.svgW))/Math.max(1,st.Wslots-1);
+      box.style.cursor="grabbing";
+      function mv(e){ var off=Math.round(off0+(e.clientX-x0)/pxPerSlot); off=Math.max(0,Math.min(st.maxOff,off)); if(off!==st.off){ st.off=off; if(!st.raf){ st.raf=requestAnimationFrame(function(){ st.raf=null; drawTimeline(mkt,st.tl,st.rng); }); } } }
+      function up(){ document.removeEventListener("mousemove",mv); document.removeEventListener("mouseup",up); window.__mkDrag=false; box.style.cursor="grab"; }
+      document.addEventListener("mousemove",mv); document.addEventListener("mouseup",up);
+    });
+    box.addEventListener("dblclick",function(){ var st=MKPAN[mkt]; if(st&&st.off&&st.tl){ st.off=0; drawTimeline(mkt,st.tl,st.rng); } });
   }
   function renderMktChart(mkt){
     var C=MKCFG[mkt], box=$(C.box), leg=$(C.leg); if(!box||!S) return;
-    var rng=C.range();
+    bindPan(mkt);
+    var rng=C.range(), st=MKPAN[mkt]||(MKPAN[mkt]={off:0,rng:null});
+    if(st.rng!==rng){ st.rng=rng; st.off=0; }
     Array.prototype.forEach.call(document.querySelectorAll(C.sel),function(c2){ c2.className="chip-sm"+(c2.getAttribute(C.attr)===rng?" on":""); });
     var days={"1D":1,"1W":7,"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[rng]||92;
     var res=rng==="1D"?"30m":(rng==="1W"?"1h":null);
-    if(mkt==="jp"&&isTerm()&&false){} /* (the Japan tab has no core-tile override) */
     renderDrivers(C.drv,C.drvSyms(),days,res,res?null:rng);
-    if(rng==="24M"||rng==="36M"||rng==="60M"){ mkDaily(C,box,leg,rng,days,null); return; }
-    if(!(MKC[mkt+"|"+rng]&&MKC[mkt+"|"+rng].data)){ box.innerHTML='<div class="empty">Loading…</div>'; leg.innerHTML=""; }
-    loadMktChart(mkt,rng,function(d){
+    if(rng==="24M"||rng==="36M"||rng==="60M"){ drawTimeline(mkt,buildDaily(C),rng); return; }
+    var need=rng==="1D"?["1D","12M"]:(rng==="1W"?["1W","12M"]:["12M"]);
+    if(!mkCached(mkt,need)){ box.innerHTML='<div class="empty">Loading…</div>'; leg.innerHTML=""; }
+    loadMany(mkt,need,function(p){
       if(C.range()!==rng||!S) return;
-      if(rng==="1W"&&(!d.days||d.days.length<4)){
-        // fewer than four sessions of 5-minute bars: show the same window from the hourly history
-        loadMktChart(mkt,"1M",function(d2){
-          if(C.range()!==rng||!S) return;
-          var cutMs=Date.parse(jstParts(Date.now()-8*86400e3).ymd+"T00:00:00Z")-9*3600e3;   // whole sessions from 8 days back (JST day boundary)
-          var pts=(d2.points||[]).filter(function(p){return Date.parse(p[0])>=cutMs;});
-          if(!pts.length){ box.innerHTML='<div class="empty">No minute data for this market yet — the intraday proxy prints from the next session.</div>'; leg.innerHTML=""; return; }
-          var dset={}; pts.forEach(function(p){ dset[p[0].slice(0,10)]=1; });   // a session's UTC date = the api's session date for all three markets
-          var d3={ok:true,mkt:mkt,range:"1W",res:"1h",tz:d2.tz,label:d2.label,proxy:(d2.proxy||"")+" · 5-min bars from the next sessions",session:null,days:(d2.days||[]).filter(function(x){return !!dset[x.d];}),prev_close:d2.prev_close,close:d2.close,points:pts,at:d2.at};
-          mkChained(C,box,leg,d3,rng);
-        });
-        return;
-      }
-      if(!d.points||!d.points.length){
-        if(rng==="1D"||rng==="1W"){ box.innerHTML='<div class="empty">No minute data for this market yet — the intraday proxy prints from the next session.</div>'; leg.innerHTML=""; }
-        else mkDaily(C,box,leg,rng,days,"no hourly history in this range yet, daily closes shown (hourly bars accrue every night)");
-        return;
-      }
-      if(rng==="1D") mkSession(C,box,leg,d); else mkChained(C,box,leg,d,rng);
+      var prev=prevMapOf(p), tl;
+      if(rng==="1D") tl=buildIntra(C,1,p["1D"],p["12M"],prev);
+      else if(rng==="1W") tl=buildIntra(C,5,p["1W"],p["12M"],prev);
+      else tl=buildHourly(C,p["12M"],prev);
+      if(!tl.slots.length){ box.innerHTML='<div class="empty">No intraday data for this market yet — the proxies print from the next session and the hourly history fills in nightly.</div>'; leg.innerHTML=""; return; }
+      drawTimeline(mkt,tl,rng);
     });
   }
-  // a visible 1D chart follows the session: refetched every two minutes (the tick writes every five)
+  // a visible 1D chart at the latest position follows the session: refetched every two minutes
   setInterval(function(){
     if(!S) return;
     Object.keys(MKCFG).forEach(function(m){
-      var C=MKCFG[m]; if(C.range()!=="1D") return;
+      var C=MKCFG[m]; if(C.range()!=="1D") return; var st=MKPAN[m]; if(st&&st.off) return;
       var box=$(C.box); if(!box||!box.getClientRects().length) return;
-      delete MKC[m+"|1D"]; renderMktChart(m);
+      var c=MKC[m+"|1D"]; if(c) c.at=0; renderMktChart(m);   // stale, not deleted: no "Loading" flash
     });
   },120e3);
   function renderAsiaUniv(){
