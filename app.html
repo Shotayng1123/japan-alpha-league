@@ -39,14 +39,15 @@ a{color:var(--cyan)}
 #topbar .bmq{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:12px}
 #topbar .chip{border:1px solid var(--bord2);border-radius:3px;padding:3px 10px;cursor:pointer;background:var(--panel2)}
 #topbar .chip:hover{border-color:var(--amber)}
-#mktstat{font-size:11px;letter-spacing:.08em}
+#mktstat{font-size:12px;letter-spacing:.08em;color:var(--amber);font-weight:700}
+#nxt{color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
 #clock{color:var(--txt2);font-size:11px}
 #nav{display:flex;gap:2px;margin-left:6px}
 #nav a{color:var(--txt2);text-decoration:none;font-size:11px;letter-spacing:.1em;padding:4px 11px;border:1px solid transparent;border-radius:3px}
 #nav a:hover{color:var(--txt);border-color:var(--bord2)}
 #nav a.on{color:var(--amber);border-color:var(--amber);background:#1c1610}
 
-#wrap{max-width:1500px;margin:0 auto;padding:10px 12px 60px}
+#wrap{max-width:none;margin:0;padding:10px 12px 60px}
 #grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
 .panel{background:var(--panel);border:1px solid var(--bord);border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
 .phead{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#17181b,#101114);border-bottom:1px solid var(--bord);padding:6px 10px}
@@ -186,8 +187,11 @@ body.term #mk-b1{grid-area:2/1/3/2;display:grid;grid-template-columns:minmax(0,1
 body.term #mk-b2{grid-area:2/2/3/3;display:flex;flex-direction:column;overflow:hidden;padding:3px 0 0 5px;border-bottom:0!important}
 body.term #mc-main{grid-area:1/1/2/2;display:flex;flex-direction:column;min-height:0;min-width:0;padding:4px 6px 3px;border-right:1px solid var(--bord);border-bottom:1px solid var(--bord)}
 body.term #mc-box{flex:1 1 auto;min-height:0;min-width:0;overflow:hidden}
-body.term table.pertab{margin-top:3px;font-size:10px}
-body.term table.pertab td,body.term table.pertab th{padding:1px 4px}
+body.term #mc-main{overflow:hidden;container-type:inline-size}
+body.term table.pertab{margin-top:3px;font-size:clamp(8px,2.15cqw,10px);width:100%;table-layout:fixed}
+body.term table.pertab td,body.term table.pertab th{padding:1px 2px;white-space:nowrap;overflow:hidden}
+body.term table.pertab th.l,body.term table.pertab td.l{width:30%;text-overflow:ellipsis}
+body.term table.pertab th:nth-child(2),body.term table.pertab td:nth-child(2){width:13%}
 body.term #mc-ctlw{flex:none;margin-top:3px!important}
 body.term #mc-drv{grid-area:1/2/2/3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:0;min-width:0;min-height:0;border-bottom:1px solid var(--bord)}
 body.term #mc-drv2{grid-area:2/1/3/3;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:0;min-width:0;min-height:0}
@@ -514,7 +518,7 @@ table.fst .fsb{display:inline-block;vertical-align:baseline;height:7px;backgroun
   #topbar .brand{grid-area:brand;font-size:12.5px;letter-spacing:.1em}
   #topbar .bmq{display:contents}
   #clock{grid-area:clock;font-size:10.5px}
-  #mktstat{grid-area:stat;font-size:10.5px}
+  #mktstat{grid-area:stat;font-size:11px}
   #bmlvl{grid-area:bm;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #upd{grid-area:upd;font-size:10px!important}
   #loginchip{grid-area:login;justify-self:end;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -723,7 +727,7 @@ body.term #rr-head .tt{font-size:13px}
     <span id="mktstat" class="mut">TSE —</span>
     <span id="bmlvl" class="num mut">MSCI JP —</span>
     <span id="clock" class="num"></span>
-    <span id="upd" class="mut" style="font-size:10px"></span>
+    <span id="upd" class="mut" style="font-size:10px"><span id="updt"></span><span id="nxt" class="num" title="Next state refresh &mdash; the page refetches the league state every 60 s"></span></span>
     <span id="sz-ctl"><span class="chip-sm" data-sz="0.85">S</span><span class="chip-sm on" data-sz="1">M</span><span class="chip-sm" data-sz="1.15">L</span><span class="chip-sm" data-sz="1.35">XL</span></span>
     <span id="cmp-ctl" class="chip-sm" title="Terminal layout &mdash; one screen per tab, sized to the window">COMPACT</span>
     <span id="fs-ctl" class="chip-sm" title="Fullscreen &mdash; hides the header (Esc or click the corner strip to leave; keys 1&ndash;9 switch tabs)">&#9974; FULL</span>
@@ -1460,13 +1464,24 @@ body.term #rr-head .tt{font-size:13px}
   });
 
   /* ---------- data load ---------- */
+  var nextLoadAt=0, loadTmr=null;
+  function scheduleLoad(){ if(loadTmr) clearTimeout(loadTmr); nextLoadAt=Date.now()+60000; loadTmr=setTimeout(load,60000); }
   function load(){
+    scheduleLoad();
     fetch(API+"?action=state").then(function(r){return r.json();}).then(function(j){
       if(!j.ok){ console.error(j.error); return; }
       S=j; renderAll();
     }).catch(function(e){ console.error(e); });
   }
-  load(); setInterval(load,60000);
+  load();
+  // countdown to the next state refresh, beside the DATA stamp (v9.6)
+  function tickNext(){
+    var el=$("nxt"); if(!el) return;
+    if(!nextLoadAt){ el.textContent=""; return; }
+    var sec=Math.max(0,Math.round((nextLoadAt-Date.now())/1000));
+    el.textContent=" \u00b7 \u21bb "+Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
+  }
+  tickNext(); setInterval(tickNext,1000);
   document.addEventListener("visibilitychange",function(){ if(!document.hidden) load(); });
 
   /* ---------- bars proxy & sparklines ---------- */
@@ -2987,6 +3002,19 @@ body.term #rr-head .tt{font-size:13px}
     if(!(MKC[mkt+"|"+rng]&&MKC[mkt+"|"+rng].data)){ box.innerHTML='<div class="empty">Loading…</div>'; leg.innerHTML=""; }
     loadMktChart(mkt,rng,function(d){
       if(C.range()!==rng||!S) return;
+      if(rng==="1W"&&(!d.days||d.days.length<4)){
+        // fewer than four sessions of 5-minute bars: show the same window from the hourly history
+        loadMktChart(mkt,"1M",function(d2){
+          if(C.range()!==rng||!S) return;
+          var cutMs=Date.parse(jstParts(Date.now()-8*86400e3).ymd+"T00:00:00Z")-9*3600e3;   // whole sessions from 8 days back (JST day boundary)
+          var pts=(d2.points||[]).filter(function(p){return Date.parse(p[0])>=cutMs;});
+          if(!pts.length){ box.innerHTML='<div class="empty">No minute data for this market yet — the intraday proxy prints from the next session.</div>'; leg.innerHTML=""; return; }
+          var dset={}; pts.forEach(function(p){ dset[p[0].slice(0,10)]=1; });   // a session's UTC date = the api's session date for all three markets
+          var d3={ok:true,mkt:mkt,range:"1W",res:"1h",tz:d2.tz,label:d2.label,proxy:(d2.proxy||"")+" · 5-min bars from the next sessions",session:null,days:(d2.days||[]).filter(function(x){return !!dset[x.d];}),prev_close:d2.prev_close,close:d2.close,points:pts,at:d2.at};
+          mkChained(C,box,leg,d3,rng);
+        });
+        return;
+      }
       if(!d.points||!d.points.length){
         if(rng==="1D"||rng==="1W"){ box.innerHTML='<div class="empty">No minute data for this market yet — the intraday proxy prints from the next session.</div>'; leg.innerHTML=""; }
         else mkDaily(C,box,leg,rng,days,"no hourly history in this range yet, daily closes shown (hourly bars accrue every night)");
@@ -4747,7 +4775,7 @@ body.term #rr-head .tt{font-size:13px}
   function renderAll(){
     var qt=0;
     S.quotes.forEach(function(q2){ var x=Date.parse(q2.updated_at||0); if(x>qt)qt=x; });
-    $("upd").textContent=qt?("DATA "+new Date(qt+9*3600e3).toISOString().slice(11,16)+" JST"):"";
+    $("updt").textContent=qt?("DATA "+new Date(qt+9*3600e3).toISOString().slice(11,16)+" JST"):"";
     var bmr=S.benchmark;
     if(bmr.length){
       var l=bmr[bmr.length-1],pv=bmr.length>1?bmr[bmr.length-2]:null;
