@@ -458,6 +458,7 @@ tbody tr.pick{cursor:pointer}
 .mgc{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:8px;margin:2px 0 4px}
 @media(max-width:560px){.mgc{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .mtile{border:1px solid var(--bord);padding:5px 8px 6px;border-radius:2px;min-width:0}
+.mtile.drv1d{cursor:grab;user-select:none}
 .mtile .lb{font-size:9px;color:var(--mut);letter-spacing:.06em;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
 .mtile .lbtxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .mtile .asof{flex:0 0 auto;font-size:8.5px;letter-spacing:.02em;color:var(--mut);opacity:.72;font-variant-numeric:tabular-nums}
@@ -639,6 +640,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.8.1: the brand mark (logo B, the armillary) in the header and as the favicon ---- */
 /* ---- v9.9a: theme V9 CORAL & TEAL; TSE/NYSE/LSE pills; World/Asia tabs in the Japan format; Cormorant Garamond wordmark ---- */
 /* ---- v9.9b: live US yields (CBOE) + bond prices in GLOBAL MARKETS; six driver tiles per market tab incl. JGB ETFs and the T-note future ---- */
+/* ---- v9.9c: driver tiles at 1D = the instrument's own session from its open (1-min bars, 7 days), drag to pan, last completed session while closed; FX day = 17:00 New York ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -2708,47 +2710,170 @@ body.term #rr-head .tt{font-size:13px}
     }).join("");
     tb.innerHTML=out||'<tr><td class="l empty" colspan="8">&ndash;</td></tr>';
   }
-  function renderDrivers(elId, syms, days, res, per){
-    var el=$(elId); if(!el||!MACRO) return;
-    // res ("30m" for 1D, "1h" for 1W): draw the tile from the shared intraday bar cache when the
-    // symbol has bars; otherwise fall back to at least a week of daily rows so a yield or a symbol
-    // without bars still shows something rather than a dash.
-    var bars=null;
-    if(res){ var bc=BARSC[res]; if(bc&&bc.data) bars=bc.data; else ensureBarsAll(res); if(days<7) days=7; }
-    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
+  /* ---------- v9.9c: driver tiles at 1D = the instrument's own session, from its open, pannable ----------
+     Shota, 2026-09-16 23:00: "メインのチャート以外も 1D を選択したときはその日の初値からトラックできるように。ホールド＆
+     マウス移動でチャート範囲も柔軟に変更できるように。各マーケットの開始に合わせる。マーケットがクローズしている時間に
+     ついては前日 1 日分を Default の表示にする。Currency とかもそう。"
+     One-minute bars (api bars_all&res=1m&symbols=…, Yahoo keeps seven days) are cut into SESSIONS:
+     exchange-listed names by the exchange's local calendar date, FX and futures by the FX day that
+     starts at 17:00 New York (decided 09-17). The tile shows the latest session on a one-minute grid
+     from its first bar; while the session is live the grid is extended to the usual session length,
+     so the line grows into the day; once the market is closed the last completed session shows in
+     full. Click-hold-drag pans back through the seven days; double-click returns to the latest.
+     Series without one-minute bars (FRED / MOF yields, policy rates) keep the daily tile. */
+  var DRV1M={};    // sym -> {at, bars:[[ms,close],...]}
+  var DRV1MQ={};   // in-flight fetches by symbol list
+  var DRVPAN={};   // sym -> {off}
+  var DRV_TZ={"^HSI":"Asia/Hong_Kong","000001.SS":"Asia/Shanghai","^TWII":"Asia/Taipei","^KS11":"Asia/Seoul","^NSEI":"Asia/Kolkata","^FTSE":"Europe/London"};
+  var _ymdF={};
+  function ymdIn(tz,ms){
+    try{ var f=_ymdF[tz]||(_ymdF[tz]=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"})); return f.format(new Date(ms)); }
+    catch(e){ return new Date(ms).toISOString().slice(0,10); }
+  }
+  function drvClass(sym){
+    if(/=X$/.test(sym)||/=F$/.test(sym)||sym==="DX-Y.NYB") return {kind:"fx"};
+    if(/\.T$/.test(sym)||sym==="^N225") return {kind:"ex",tz:"Asia/Tokyo"};
+    if(DRV_TZ[sym]) return {kind:"ex",tz:DRV_TZ[sym]};
+    return {kind:"ex",tz:"America/New_York"};        // US listings and the CBOE yield indices
+  }
+  // session key of an instant: the local date, or the FX day (17:00 New York rolls the date)
+  function drvKey(cls,ms){ return cls.kind==="fx"?ymdIn("America/New_York",ms+7*3600e3):ymdIn(cls.tz,ms); }
+  function drvTimeline(sym,bars){
+    var cls=drvClass(sym), sess=[], byKey={}, now=Date.now();
+    bars.forEach(function(b){ var ms=b[0]*1000, k=drvKey(cls,ms); if(!byKey[k]){ byKey[k]={k:k,bars:[]}; sess.push(byKey[k]); } byKey[k].bars.push([ms,Number(b[1])]); });
+    if(!sess.length) return null;
+    var lens=sess.slice(0,-1).map(function(s){ return s.bars[s.bars.length-1][0]-s.bars[0][0]; }).sort(function(a,b){return a-b;});
+    var typ=lens.length?lens[Math.floor(lens.length/2)]:(cls.kind==="fx"?23*3600e3:6*3600e3);
+    var last=sess[sess.length-1], lastMs=last.bars[last.bars.length-1][0];
+    last.live=(now-lastMs)<90*60e3;
+    var slots=[], vals=[], starts=[];
+    sess.forEach(function(s,i){
+      var a=Math.floor(s.bars[0][0]/60000)*60000, end=s.bars[s.bars.length-1][0];
+      if(i===sess.length-1&&s.live) end=Math.max(end,a+typ);      // live: the grid reaches the usual close, the line grows into it
+      var i0=slots.length; starts.push(i0);
+      for(var ms=a; ms<=end; ms+=60000){ slots.push(ms); vals.push(null); }
+      s.bars.forEach(function(b){ var j=i0+Math.floor((b[0]-a)/60000); if(j>=i0&&j<slots.length) vals[j]=b[1]; });
+      s.i0=i0; s.i1=slots.length;
+    });
+    return {sym:sym,cls:cls,sess:sess,slots:slots,vals:vals,starts:starts,live:last.live};
+  }
+  // first load: seven days of minutes; refreshes every two minutes fetch only the last day and merge
+  function ensureDrv1m(syms,cb){
+    var need=syms.filter(function(s){ var c=DRV1M[s]; return !(c&&Date.now()-c.at<120e3); });
+    if(!need.length) return false;
+    var fresh=need.every(function(s){ var c=DRV1M[s]; return c&&c.bars&&c.bars.length; });
+    var key=need.slice().sort().join(","); if(DRV1MQ[key]) return true; DRV1MQ[key]=1;
+    fetch(API+"?action=bars_all&res=1m&range="+(fresh?"1d":"7d")+"&symbols="+encodeURIComponent(need.join(","))).then(function(r){return r.json();}).then(function(j){
+      need.forEach(function(s){
+        var nb=(j&&j.bars&&j.bars[s])||null, old=DRV1M[s]&&DRV1M[s].bars;
+        if(nb&&old&&old.length){ var m={}; old.forEach(function(b){m[b[0]]=b[1];}); nb.forEach(function(b){m[b[0]]=b[1];}); nb=Object.keys(m).map(function(k){return [Number(k),m[k]];}).sort(function(a,b){return a[0]-b[0];}); var cut=Date.now()/1000-8*86400; nb=nb.filter(function(b){return b[0]>=cut;}); }
+        DRV1M[s]={at:Date.now(),bars:nb||old||null};
+      });
+      delete DRV1MQ[key]; cb();
+    }).catch(function(){ need.forEach(function(s){ DRV1M[s]={at:Date.now()-60e3,bars:(DRV1M[s]&&DRV1M[s].bars)||null}; }); delete DRV1MQ[key]; });
+    return true;
+  }
+  function pctStr(v,isY){ return isY?((v>=0?"+":"")+(v*100).toFixed(0)+"bp"):((v>=0?"+":"")+(v*100).toFixed(1)+"%"); }
+  // draw one symbol's tile from its timeline; returns null when the symbol has no minute bars
+  function drvTile1D(sym,m,badge){
+    var c=DRV1M[sym]; if(!c||!c.bars||c.bars.length<2) return null;
+    var tl=drvTimeline(sym,c.bars); if(!tl||!tl.slots.length) return null;
+    var st=DRVPAN[sym]||(DRVPAN[sym]={off:0});
+    var total=tl.slots.length, W=total-tl.starts[tl.starts.length-1], maxOff=Math.max(0,total-W);
+    if(W<2) W=Math.min(total,2);
+    st.off=Math.max(0,Math.min(maxOff,st.off||0)); st.W=W; st.maxOff=maxOff;
+    var a=total-W-st.off, b=total-st.off;
+    var xs=[], vs=[], labels=[];
+    for(var i=a;i<b;i++){ var v=tl.vals[i]; if(v==null) continue; xs.push(((i-a)/Math.max(1,W-1))*120); vs.push(v); labels.push(hvJst(tl.slots[i]/1000)); }
+    var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
+    var first=vs.length?vs[0]:null, last=vs.length?vs[vs.length-1]:null;
+    var chg=(first!=null&&last!=null)?(isY?((last-first)/100):(last/first-1)):null;   // yields already in percent points
+    var s0=null; for(var q=0;q<tl.sess.length;q++){ if(tl.sess[q].i1>a){ s0=tl.sess[q]; break; } }
+    var sLast=null; for(var q2=tl.sess.length-1;q2>=0;q2--){ if(tl.sess[q2].i0<b){ sLast=tl.sess[q2]; break; } }
+    var tag=st.off?(sLast?sLast.k.slice(5).replace("-","/"):"")+" ←":(tl.live?"1D · live":"1D · last session");
+    var lbl=m?m.label:sym;
+    var vl=last==null?"&ndash;":(isY?last.toFixed(2)+"%":n(last,last<10?3:(last<100?2:(last<10000?1:0))));
+    var chTxt=chg==null?"":pctStr(chg,isY);
+    var spark=vs.length>1?sparkSvg(vs,120,34,chg==null?null:chg>=0,{xs:xs,labels:labels,fmt:isY?function(v){return v.toFixed(2)+"%";}:null}):'<div class="mut" style="font-size:9px;margin-top:6px">no prints yet</div>';
+    return '<div class="mtile drv1d" data-sym="'+esc(sym)+'" data-off="'+st.off+'" data-w="'+W+'" data-total="'+total+'" title="drag ↔ to pan back through the last 7 days · double-click = latest">'+lbLine(lbl,badge,m&&m.market_time)
+      +'<div class="vl">'+vl+'</div><div class="ch '+(chg==null?"":(chg>=0?"up":"dn"))+'">'+chTxt+' <span class="mut">'+esc(tag)+'</span></div>'+spark+'</div>';
+  }
+  function bindDrvPan(el,rerender){
+    if(el.__drvpan) return; el.__drvpan=true;
+    el.addEventListener("mousedown",function(ev){
+      var t=ev.target&&ev.target.closest?ev.target.closest(".mtile.drv1d"):null; if(!t||ev.button!==0) return;
+      var sym=t.getAttribute("data-sym"), st=DRVPAN[sym]; if(!st||!st.W) return;
+      ev.preventDefault(); window.__mkDrag=true; if(typeof hvCur!=="undefined"&&hvCur){ hvHide(hvCur); hvCur=null; }
+      var x0=ev.clientX, off0=st.off, r=t.getBoundingClientRect(), pxPerSlot=Math.max(0.05,(r.width-16)/Math.max(1,st.W-1)), raf=null;
+      function mv(e){ var off=Math.round(off0+(e.clientX-x0)/pxPerSlot); off=Math.max(0,Math.min(st.maxOff,off)); if(off!==st.off){ st.off=off; if(!raf) raf=requestAnimationFrame(function(){ raf=null; rerender(); }); } }
+      function up(){ document.removeEventListener("mousemove",mv); document.removeEventListener("mouseup",up); window.__mkDrag=false; }
+      document.addEventListener("mousemove",mv); document.addEventListener("mouseup",up);
+    });
+    el.addEventListener("dblclick",function(ev){
+      var t=ev.target&&ev.target.closest?ev.target.closest(".mtile.drv1d"):null; if(!t) return;
+      var st=DRVPAN[t.getAttribute("data-sym")]; if(st&&st.off){ st.off=0; rerender(); }
+    });
+  }
+  // the 1D tile row: minute sessions where the feed has them, the 30-minute fallback where it does not
+  function renderDrivers1D(elId,syms,days,res,per){
+    var el=$(elId); if(!el||!MACRO) return false;
+    var rerender=function(){ renderDrivers(elId,syms,days,res,per); };
+    ensureDrv1m(syms,rerender);
+    var have=syms.filter(function(s){ var c=DRV1M[s]; return c&&c.bars&&c.bars.length>1; });
+    if(!have.length) return false;
     var h="", now=Date.now();
     syms.forEach(function(sym){
       var m=MACRO.meta.find(function(x){return x.symbol===sym;});
-      var lbl=m?m.label:sym;
-      // the same OPEN / CLOSED evidence as the GLOBAL MARKETS tiles
       var mt=m&&m.market_time?Date.parse(m.market_time):null, isOpen=symOpen(sym);
       var badge=isOpen?'<span class="mopen" title="'+esc(OPEN_TIP)+'">OPEN</span>':(((!isOpen)&&mt&&(now-mt>3*3600e3))?'<span class="mclosed">CLOSED</span>':"");
-      var bb=bars&&bars[sym];
-      if(bb&&bb.length>1){
-        var isYb=m&&(m.kind==="yield"||m.kind==="yield10x");
-        var w0=Number(bb[0][1]), w1=Number(bb[bb.length-1][1]);
-        var chb=isYb?((w1-w0)*100):((w1/w0-1)*100);
-        var chTxtb=isYb?((chb>=0?"+":"")+chb.toFixed(0)+"bp"):((chb>=0?"+":"")+chb.toFixed(1)+"%");
-        h+='<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)
-          +'<div class="vl">'+(isYb?w1.toFixed(2)+"%":n(w1,w1<10?3:(w1<100?2:(w1<10000?1:0))))+'</div>'
-          +'<div class="ch '+(chb>=0?"up":"dn")+'">'+chTxtb+' <span class="mut">'+(res==="30m"?"1D":"1W")+'</span></div>'
-          +sparkSvg(bb.map(function(x){return Number(x[1]);}),120,34,chb>=0,{labels:bb.map(function(x){return hvJst(x[0]);}),fmt:isYb?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
-        return;
-      }
-      var arr=(MACRO.by[sym]||[]).filter(function(x){return x.d>=startD;});
-      if(arr.length<2){ h+='<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)+'<div class="vl">&ndash;</div></div>'; return; }
-      var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
-      var v0=Number(arr[0].close), v1=Number(arr[arr.length-1].close);
-      var chg=isY?((v1-v0)*100):((v1/v0-1)*100);
-      var chTxt=isY?((chg>=0?"+":"")+chg.toFixed(0)+"bp"):((chg>=0?"+":"")+chg.toFixed(1)+"%");
-      var up=chg>=0;
-      var t0=Date.parse(arr[0].d), t1=Date.parse(arr[arr.length-1].d);
-      h+='<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)
-        +'<div class="vl">'+(isY?v1.toFixed(2)+"%":n(v1,v1<10?3:(v1<100?2:(v1<10000?1:0))))+'</div>'
-        +'<div class="ch '+(up?"up":"dn")+'">'+chTxt+(per?' <span class="mut">'+esc(per)+'</span>':'')+'</div>'
-        +sparkSvg(arr.map(function(x){return Number(x.close);}),120,34,up,{xs:arr.map(function(x){return t1>t0?(Date.parse(x.d)-t0)/(t1-t0)*120:0;}),labels:arr.map(function(x){return x.d;}),fmt:isY?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
+      var t=drvTile1D(sym,m,badge);
+      if(t){ h+=t; return; }
+      h+=drvTileFallback(sym,m,badge,days,res,per);
+    });
+    el.innerHTML=h; bindDrvPan(el,rerender);
+    return true;
+  }
+  function renderDrivers(elId, syms, days, res, per){
+    var el=$(elId); if(!el||!MACRO) return;
+    if(res==="30m"&&renderDrivers1D(elId,syms,days,res,per)) return;   // v9.9c: session tiles when minute bars exist
+    var h="";
+    syms.forEach(function(sym){
+      var m=MACRO.meta.find(function(x){return x.symbol===sym;});
+      var now=Date.now(), mt=m&&m.market_time?Date.parse(m.market_time):null, isOpen=symOpen(sym);
+      var badge=isOpen?'<span class="mopen" title="'+esc(OPEN_TIP)+'">OPEN</span>':(((!isOpen)&&mt&&(now-mt>3*3600e3))?'<span class="mclosed">CLOSED</span>':"");
+      h+=drvTileFallback(sym,m,badge,days,res,per);
     });
     el.innerHTML=h;
+  }
+  // one tile from the shared 30-minute / hourly bar cache, or from daily rows (pre-v9.9c behaviour)
+  function drvTileFallback(sym,m,badge,days,res,per){
+    var bars=null;
+    if(res){ var bc=BARSC[res]; if(bc&&bc.data) bars=bc.data; else ensureBarsAll(res); if(days<7) days=7; }
+    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
+    var lbl=m?m.label:sym;
+    var bb=bars&&bars[sym];
+    if(bb&&bb.length>1){
+      var isYb=m&&(m.kind==="yield"||m.kind==="yield10x");
+      var w0=Number(bb[0][1]), w1=Number(bb[bb.length-1][1]);
+      var chb=isYb?((w1-w0)*100):((w1/w0-1)*100);
+      var chTxtb=isYb?((chb>=0?"+":"")+chb.toFixed(0)+"bp"):((chb>=0?"+":"")+chb.toFixed(1)+"%");
+      return '<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)
+        +'<div class="vl">'+(isYb?w1.toFixed(2)+"%":n(w1,w1<10?3:(w1<100?2:(w1<10000?1:0))))+'</div>'
+        +'<div class="ch '+(chb>=0?"up":"dn")+'">'+chTxtb+' <span class="mut">'+(res==="30m"?"1D":"1W")+'</span></div>'
+        +sparkSvg(bb.map(function(x){return Number(x[1]);}),120,34,chb>=0,{labels:bb.map(function(x){return hvJst(x[0]);}),fmt:isYb?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
+    }
+    var arr=(MACRO.by[sym]||[]).filter(function(x){return x.d>=startD;});
+    if(arr.length<2) return '<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)+'<div class="vl">&ndash;</div></div>';
+    var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
+    var v0=Number(arr[0].close), v1=Number(arr[arr.length-1].close);
+    var chg=isY?((v1-v0)*100):((v1/v0-1)*100);
+    var chTxt=isY?((chg>=0?"+":"")+chg.toFixed(0)+"bp"):((chg>=0?"+":"")+chg.toFixed(1)+"%");
+    var up=chg>=0;
+    var t0=Date.parse(arr[0].d), t1=Date.parse(arr[arr.length-1].d);
+    return '<div class="mtile">'+lbLine(lbl,badge,m&&m.market_time)
+      +'<div class="vl">'+(isY?v1.toFixed(2)+"%":n(v1,v1<10?3:(v1<100?2:(v1<10000?1:0))))+'</div>'
+      +'<div class="ch '+(up?"up":"dn")+'">'+chTxt+(per?' <span class="mut">'+esc(per)+'</span>':'')+'</div>'
+      +sparkSvg(arr.map(function(x){return Number(x.close);}),120,34,up,{xs:arr.map(function(x){return t1>t0?(Date.parse(x.d)-t0)/(t1-t0)*120:0;}),labels:arr.map(function(x){return x.d;}),fmt:isY?function(v){return v.toFixed(2)+"%";}:null})+'</div>';
   }
   /* MSCI JAPAN vs WORLD vs ASIA ex JP, index=100 at range start: the MARKET summary ("m") and the
      Japan tab's reference chart ("j") are the same picture with their own range and drivers. */
