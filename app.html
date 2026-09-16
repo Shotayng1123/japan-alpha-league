@@ -625,6 +625,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   #report svg{width:100%;height:auto}
 }
 /* ---- RESEARCH tab (v9.4): JAL AI analyst reports ---- */
+/* ---- v9.5: Japan / World / Asia tab charts are one series each at index levels (see renderMktChart) ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#1c1610}
 .rlrow.on{background:#1c1610;border-left-color:var(--amber)}
@@ -2721,8 +2722,9 @@ body.term #rr-head .tt{font-size:13px}
     });
   });
   function renderMarketChart(){ renderIdxChart("m"); renderMcPer(); }
-  function renderJapanChart(){ renderIdxChart("j"); }
+  function renderJapanChart(){ renderMktChart("jp"); }
   function renderIdxChart(k){
+    if(k==="j"){ renderMktChart("jp"); return; }        // v9.5: the Japan tab's chart is one series (see renderMktChart)
     var C=IDXC[k], box=$(C.box), leg=$(C.leg), rng=C.range;
     if(!box) return;
     Array.prototype.forEach.call(document.querySelectorAll(C.sel),function(c2){
@@ -2785,36 +2787,7 @@ body.term #rr-head .tt{font-size:13px}
       });
       tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
     }
-    if(worldRange==="1D"||worldRange==="1W"){
-      if(!IDATA){ box.innerHTML=I_LOAD; leg.innerHTML=""; loadIntraday(function(){ if(S) renderWorldChart(); }); return; }
-      var bW=iBuild(worldRange,[
-        {label:I_W.label,color:I_W.color,pts:iProxyJpy("URTH")},
-        {label:I_JP.label,color:I_JP.color,pts:iBasketAbs()},
-        {label:I_A.label,color:I_A.color,pts:iProxyJpy("AAXJ")}]);
-      if(!bW){ box.innerHTML=I_EMPTY; leg.innerHTML=""; }
-      else drawLineChart(box,leg,bW.labels,bW.keys,bW.series,bW.note,"w2",$("wc-tip"));
-      renderDrivers("wc-drv",["^GSPC","^SOX","DGS10","USDJPY=X"],worldRange==="1D"?1:7,worldRange==="1D"?"30m":"1h");
-      return;
-    }
-    var days={"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[worldRange]||92;
-    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
-    var wr=(S.benchmark_world||[]).filter(function(r){return r.d>=startD;});
-    if(wr.length<2){ box.innerHTML='<div class="empty">Not enough MSCI World history for this range yet.</div>'; leg.innerHTML=""; return; }
-    var dates=wr.map(function(r){return r.d;});
-    var idx={}; dates.forEach(function(d,i){idx[d]=i;});
-    function mk(label,color,rows){
-      var arr=new Array(dates.length).fill(null);
-      rows.forEach(function(r){ if(r.d>=startD&&idx[r.d]!=null) arr[idx[r.d]]=Number(r.level); });
-      var base=null; for(var i=0;i<arr.length;i++){ if(arr[i]!=null){base=arr[i];break;} }
-      if(base==null||base<=0) return null;
-      return {label:label,color:color,dash:0,w:1.9,vals:arr.map(function(v){return v==null?null:100*v/base;})};
-    }
-    var series=[];
-    var s1=mk("MSCI WORLD","#38c8ff",S.benchmark_world||[]); if(s1)series.push(s1);
-    var s2=mk("MSCI JAPAN","#ffa028",S.benchmark); if(s2)series.push(s2);
-    var s3=mk("MSCI ASIA ex JP","#c084fc",S.benchmark_asia||[]); if(s3)series.push(s3);
-    drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","w2",$("wc-tip"));
-    renderDrivers("wc-drv",["^GSPC","^SOX","DGS10","USDJPY=X"],days);
+    renderMktChart("world");
   }
   // state.world_instruments carries BOTH books (MSCI World rows and MSCI AC Asia ex Japan rows,
   // a few Hong Kong / Singapore names in both). The World panels take in_universe rows, the Asia
@@ -2878,37 +2851,159 @@ body.term #rr-head .tt{font-size:13px}
       });
       tl.innerHTML=h2||'<div class="empty">&ndash;</div>';
     }
-    if(asiaRange==="1D"||asiaRange==="1W"){
-      if(!IDATA){ box.innerHTML=I_LOAD; leg.innerHTML=""; loadIntraday(function(){ if(S) renderAsiaChart(); }); return; }
-      var bA=iBuild(asiaRange,[
-        {label:I_A.label,color:I_A.color,pts:iProxyJpy("AAXJ")},
-        {label:I_JP.label,color:I_JP.color,pts:iBasketAbs()},
-        {label:I_W.label,color:I_W.color,pts:iProxyJpy("URTH")}]);
-      if(!bA){ box.innerHTML=I_EMPTY; leg.innerHTML=""; }
-      else drawLineChart(box,leg,bA.labels,bA.keys,bA.series,bA.note,"a2",$("ac-tip"));
-      renderDrivers("ac-drv",ASIA_DRV,asiaRange==="1D"?1:7,asiaRange==="1D"?"30m":"1h");
-      return;
-    }
-    var days={"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[asiaRange]||92;
-    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
-    var ar=(S.benchmark_asia||[]).filter(function(r){return r.d>=startD;});
-    if(ar.length<2){ box.innerHTML='<div class="empty">Not enough MSCI AC Asia ex Japan history for this range yet.</div>'; leg.innerHTML=""; renderDrivers("ac-drv",ASIA_DRV,days); return; }
-    var dates=ar.map(function(r){return r.d;});
-    var idx={}; dates.forEach(function(d,i){idx[d]=i;});
-    function mk(label,color,rows){
-      var arr=new Array(dates.length).fill(null);
-      rows.forEach(function(r){ if(r.d>=startD&&idx[r.d]!=null) arr[idx[r.d]]=Number(r.level); });
-      var base=null; for(var i=0;i<arr.length;i++){ if(arr[i]!=null){base=arr[i];break;} }
-      if(base==null||base<=0) return null;
-      return {label:label,color:color,dash:0,w:1.9,vals:arr.map(function(v){return v==null?null:100*v/base;})};
-    }
-    var series=[];
-    var s1=mk("MSCI ASIA ex JP","#c084fc",S.benchmark_asia||[]); if(s1)series.push(s1);
-    var s2=mk("MSCI JAPAN","#ffa028",S.benchmark); if(s2)series.push(s2);
-    var s3=mk("MSCI WORLD","#38c8ff",S.benchmark_world||[]); if(s3)series.push(s3);
-    drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,"index=100 at range start","a2",$("ac-tip"));
-    renderDrivers("ac-drv",ASIA_DRV,days);
+    renderMktChart("asia");
   }
+
+  /* ---------- v9.5: the three tab charts as ONE series each, drawn as index levels ----------
+     Shota, 2026-09-15: no index=100 and no comparison lines on the MSCI JAPAN / WORLD / ASIA ex JP
+     tabs -- each shows its own market. 1D = the latest session from its open at ONE-MINUTE bars,
+     held after the close until the next session's first print, with the previous close as a
+     dashed line; 1W = five-minute bars over the last sessions; 1M-12M = hourly bars (bars_1h,
+     accruing from the first `bars` night, daily closes shown until then); 24M+ = daily closes
+     from state. Levels come from api ?action=chart, which chains each session's intraday proxy
+     (JP basket / URTH x USD/JPY / Asian venue-index composite) onto the MSCI Net TR close before
+     it and anchors finished sessions to their own close -- so the y-axis is the same number as
+     the header and the benchmark table. */
+  var MKCFG={
+    jp:   {box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:function(){return ["^N225","1306.T","USDJPY=X","JGB10Y"];},color:"#ffa028",name:"MSCI JAPAN (NET TR ¥)",pfx:"j",daily:function(){return S.benchmark||[];},range:function(){return IDXC.j.range;}},
+    world:{box:"wc-box",leg:"wc-leg",tip:"wc-tip",sel:"#wc-ctl [data-wrng]",attr:"data-wrng",drv:"wc-drv",drvSyms:function(){return ["^GSPC","^SOX","DGS10","USDJPY=X"];},color:"#38c8ff",name:"MSCI WORLD (NET TR ¥)",pfx:"w2",daily:function(){return S.benchmark_world||[];},range:function(){return worldRange;}},
+    asia: {box:"ac-box",leg:"ac-leg",tip:"ac-tip",sel:"#ac-ctl [data-arng]",attr:"data-arng",drv:"ac-drv",drvSyms:function(){return ASIA_DRV;},color:"#c084fc",name:"MSCI AC ASIA ex JP (NET TR ¥)",pfx:"a2",daily:function(){return S.benchmark_asia||[];},range:function(){return asiaRange;}}
+  };
+  var MKC={};
+  function mkTtl(range){ return range==="1D"?120e3:(range==="1W"?300e3:900e3); }
+  function loadMktChart(mkt,range,cb){
+    var key=mkt+"|"+range, c=MKC[key];
+    if(c&&c.data&&Date.now()-c.at<mkTtl(range)){ cb(c.data); return; }
+    if(c&&c.q){ c.q.push(cb); return; }
+    MKC[key]=c={at:0,data:c?c.data:null,q:[cb]};
+    var done=function(d,failed){ c.data=d; c.at=failed?Date.now()-mkTtl(range)+60e3:Date.now(); var q=c.q; c.q=null; q.forEach(function(f){f(d);}); };
+    fetch(API+"?action=chart&mkt="+mkt+"&range="+range).then(function(r){return r.json();})
+      .then(function(j){ done((j&&j.ok&&Array.isArray(j.points))?j:{ok:false,points:[],days:[],session:null},false); })
+      .catch(function(){ done(c.data||{ok:false,points:[],days:[],session:null},true); });
+  }
+  function jstParts(ms){ var d=new Date(ms+9*3600e3), p=function(x){return ("0"+x).slice(-2);}; return {hm:p(d.getUTCHours())+":"+p(d.getUTCMinutes()),md:p(d.getUTCMonth()+1)+"/"+p(d.getUTCDate()),min:d.getUTCHours()*60+d.getUTCMinutes(),ymd:d.toISOString().slice(0,10)}; }
+  function lvl(v){ return v==null?"–":n(v,1); }
+  // Level chart: `o` = {pfx,tipEl,color,name,vals (nulls allowed, one per x slot),labels (one per slot,
+  // for the readout),ticks [{i,text}],seps [i],hline {v,text}|null,note}. Same geometry rules as
+  // drawLineChart (phone / terminal fit), nice-rounded y ticks with thousands separators.
+  function drawLevelChart(box,leg,o){
+    var pfx=o.pfx||"c";
+    leg.innerHTML='<span><span class="sw" style="background:'+o.color+'"></span>'+esc(o.name)+"</span>"
+      +(o.hline?'<span><span class="sw" style="background:transparent;border-top:1px dashed #8a877e;height:0"></span>'+esc(o.hline.text)+"</span>":"")
+      +(o.note?'<span class="mut">'+esc(o.note)+"</span>":"");
+    var cw=(box&&box.clientWidth)||0, ch=(box&&box.clientHeight)||0, narrow=cw>0&&cw<600;
+    var fit=isTerm()&&cw>120&&ch>80;
+    var W=fit?Math.round(cw):(narrow?Math.max(240,Math.round(cw)):560),H=fit?Math.round(ch):250,mL=54,mR=8,mT=8,mB=20,iW=W-mL-mR,iH=H-mT-mB;
+    var all=[]; o.vals.forEach(function(v){if(v!=null)all.push(v);}); if(o.hline&&o.hline.v!=null) all.push(o.hline.v);
+    if(!all.length){ box.innerHTML='<div class="empty">–</div>'; return; }
+    var lo=Math.min.apply(null,all),hi=Math.max.apply(null,all);
+    var pad=Math.max((hi-lo)*0.08,Math.abs(hi)*0.0015,0.01); lo-=pad;hi+=pad;
+    var nn=o.vals.length;
+    var X=function(i){return mL+(nn<=1?0:(i/(nn-1))*iW);};
+    var Y=function(v){return mT+(1-(v-lo)/(hi-lo))*iH;};
+    var raw=(hi-lo)/4, mag=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)), nrm=raw/mag;
+    var step=(nrm<=1?1:(nrm<=2?2:(nrm<=2.5?2.5:(nrm<=5?5:10))))*mag;
+    var dp=step<1?(step<0.1?2:1):0;
+    var svg='<svg id="'+pfx+'chart" viewBox="0 0 '+W+" "+H+'"'+(fit?' style="width:100%;height:100%"':'')+'>';
+    for(var v=Math.ceil(lo/step)*step;v<=hi+step*1e-9;v+=step){
+      svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="#1d1e22" stroke-width="1"/>'
+        +'<text x="'+(mL-6)+'" y="'+(Y(v)+3.5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="var(--mut)">'+n(v,dp)+"</text>";
+    }
+    // session separators: drawn while they still read as boundaries (1D lunch, 1W, 1M); a 3M+ chart has too many
+    if((o.seps||[]).length<=25) (o.seps||[]).forEach(function(i){ var xx=X(i); svg+='<line x1="'+xx.toFixed(1)+'" x2="'+xx.toFixed(1)+'" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#23242a" stroke-width="1"/>'; });
+    var ticks=o.ticks||[], maxT=narrow?4:(fit?Math.max(4,Math.floor(W/90)):8);
+    if(ticks.length>maxT){ var k=Math.ceil(ticks.length/maxT), t2=[]; for(var q=0;q<ticks.length;q+=k) t2.push(ticks[q]); if(t2[t2.length-1]!==ticks[ticks.length-1]&&ticks.length>1) t2.push(ticks[ticks.length-1]); ticks=t2; }
+    // the opening and closing labels win: drop any other label within 58 units of either (a 30-minute
+    // head or tail on the session grid, e.g. 22:30/23:00 or 15:00/15:30)
+    if(ticks.length>2){ var x0=X(ticks[0].i), xe=X(ticks[ticks.length-1].i), nT=ticks.length; ticks=ticks.filter(function(t,qi){ return qi===0||qi===nT-1||(X(t.i)-x0>58&&xe-X(t.i)>58); }); }
+    ticks.forEach(function(t){ var xx=X(t.i), anc=xx<mL+30?"start":(xx>W-mR-30?"end":"middle"); svg+='<text x="'+xx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+anc+'" font-size="9.5" fill="var(--mut)">'+esc(t.text)+"</text>"; });
+    if(o.hline&&o.hline.v!=null){
+      var yh=Y(o.hline.v);
+      svg+='<line x1="'+mL+'" x2="'+(W-mR)+'" y1="'+yh.toFixed(1)+'" y2="'+yh.toFixed(1)+'" stroke="#8a877e" stroke-width="1" stroke-dasharray="4 3"/>'
+        +'<text x="'+(W-mR-2)+'" y="'+(yh-3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#8a877e">'+esc(o.hline.short||o.hline.text)+"</text>";
+    }
+    var d="",st=false;
+    for(var i=0;i<nn;i++){ var vv=o.vals[i]; if(vv==null) continue; d+=(st?"L":"M")+X(i).toFixed(1)+","+Y(vv).toFixed(1); st=true; }
+    svg+='<path d="'+d+'" fill="none" stroke="'+o.color+'" stroke-width="1.4"/>';
+    var lastI=-1; for(var i2=nn-1;i2>=0;i2--){ if(o.vals[i2]!=null){ lastI=i2; break; } }
+    if(lastI>=0) svg+='<circle cx="'+X(lastI).toFixed(1)+'" cy="'+Y(o.vals[lastI]).toFixed(1)+'" r="2.4" fill="'+o.color+'"/>';
+    svg+='<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
+    box.innerHTML=svg;
+    var xs=[]; for(var i3=0;i3<nn;i3++) xs.push(X(i3));
+    hvSpec(pfx+"chart",{W:W,xs:xs,labels:o.labels,vline:[mT,H-mB],r:3.2,fmt:function(v){return n(v,1);},
+      series:[{name:o.name,color:o.color,vals:o.vals,ys:o.vals.map(function(v){return v==null?null:Y(v);})}]});
+    var svgEl=$(pfx+"chart"); if(svgEl) svgEl.setAttribute("data-hv",pfx+"chart");
+  }
+  // 1D: the session grid (one slot per minute, breaks compressed out), the line from the open
+  function mkSession(C,box,leg,d){
+    var open=Date.parse(d.session.open), close=Date.parse(d.session.close);
+    var brk=(d.session.breaks||[]).map(function(b){return [Date.parse(b[0]),Date.parse(b[1])];});
+    var grid=[];
+    for(var ms=open;ms<=close;ms+=60e3){ var inB=false; for(var i=0;i<brk.length;i++){ if(ms>brk[i][0]&&ms<brk[i][1]){ inB=true; break; } } if(!inB) grid.push(ms); }
+    var byMs={}; d.points.forEach(function(p){ byMs[Date.parse(p[0])]=p[1]; });
+    var vals=grid.map(function(ms){ var v=byMs[ms]; return v==null?null:v; });
+    var labels=grid.map(function(ms){ var j=jstParts(ms); return j.md+" "+j.hm+" JST"; });
+    var ticks=[]; grid.forEach(function(ms,i){ var j=jstParts(ms); if(i===0||i===grid.length-1||j.min%60===0||(i>0&&ms-grid[i-1]>60e3)) ticks.push({i:i,text:j.hm}); });
+    var seps=[]; brk.forEach(function(b){ var i=grid.indexOf(b[1]); if(i>0) seps.push(i); });
+    var first=null,last=null; vals.forEach(function(v){ if(v!=null){ if(first==null) first=v; last=v; } });
+    var prev=d.prev_close, chg=(prev&&last!=null)?last/prev-1:null;
+    var o=jstParts(open), c=jstParts(close);
+    var note=(d.session.d||"")+" session "+o.hm+"–"+c.hm+" JST"+(d.tz==="ET"?" (NY 09:30–16:00 ET)":"")+" · 1-min · open "+lvl(first)+" · last "+lvl(last)+(chg==null?"":" ("+pct(chg)+" vs prev close)")
+      +(d.session.live?" · live":" · closed — held until the next open")+(d.days&&d.days.length&&d.days[d.days.length-1].anchored?" · anchored to the MSCI close":"")+" · "+(d.proxy||"");
+    drawLevelChart(box,leg,{pfx:C.pfx,tipEl:$(C.tip),color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,
+      hline:prev!=null?{v:prev,text:"prev close "+lvl(prev),short:"prev "+lvl(prev)}:null,note:note});
+  }
+  // 1W / hourly: sessions concatenated, a separator and a date label at each session start
+  function mkChained(C,box,leg,d,rng){
+    var vals=d.points.map(function(p){return p[1];});
+    var labels=d.points.map(function(p){ var j=jstParts(Date.parse(p[0])); return j.md+" "+j.hm+" JST"; });
+    var ticks=[], seps=[], lastD=null;
+    d.points.forEach(function(p,i){ var dd=p[0].slice(0,10); if(d.tz!=="ET") dd=jstParts(Date.parse(p[0])).ymd; if(dd!==lastD){ if(lastD!==null) seps.push(i); ticks.push({i:i,text:jstParts(Date.parse(p[0])).md}); lastD=dd; } });
+    var first=vals.length?vals[0]:null, last=vals.length?vals[vals.length-1]:null;
+    var note=rng+" · "+(d.res==="5m"?"5-min":(d.res==="1h"?"hourly":"1-min"))+" bars · "+(d.days||[]).length+" sessions · finished sessions anchored to the MSCI close · "+(d.proxy||"")+(first!=null&&last!=null?" · "+pct(last/first-1)+" over the range":"");
+    drawLevelChart(box,leg,{pfx:C.pfx,tipEl:$(C.tip),color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,hline:null,note:note});
+  }
+  // 24M+ (and the fallback while hourly history accrues): daily Net TR closes from state
+  function mkDaily(C,box,leg,rng,days,extra){
+    var startD=new Date(Date.now()-days*86400e3).toISOString().slice(0,10);
+    var rows=C.daily().filter(function(r){return r.d>=startD;});
+    if(rows.length<2){ box.innerHTML='<div class="empty">Not enough index history for this range yet.</div>'; leg.innerHTML=""; return; }
+    var vals=rows.map(function(r){return Number(r.level);});
+    var labels=rows.map(function(r){return r.d;});
+    var ticks=[]; var kk=Math.max(1,Math.round((rows.length-1)/6));
+    for(var i=0;i<rows.length;i+=kk) ticks.push({i:i,text:(days>200?rows[i].d.slice(2,7):rows[i].d.slice(5)).replace("-","/")});
+    var note=rng+" · daily closes · "+pct(vals[vals.length-1]/vals[0]-1)+" over the range"+(extra?" · "+extra:"");
+    drawLevelChart(box,leg,{pfx:C.pfx,tipEl:$(C.tip),color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:[],hline:null,note:note});
+  }
+  function renderMktChart(mkt){
+    var C=MKCFG[mkt], box=$(C.box), leg=$(C.leg); if(!box||!S) return;
+    var rng=C.range();
+    Array.prototype.forEach.call(document.querySelectorAll(C.sel),function(c2){ c2.className="chip-sm"+(c2.getAttribute(C.attr)===rng?" on":""); });
+    var days={"1D":1,"1W":7,"1M":31,"3M":92,"6M":183,"12M":366,"24M":731,"36M":1096,"60M":1826}[rng]||92;
+    var res=rng==="1D"?"30m":(rng==="1W"?"1h":null);
+    if(mkt==="jp"&&isTerm()&&false){} /* (the Japan tab has no core-tile override) */
+    renderDrivers(C.drv,C.drvSyms(),days,res,res?null:rng);
+    if(rng==="24M"||rng==="36M"||rng==="60M"){ mkDaily(C,box,leg,rng,days,null); return; }
+    if(!(MKC[mkt+"|"+rng]&&MKC[mkt+"|"+rng].data)){ box.innerHTML='<div class="empty">Loading…</div>'; leg.innerHTML=""; }
+    loadMktChart(mkt,rng,function(d){
+      if(C.range()!==rng||!S) return;
+      if(!d.points||!d.points.length){
+        if(rng==="1D"||rng==="1W"){ box.innerHTML='<div class="empty">No minute data for this market yet — the intraday proxy prints from the next session.</div>'; leg.innerHTML=""; }
+        else mkDaily(C,box,leg,rng,days,"no hourly history in this range yet, daily closes shown (hourly bars accrue every night)");
+        return;
+      }
+      if(rng==="1D") mkSession(C,box,leg,d); else mkChained(C,box,leg,d,rng);
+    });
+  }
+  // a visible 1D chart follows the session: refetched every two minutes (the tick writes every five)
+  setInterval(function(){
+    if(!S) return;
+    Object.keys(MKCFG).forEach(function(m){
+      var C=MKCFG[m]; if(C.range()!=="1D") return;
+      var box=$(C.box); if(!box||!box.getClientRects().length) return;
+      delete MKC[m+"|1D"]; renderMktChart(m);
+    });
+  },120e3);
   function renderAsiaUniv(){
     var tb=$("au-body"); if(!tb) return;
     var rows=asiaRows();
