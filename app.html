@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Orrery Analytics</title>
-<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;circle cx='50' cy='50' r='44' fill='none' stroke='%238a877e' stroke-width='5'/&gt;&lt;circle cx='50' cy='50' r='26' fill='none' stroke='%238a877e' stroke-width='5'/&gt;&lt;circle cx='50' cy='50' r='11' fill='%23ffa028'/&gt;&lt;circle cx='68.4' cy='31.6' r='7' fill='%2338c8ff'/&gt;&lt;circle cx='11.2' cy='70.6' r='7.5' fill='%23c084fc'/&gt;&lt;/svg&gt;">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%23e8e6df' stroke-width='11' stroke-linecap='round'&gt;&lt;circle cx='100' cy='92' r='70'/&gt;&lt;ellipse cx='100' cy='92' rx='70' ry='22'/&gt;&lt;ellipse cx='100' cy='92' rx='70' ry='46' transform='rotate(-32 100 92)'/&gt;&lt;circle cx='100' cy='92' r='10' fill='%23e8e6df' stroke='none'/&gt;&lt;circle cx='114.1' cy='38.8' r='7.5' fill='%23e8e6df' stroke='none'/&gt;&lt;line x1='100' y1='162' x2='100' y2='182'/&gt;&lt;path d='M72 186 Q100 176 128 186'/&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&amp;family=IBM+Plex+Sans+JP:wght@400;500;700&amp;display=swap">
 <style>
@@ -35,7 +35,8 @@ a{color:var(--cyan)}
 
 /* top bar */
 #topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#000;border-bottom:1px solid var(--bord2);padding:7px 12px;position:sticky;top:0;z-index:20}
-#topbar .brand{color:var(--amber);font-weight:700;letter-spacing:.12em;font-size:13.5px}
+#topbar .brand{color:var(--txt);font-weight:700;letter-spacing:.12em;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}   /* v9.8.1: white-based brand (Shota), no background */
+#topbar .brand .mark{width:18px;height:18px;flex:none}
 #topbar .bmq{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:12px}
 #topbar .chip{border:1px solid var(--bord2);border-radius:3px;padding:3px 10px;cursor:pointer;background:var(--panel2)}
 #topbar .chip:hover{border-color:var(--amber)}
@@ -88,7 +89,8 @@ body.cmp .nwrow{padding:1px 5px}
    which only the constituent lists scroll. Everything below is scoped to body.term. ---- */
 body.term{font-size:11px;line-height:1.28;height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction:column}
 body.term #topbar{position:static;flex:none;padding:2px 8px;gap:8px;min-height:0}
-body.term #topbar .brand{font-size:11px;letter-spacing:.1em}
+body.term #topbar .brand{font-size:11px;letter-spacing:.1em;gap:6px}
+body.term #topbar .brand .mark{width:15px;height:15px}
 body.term #topbar .bmq{gap:7px;font-size:10.5px}
 body.term #topbar .chip{padding:1px 6px;font-size:9.5px}
 body.term #topbar .chip-sm{padding:0 5px;margin-left:2px}
@@ -633,6 +635,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.7: those charts pan (click-hold-drag back through sessions; double-click = latest) ---- */
 /* ---- v9.7.1: minute bars floored to the grid (feed timestamps may carry seconds) ---- */
 /* ---- v9.8: platform renamed ORRERY ANALYTICS (was Japan Alpha League); orrery favicon ---- */
+/* ---- v9.8.1: the brand mark (logo B, the armillary) in the header and as the favicon ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#1c1610}
 .rlrow.on{background:#1c1610;border-left-color:var(--amber)}
@@ -714,7 +717,7 @@ body.term #rr-head .tt{font-size:13px}
 </head>
 <body>
 <div id="topbar">
-  <span class="brand">ORRERY ANALYTICS</span>
+  <span class="brand"><svg class="mark" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" aria-hidden="true"><circle cx="100" cy="92" r="70"/><ellipse cx="100" cy="92" rx="70" ry="22"/><ellipse cx="100" cy="92" rx="70" ry="46" transform="rotate(-32 100 92)"/><circle cx="100" cy="92" r="7" fill="currentColor" stroke="none"/><circle cx="114.1" cy="38.8" r="5.25" fill="currentColor" stroke="none"/><line x1="100" y1="162" x2="100" y2="182"/><path d="M72 186 Q100 176 128 186"/></svg>ORRERY ANALYTICS</span>
   <nav id="nav">
     <a href="#league" data-view="league">LEAGUE</a>
     <a href="#me" data-view="me">MY DESK</a>
