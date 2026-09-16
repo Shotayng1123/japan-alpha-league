@@ -148,7 +148,7 @@ body.term .mtile svg.spk{height:24px!important;margin-top:2px!important}
 body.term .chrow{flex-direction:column;flex-wrap:nowrap;gap:4px;flex:1 1 auto;min-height:0}
 body.term .chrow .chbox{flex:1 1 auto;min-height:0;min-width:0;display:flex;overflow:hidden}
 body.term .chrow .chbox>div{flex:1 1 auto;min-height:0;min-width:0}
-body.term .chrow .drvgrid{flex:none;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:auto;gap:4px;min-width:0}
+body.term .chrow .drvgrid{flex:none;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;gap:4px;min-width:0}   /* v9.9b: six tiles, two rows of three */
 body.term .chrow .drvgrid .mtile{padding:2px 5px 3px}
 body.term .chrow .drvgrid .mtile svg.spk{height:20px!important}
 
@@ -638,6 +638,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.8: platform renamed ORRERY ANALYTICS (was Japan Alpha League); orrery favicon ---- */
 /* ---- v9.8.1: the brand mark (logo B, the armillary) in the header and as the favicon ---- */
 /* ---- v9.9a: theme V9 CORAL & TEAL; TSE/NYSE/LSE pills; World/Asia tabs in the Japan format; Cormorant Garamond wordmark ---- */
+/* ---- v9.9b: live US yields (CBOE) + bond prices in GLOBAL MARKETS; six driver tiles per market tab incl. JGB ETFs and the T-note future ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -1653,7 +1654,7 @@ body.term #rr-head .tt{font-size:13px}
     // api already sorts by. (COMMODITIES was briefly pinned here in v7.6 to put energy first; the
     // same order is now in the database -- CL=F 61 ... SB=F 69 -- so the pin is gone and there is
     // one source of truth again.)
-    var groups=[["EQUITY","EQUITY INDICES"],["ASIA","ASIA INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES"],["RATES_JP","JGB &mdash; JAPAN"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],
+    var groups=[["EQUITY","EQUITY INDICES"],["ASIA","ASIA INDICES"],["ETF","REGIONAL ETFs (USD)"],["RATES_US","US TREASURIES (FRED, DAILY)"],["RATES_US_LIVE","US TREASURIES &mdash; LIVE (CBOE)"],["RATES_JP","JGB &mdash; JAPAN (DAILY)"],["BONDS","BOND PRICES &mdash; FUTURES &amp; ETFs"],["RATES_POLICY","POLICY RATES &mdash; 10Y"],["RISK","RISK &amp; INFLATION"],["FUTURES","FUTURES"],
       ["COMMODITY","COMMODITIES"],["FX","FX &amp; DOLLAR"],["FXX","JPY CROSSES"]];
     var now=Date.now(), anyClosed=false, anyOpen=false, latest=0, oldest=0;
     var barsRes=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
@@ -2679,7 +2680,7 @@ body.term #rr-head .tt{font-size:13px}
   // (bottom-left) = Nikkei 225 · NASDAQ · US 10Y · SOX · VIX · Hang Seng · DXY · WTI [仮].
   // Both follow the GLOBAL MARKETS period chips.
   var CORE4=["USDJPY=X","1306.T","JGB10Y","^GSPC"];
-  var TIER8=["^N225","^IXIC","DGS10","^SOX","^VIX","^HSI","DX-Y.NYB","CL=F"];
+  var TIER8=["^N225","^IXIC","^TNX","^SOX","^VIX","^HSI","DX-Y.NYB","CL=F"];   // v9.9b: ^TNX (CBOE, live) for DGS10 (FRED, daily)
   function gDays(p){ return {"1D":1,"1W":7,"1M":31,"3M":92,"6M":183,"12M":365,"24M":730,"36M":1095,"60M":1825}[p]||1; }
   function renderCore(){
     var res=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
@@ -2753,7 +2754,7 @@ body.term #rr-head .tt{font-size:13px}
      Japan tab's reference chart ("j") are the same picture with their own range and drivers. */
   var IDXC={
     m:{box:"mc-box",leg:"mc-leg",tip:"mc-tip",sel:"#mc-ctl [data-mrng]",attr:"data-mrng",drv:"mc-drv",drvSyms:["USDJPY=X","DGS10","^SOX","^VIX"],range:"3M"},
-    j:{box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:["^N225","1306.T","USDJPY=X","JGB10Y"],range:"3M"}
+    j:{box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:["^N225","1306.T","USDJPY=X","JGB10Y","236A.T","2510.T"],range:"3M"}
   };
   Object.keys(IDXC).forEach(function(k){
     Array.prototype.forEach.call(document.querySelectorAll(IDXC[k].sel),function(c2){
@@ -2870,7 +2871,7 @@ body.term #rr-head .tt{font-size:13px}
   });
   // Driver tiles: symbols must exist in macro_meta (the eod refreshes them); a symbol that is not
   // there yet shows a dash under its own name until the row is added.
-  var ASIA_DRV=["^HSI","^TWII","^KS11","^NSEI"];
+  var ASIA_DRV=["^HSI","^TWII","^KS11","^NSEI","000001.SS","AAXJ"];   // v9.9b: six tiles, like the other tabs
   function renderAsiaChart(){
     var box=$("ac-box"), leg=$("ac-leg");
     if(!box) return;
@@ -2911,8 +2912,8 @@ body.term #rr-head .tt{font-size:13px}
      session chained onto the MSCI Net TR close before it, anchored to its own close once it is
      published), so the y-axis is the same number as the header and the benchmark table. */
   var MKCFG={
-    jp:   {box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:function(){return ["^N225","1306.T","USDJPY=X","JGB10Y"];},color:"#ff6f61",name:"MSCI JAPAN (NET TR ¥)",pfx:"j",tz:"JST",blocks:[[540,690],[750,930]],daily:function(){return S.benchmark||[];},range:function(){return IDXC.j.range;}},
-    world:{box:"wc-box",leg:"wc-leg",tip:"wc-tip",sel:"#wc-ctl [data-wrng]",attr:"data-wrng",drv:"wc-drv",drvSyms:function(){return ["^GSPC","^SOX","DGS10","USDJPY=X"];},color:"#1fd1c1",name:"MSCI WORLD (NET TR ¥)",pfx:"w2",tz:"ET",blocks:[[570,960]],daily:function(){return S.benchmark_world||[];},range:function(){return worldRange;}},
+    jp:   {box:"jc-box",leg:"jc-leg",tip:"jc-tip",sel:"#jc-ctl [data-jrng]",attr:"data-jrng",drv:"jc-drv",drvSyms:function(){return ["^N225","1306.T","USDJPY=X","JGB10Y","236A.T","2510.T"];},color:"#ff6f61",name:"MSCI JAPAN (NET TR ¥)",pfx:"j",tz:"JST",blocks:[[540,690],[750,930]],daily:function(){return S.benchmark||[];},range:function(){return IDXC.j.range;}},
+    world:{box:"wc-box",leg:"wc-leg",tip:"wc-tip",sel:"#wc-ctl [data-wrng]",attr:"data-wrng",drv:"wc-drv",drvSyms:function(){return ["^GSPC","^SOX","USDJPY=X","^TNX","^TYX","ZN=F"];},color:"#1fd1c1",name:"MSCI WORLD (NET TR ¥)",pfx:"w2",tz:"ET",blocks:[[570,960]],daily:function(){return S.benchmark_world||[];},range:function(){return worldRange;}},
     asia: {box:"ac-box",leg:"ac-leg",tip:"ac-tip",sel:"#ac-ctl [data-arng]",attr:"data-arng",drv:"ac-drv",drvSyms:function(){return ASIA_DRV;},color:"#b08cff",name:"MSCI AC ASIA ex JP (NET TR ¥)",pfx:"a2",tz:"JST",blocks:[[540,1140]],daily:function(){return S.benchmark_asia||[];},range:function(){return asiaRange;}}
   };
   var MKC={};     // fetch cache  mkt|kind -> {at,data,q}
