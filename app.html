@@ -641,6 +641,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9a: theme V9 CORAL & TEAL; TSE/NYSE/LSE pills; World/Asia tabs in the Japan format; Cormorant Garamond wordmark ---- */
 /* ---- v9.9b: live US yields (CBOE) + bond prices in GLOBAL MARKETS; six driver tiles per market tab incl. JGB ETFs and the T-note future ---- */
 /* ---- v9.9c: driver tiles at 1D = the instrument's own session from its open (1-min bars, 7 days), drag to pan, last completed session while closed; FX day = 17:00 New York ---- */
+/* ---- v9.9c.1: yield session tiles (^TNX/^TYX/^FVX) report the change in basis points (was 100x too small: +5bp showed as +0bp) ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -2773,7 +2774,7 @@ body.term #rr-head .tt{font-size:13px}
     }).catch(function(){ need.forEach(function(s){ DRV1M[s]={at:Date.now()-60e3,bars:(DRV1M[s]&&DRV1M[s].bars)||null}; }); delete DRV1MQ[key]; });
     return true;
   }
-  function pctStr(v,isY){ return isY?((v>=0?"+":"")+(v*100).toFixed(0)+"bp"):((v>=0?"+":"")+(v*100).toFixed(1)+"%"); }
+  function pctStr(v,isY){ if(isY){ var bp=Math.round(v*100); return (bp>=0?"+":"")+bp+"bp"; } return (v>=0?"+":"")+(v*100).toFixed(1)+"%"; }
   // draw one symbol's tile from its timeline; returns null when the symbol has no minute bars
   function drvTile1D(sym,m,badge){
     var c=DRV1M[sym]; if(!c||!c.bars||c.bars.length<2) return null;
@@ -2787,7 +2788,7 @@ body.term #rr-head .tt{font-size:13px}
     for(var i=a;i<b;i++){ var v=tl.vals[i]; if(v==null) continue; xs.push(((i-a)/Math.max(1,W-1))*120); vs.push(v); labels.push(hvJst(tl.slots[i]/1000)); }
     var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
     var first=vs.length?vs[0]:null, last=vs.length?vs[vs.length-1]:null;
-    var chg=(first!=null&&last!=null)?(isY?((last-first)/100):(last/first-1)):null;   // yields already in percent points
+    var chg=(first!=null&&last!=null)?(isY?(last-first):(last/first-1)):null;   // yields: percent points (x100 = bp in pctStr); prices: a fraction
     var s0=null; for(var q=0;q<tl.sess.length;q++){ if(tl.sess[q].i1>a){ s0=tl.sess[q]; break; } }
     var sLast=null; for(var q2=tl.sess.length-1;q2>=0;q2--){ if(tl.sess[q2].i0<b){ sLast=tl.sess[q2]; break; } }
     var tag=st.off?(sLast?sLast.k.slice(5).replace("-","/"):"")+" ←":(tl.live?"1D · live":"1D · last session");
