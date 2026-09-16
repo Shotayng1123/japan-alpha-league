@@ -631,6 +631,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- RESEARCH tab (v9.4): JAL AI analyst reports ---- */
 /* ---- v9.5: Japan / World / Asia tab charts are one series each at index levels (see renderMktChart) ---- */
 /* ---- v9.7: those charts pan (click-hold-drag back through sessions; double-click = latest) ---- */
+/* ---- v9.7.1: minute bars floored to the grid (feed timestamps may carry seconds) ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#1c1610}
 .rlrow.on{background:#1c1610;border-left-color:var(--amber)}
@@ -2931,7 +2932,8 @@ body.term #rr-head .tt{font-size:13px}
       for(var ms=s.open;ms<=s.close;ms+=stepMs){ if(inBreak(s,ms)>=0) continue; slots.push(ms); vals.push(null); }
     });
     var idx={}; for(var i=0;i<slots.length;i++) idx[slots[i]]=i;
-    (minute.points||[]).forEach(function(p){ var i=idx[Date.parse(p[0])]; if(i!=null) vals[i]=p[1]; });
+    // v9.7.1: a feed bar can carry seconds (Yahoo stamps the first URTH bar of a day at 13:30:20Z) -- floor to the grid step
+    (minute.points||[]).forEach(function(p){ var ms=Date.parse(p[0]); var i=idx[Math.floor(ms/stepMs)*stepMs]; if(i!=null) vals[i]=p[1]; });
     var byD={}; sess.forEach(function(s){ byD[s.d]=s; });
     (hourly.points||[]).forEach(function(p){
       var ms=Date.parse(p[0]), l=mkLocal(C.tz,ms); if(!l||minuteDays[l.d]) return;
