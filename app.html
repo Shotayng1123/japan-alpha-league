@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Japan Alpha League</title>
-<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;&#128200;&lt;/text&gt;&lt;/svg&gt;">
+<title>Orrery Analytics</title>
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;circle cx='50' cy='50' r='44' fill='none' stroke='%238a877e' stroke-width='5'/&gt;&lt;circle cx='50' cy='50' r='26' fill='none' stroke='%238a877e' stroke-width='5'/&gt;&lt;circle cx='50' cy='50' r='11' fill='%23ffa028'/&gt;&lt;circle cx='68.4' cy='31.6' r='7' fill='%2338c8ff'/&gt;&lt;circle cx='11.2' cy='70.6' r='7.5' fill='%23c084fc'/&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&amp;family=IBM+Plex+Sans+JP:wght@400;500;700&amp;display=swap">
 <style>
@@ -628,10 +628,11 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
   #report .rp-sec{margin-bottom:6px}
   #report svg{width:100%;height:auto}
 }
-/* ---- RESEARCH tab (v9.4): JAL AI analyst reports ---- */
+/* ---- RESEARCH tab (v9.4): Orrery AI analyst reports ---- */
 /* ---- v9.5: Japan / World / Asia tab charts are one series each at index levels (see renderMktChart) ---- */
 /* ---- v9.7: those charts pan (click-hold-drag back through sessions; double-click = latest) ---- */
 /* ---- v9.7.1: minute bars floored to the grid (feed timestamps may carry seconds) ---- */
+/* ---- v9.8: platform renamed ORRERY ANALYTICS (was Japan Alpha League); orrery favicon ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#1c1610}
 .rlrow.on{background:#1c1610;border-left-color:var(--amber)}
@@ -694,7 +695,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 .dlb.off{opacity:.32;pointer-events:none}
 #rr-dl{display:flex;gap:5px;align-items:center;margin-left:auto}
 #rr-dl .dlb{font-size:9.5px;line-height:17px;padding:0 8px}
-/* report figures sit in the JAL format: the charts ship in the terminal palette, so they only need a frame */
+/* report figures sit in the Orrery format: the charts ship in the terminal palette, so they only need a frame */
 .md .fig{margin:10px 0 12px;border:1px solid var(--bord);border-radius:3px;padding:6px 8px 4px;background:var(--panel2);max-width:920px}
 .md .fig svg{width:100%;height:auto;display:block}
 .md .figmiss{color:var(--mut);font-size:10.5px;padding:6px}
@@ -713,7 +714,7 @@ body.term #rr-head .tt{font-size:13px}
 </head>
 <body>
 <div id="topbar">
-  <span class="brand">JAPAN ALPHA LEAGUE</span>
+  <span class="brand">ORRERY ANALYTICS</span>
   <nav id="nav">
     <a href="#league" data-view="league">LEAGUE</a>
     <a href="#me" data-view="me">MY DESK</a>
@@ -922,7 +923,7 @@ body.term #rr-head .tt{font-size:13px}
     </div>
 
     <div id="p-rl" class="panel c5" data-view="research">
-      <div class="phead"><span class="no">13L</span><span class="t">RESEARCH &mdash; JAL AI ANALYST</span><span class="aux" id="rl-aux"></span></div>
+      <div class="phead"><span class="no">13L</span><span class="t">RESEARCH &mdash; ORRERY AI ANALYST</span><span class="aux" id="rl-aux"></span></div>
       <div class="pbody">
         <div id="rl-ctl">
           <span class="chip-sm on" data-rk="">ALL</span>
@@ -3853,7 +3854,7 @@ body.term #rr-head .tt{font-size:13px}
       h.push('<tr class="rrow'+(RS.cur===r.id?' on':'')+'" data-rep="'+Number(r.id)+'">'+
         '<td class="tk" title="'+esc(tk)+'">'+esc(tk)+'</td>'+
         '<td class="ti" title="'+esc(r.title)+'">'+esc(name)+': '+esc(kind)+badge+'</td>'+
-        '<td class="au" title="JAL AI analyst">'+esc(r.author||"Emma Sato")+'</td>'+
+        '<td class="au" title="Orrery AI analyst">'+esc(r.author||"Emma Sato")+'</td>'+
         '<td class="dt">'+esc(rsDateShort(r.published_at))+'</td>'+
         '<td class="dl"><a class="dlb" href="#research/'+Number(r.id)+'" data-rep="'+Number(r.id)+'" title="Open the report in the reader">OPEN</a></td>'+
         '<td class="dl">'+pdf+'</td>'+
@@ -4620,7 +4621,7 @@ body.term #rr-head .tt{font-size:13px}
     var asof=S.league.last_eod||new Date().toISOString().slice(0,10);
     var perLabel=per==="SI"?"SINCE INCEPTION ("+esc(S.league.start_date)+")":"LAST "+per;
     return '<div class="rp-hd">'
-      +'<div><div class="rp-t1">JAPAN ALPHA LEAGUE</div><div class="rp-t2">Portfolio Summary &mdash; '+esc(p.icon+" "+p.nickname)+' &middot; JPY 1tn notional, long-only Japan equity &middot; Benchmark: MSCI Japan (Net Total Return, JPY)</div></div>'
+      +'<div><div class="rp-t1">ORRERY ANALYTICS</div><div class="rp-t2">Portfolio Summary &mdash; '+esc(p.icon+" "+p.nickname)+' &middot; JPY 1tn notional, long-only Japan equity &middot; Benchmark: MSCI Japan (Net Total Return, JPY)</div></div>'
       +'<div class="rp-meta">PERIOD: <b>'+perLabel+'</b><br>DATA AS OF: '+esc(asof)+'<br>GENERATED: '+new Date().toISOString().slice(0,16).replace("T"," ")+' UTC</div>'
       +'</div>'
       +'<div class="rp-kpi">'
@@ -4646,7 +4647,7 @@ body.term #rr-head .tt{font-size:13px}
       +'<div class="rp-sec">'+dvaTable(drows.filter(function(r){return r.dva<0;}).slice(-10).reverse(),"DAILY VALUE ADDED &mdash; BOTTOM 10 (bp of NAV)")+'</div>'
       +'</div>'
       +'</div>'
-      +'<div class="rp-note">Mock portfolio for professional training purposes only &mdash; not an actual fund, not investment advice. Fills are simulated at TSE closing prices with participation capped at 20% of 20-day average daily value traded per day; books are seeded at MSCI Japan neutral weights at inception. Daily Value Added (DVA) = active weight &times; (stock 1-day return &minus; benchmark 1-day return), in basis points of NAV, measured on the latest trading day. Benchmark returns are measured from each player&#39;s own inception date. Sharpe ratio is annualised from daily NAV returns (min. 10 observations). Source: Japan Alpha League platform; prices via public market data feeds; index levels: MSCI (Net Total Return, JPY).</div>';
+      +'<div class="rp-note">Mock portfolio for professional training purposes only &mdash; not an actual fund, not investment advice. Fills are simulated at TSE closing prices with participation capped at 20% of 20-day average daily value traded per day; books are seeded at MSCI Japan neutral weights at inception. Daily Value Added (DVA) = active weight &times; (stock 1-day return &minus; benchmark 1-day return), in basis points of NAV, measured on the latest trading day. Benchmark returns are measured from each player&#39;s own inception date. Sharpe ratio is annualised from daily NAV returns (min. 10 observations). Source: Orrery Analytics platform; prices via public market data feeds; index levels: MSCI (Net Total Return, JPY).</div>';
   }
   $("repbtn").addEventListener("click",function(){
     if(!S){ return; }
