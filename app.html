@@ -714,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.13: PORT -- PORTFOLIO CHARACTERISTICS vs INDEX under the Brinson table: weighted P/E FY-E, P/B (harmonic), ROE, dividend yield, 3M / 12M return, weighted-average market cap and the book's beta vs the official MSCI Japan level, each with coverage ---- */
 /* ---- v9.12: GRR -- the three MOVERS tables follow a period chip (1D/1W/1M/3M/12M) and ALL lists every name ranked; snapshot: RATIO line (stock / index) + beta, correlation, annualised vol over the range (COMP / BETA / HRA) ---- */
 /* ---- v9.11: SCREENER (EQS) on the MSCI Japan universe -- api funda (EDINET latest actual / prior / guidance) joined with prices and stats: P/B, ROE, OPM, sales growth, guidance OP growth, dividend yield, market cap; presets, custom ranges, sector chips, saved screens (localStorage), CSV; PEERS (RV) table + percentiles in the stock snapshot ---- */
 /* ---- v9.10.1: the constituent basket stands in for the MSCI day until the official level lands; "Communication" abbreviates like the GICS name ---- */
@@ -934,6 +935,10 @@ body.term #rr-head .tt{font-size:13px}
           <tbody id="attr-body"><tr><td class="l empty" colspan="10">Appears once the book is seeded.</td></tr></tbody>
         </table>
         <div class="hint2" id="attr-foot"></div>
+        <h4 class="minih" style="margin-top:10px">PORTFOLIO CHARACTERISTICS vs INDEX <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; style tilts on the screener's ratios, long book, weighted over the names with data (PORT)</span></h4>
+        <table class="mini"><thead><tr><th class="l">METRIC</th><th>PORT</th><th>INDEX</th><th>TILT</th><th class="l">READ</th><th class="l">COVERAGE port &middot; index</th></tr></thead>
+        <tbody id="char-body"><tr><td class="l empty" colspan="6">Appears once the book is seeded.</td></tr></tbody></table>
+        <div class="hint2" id="char-foot"></div>
       </div>
     </div>
 
@@ -1322,7 +1327,7 @@ body.term #rr-head .tt{font-size:13px}
     if(v==="news"){ loadBrief(); loadNews(); loadEcon(); }
     if(v==="research"){ syncTopbarVar(); loadResearch(); }
     if(v==="japan"||v==="world"||v==="asia"){ loadFlow(); }
-    if(v==="japan"){ loadFunda(); }   // v9.11: fundamentals for the screener
+    if(v==="japan"||v==="me"){ loadFunda(); }   // v9.11: fundamentals for the screener; v9.13: characteristics
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderJapanChart(); renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="asia"){ renderAsiaChart(); renderHMA(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
@@ -3762,7 +3767,101 @@ body.term #rr-head .tt{font-size:13px}
       return;
     }
     var c=playerCalc(p);
-    renderDVA(p,c); renderSectors(p,c); renderAttrib(p,c);
+    renderDVA(p,c); renderSectors(p,c); renderAttrib(p,c); renderChar(p,c);
+  }
+  /* ---------- v9.13 (PORT): portfolio characteristics versus the index ---------- */
+  // Weighted characteristics of the long book against the MSCI Japan weights, on the same ratios the
+  // screener shows (one fiscal year at a time, EDINET latest actual), plus the book's beta. P/E and P/B
+  // are weighted harmonic means (the portfolio's earnings / book yield inverted), the rest weighted
+  // arithmetic means; every figure is over the names that have the datum, with the coverage shown.
+  var CHARB={}, charBusy={};
+  function charBeta(code,h){
+    // beta of the name's daily simple returns on the official MSCI Japan level, last 120 overlapping sessions
+    if(!h||!h.px||!h.bmj) return null;
+    var pxm={}; h.px.forEach(function(a){ pxm[a[0]]=Number(a[1]); });
+    var rows=h.bmj.filter(function(a){ return pxm[a[0]]>0&&Number(a[1])>0; }).slice(-121);
+    var rs=[], rb=[];
+    for(var i=1;i<rows.length;i++){ rs.push(pxm[rows[i][0]]/pxm[rows[i-1][0]]-1); rb.push(Number(rows[i][1])/Number(rows[i-1][1])-1); }
+    if(rs.length<40) return {beta:null,n:rs.length};
+    var n=rs.length, ms=0, mb=0; for(var j=0;j<n;j++){ ms+=rs[j]; mb+=rb[j]; } ms/=n; mb/=n;
+    var cov=0, vb=0; for(var k=0;k<n;k++){ cov+=(rs[k]-ms)*(rb[k]-mb); vb+=(rb[k]-mb)*(rb[k]-mb); }
+    return {beta:vb>0?cov/vb:null,n:n};
+  }
+  function charLoadBetas(codes){
+    var todo=codes.filter(function(code){ return !CHARB[code]&&!charBusy[code]; });
+    if(!todo.length) return;
+    todo.forEach(function(code){ charBusy[code]=1; });
+    var i=0, done=0;
+    function next(){
+      if(i>=todo.length) return;
+      var code=todo[i++];
+      var go=function(h){ CHARB[code]=charBeta(code,h)||{beta:null,n:0}; delete charBusy[code]; done++; if(done===todo.length&&S&&curView()==="me") renderExtras(); next(); };
+      if(SNAPC[code]&&!SNAPC[code].p){ go(SNAPC[code]); return; }
+      fetch(API+"?action=hist&code="+encodeURIComponent(code)).then(function(r){return r.json();}).then(function(j){ if(j&&j.px&&!SNAPC[code]) SNAPC[code]=j; go(j&&j.px?j:null); }).catch(function(){ go(null); });
+    }
+    next(); next(); next();
+  }
+  function renderChar(p,c){
+    var tb=$("char-body"), ft=$("char-foot"); if(!tb) return;
+    var poss=S.positions.filter(function(x){return x.player_id===p.id;});
+    if(!poss.length||!(c.nav>0)){ tb.innerHTML='<tr><td class="l empty" colspan="6">Appears once the book is seeded.</td></tr>'; ft.textContent=""; return; }
+    if(!FUNDA) loadFunda();
+    var pw={}, bw={}, shorts=0, nonJp=0;
+    poss.forEach(function(x){
+      var lc=lastCloseOf(x.code); if(!lc) return;
+      if(!(Number(x.shares)>0)){ shorts++; return; }
+      if(!instOf(x.code)){ nonJp++; return; }
+      pw[x.code]=(pw[x.code]||0)+Number(x.shares)*lc.px/c.nav;
+    });
+    S.instruments.forEach(function(i){ if(i.in_universe&&Number(i.bm_weight)>0) bw[i.code]=Number(i.bm_weight); });
+    var held=Object.keys(pw);
+    if(!held.length){ tb.innerHTML='<tr><td class="l empty" colspan="6">No long Japan positions.</td></tr>'; ft.textContent=""; return; }
+    charLoadBetas(held);
+    var M=[
+      {k:"pe",lb:"P/E FY-E (x)",harm:true,dp:1,lo:"cheaper",hi:"dearer",tip:"Weighted harmonic mean of P/E FY-E (company-guidance EPS, vetted by the eod) over the names with a P/E between 0 and 200."},
+      {k:"pb",lb:"P/B (x)",harm:true,dp:2,lo:"cheaper",hi:"dearer",tip:"Weighted harmonic mean of price / latest reported BPS (EDINET)."},
+      {k:"roe",lb:"ROE (%)",dp:1,lo:"lower ROE",hi:"higher ROE",tip:"Weighted average of the latest reported ROE (EDINET)."},
+      {k:"dy",lb:"DIV YIELD (%)",dp:2,lo:"lower yield",hi:"higher yield",tip:"Weighted average of latest-year DPS / price (EDINET DPS)."},
+      {k:"c3",lb:"3M RETURN (%)",dp:1,lo:"less momentum",hi:"more momentum",tip:"Weighted average 3-month price return (stats)."},
+      {k:"c52",lb:"12M RETURN (%)",dp:1,lo:"less momentum",hi:"more momentum",tip:"Weighted average 12-month price return (stats)."},
+      {k:"mcap",lb:"MKT CAP (\u00a5tn, wtd avg)",dp:2,lo:"smaller",hi:"larger",tip:"Weighted average market capitalisation: latest year-end shares (EDINET) x price, in trillion yen."},
+      {k:"beta",lb:"BETA vs MSCI JAPAN",dp:2,lo:"lower beta",hi:"higher beta",tip:"Weighted average of each held name's beta of daily returns on the official MSCI Japan level over the last 120 sessions (40+ needed). The index column is 1.00 by construction and is not recomputed."}
+    ];
+    function valOf(code,k){
+      var s2=statOf(code)||{}, lc=lastCloseOf(code), px=lc?lc.px:null, fd=fundaOf(code,px);
+      if(k==="pe"){ var v=s2.per_fwd!=null?Number(s2.per_fwd):null; return (v!=null&&v>0&&v<200)?v:null; }
+      if(k==="pb") return fd.pb>0?fd.pb:null;
+      if(k==="roe") return fd.roe!=null?fd.roe:null;
+      if(k==="dy") return fd.dy!=null?fd.dy:null;
+      if(k==="c3") return s2.chg3m!=null?Number(s2.chg3m):null;
+      if(k==="c52") return s2.chg52w!=null?Number(s2.chg52w):null;
+      if(k==="mcap") return fd.mcap>0?fd.mcap/1000:null;
+      if(k==="beta"){ var b=CHARB[code]; return (b&&b.beta!=null)?b.beta:null; }
+      return null;
+    }
+    function agg(ws,k,harm){
+      var sw=0, acc=0, n=0, N=0, tw=0;
+      Object.keys(ws).forEach(function(code){ N++; tw+=ws[code]; var v=valOf(code,k); if(v==null) return; var w=ws[code]; sw+=w; acc+=harm?w/v:w*v; n++; });
+      if(!(sw>0)||!n||!(acc!==0||!harm)) return {v:null,n:n,N:N,cov:tw>0?sw/tw:0};
+      return {v:harm?sw/acc:acc/sw,n:n,N:N,cov:tw>0?sw/tw:0};
+    }
+    var pend=held.filter(function(code){ return charBusy[code]; }).length;
+    tb.innerHTML=M.map(function(m){
+      var a=agg(pw,m.k,m.harm), b=(m.k==="beta")?{v:1,n:null,N:null,cov:1}:agg(bw,m.k,m.harm);
+      var f=function(v){ return v==null?'<span class="mut">&ndash;</span>':n(v,m.dp); };
+      var tilt=(a.v!=null&&b.v!=null)?a.v-b.v:null;
+      var read=tilt==null?"":(Math.abs(tilt)<Math.pow(10,-m.dp)/2?"in line":(tilt<0?m.lo:m.hi));
+      var covp=a.n+"/"+a.N+" ("+Math.round(a.cov*100)+"%)";
+      var covb=(m.k==="beta")?"1.00 by construction":(b.n+"/"+b.N+" ("+Math.round(b.cov*100)+"%)");
+      if(m.k==="beta"&&pend) covp+=" \u00b7 "+pend+" computing";
+      return '<tr title="'+esc(m.tip)+'"><td class="l">'+m.lb+'</td><td class="num">'+f(a.v)+'</td><td class="num">'+f(b.v)+'</td>'
+        +'<td class="num">'+(tilt==null?'<span class="mut">&ndash;</span>':((tilt>0?"+":"")+n(tilt,m.dp)))+'</td>'
+        +'<td class="l"><span class="mut">'+esc(read)+'</span></td><td class="l mut">'+covp+' \u00b7 '+covb+'</td></tr>';
+    }).join("");
+    ft.innerHTML="Portfolio weights = long Japan positions / NAV; index = MSCI Japan weights; both re-normalised over the names with the datum (coverage shown). "
+      +(FUNDA&&FUNDA.updated_at?("Fundamentals: EDINET, latest actual fiscal year, stamp "+esc(String(FUNDA.updated_at).slice(0,10))+". "):"Fundamentals loading. ")
+      +"Betas: daily returns on the official MSCI Japan level, last 120 sessions."
+      +(shorts?(" "+shorts+" short position"+(shorts>1?"s":"")+" excluded."):"")+(nonJp?(" "+nonJp+" non-Japan name"+(nonJp>1?"s":"")+" excluded."):"");
   }
   // click any row/cell with a ticker to prefill the order ticket
   document.addEventListener("click",function(ev){
@@ -4724,6 +4823,7 @@ body.term #rr-head .tt{font-size:13px}
       fundaLoading=false; if(!j||!j.rows) return;
       FUNDA=j; fundaAt=Date.now(); FUNDAM={}; j.rows.forEach(function(r){ FUNDAM[r.code]=r; });
       if(curView()==="japan"&&S) renderUniv();
+      if(curView()==="me"&&S&&typeof renderExtras==="function") renderExtras();   // v9.13
       if(typeof snapPeers==="function"&&snapCode) snapPeers();
     }).catch(function(){ fundaLoading=false; });
   }
