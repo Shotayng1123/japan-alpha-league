@@ -469,6 +469,22 @@ button.ghost{background:none;border:none;color:var(--dn);cursor:pointer;font-siz
 .searchrow input{width:250px}
 .searchrow .cnt{color:var(--mut);font-size:11px}
 #univwrap{max-height:460px;overflow:auto;border:1px solid var(--bord);border-radius:3px}
+#u-tbl{min-width:1180px}
+/* v9.11 screener */
+.scrbar{border:1px solid var(--bord);border-radius:3px;padding:5px 8px;margin:0 0 6px;background:#0e0f12}
+.scrrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:2px 0}
+.scrlb{font-size:9.5px;letter-spacing:.08em;width:52px;flex:none}
+.scrf{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--bord2);border-radius:2px;padding:1px 5px;margin:1px 2px;font-size:10px;color:var(--txt2)}
+.scrf.on{border-color:var(--amber);color:var(--txt)}
+.scrf input{width:44px;background:#141518;border:1px solid var(--bord);color:var(--txt);font:inherit;font-size:10px;padding:1px 3px;text-align:right}
+.scrf input::placeholder{color:#5c5953}
+#scr-saved{background:#141518;border:1px solid var(--bord2);color:var(--txt2);font:inherit;font-size:10px;padding:1px 4px;max-width:180px}
+.chip-sm.scrsec.on{background:var(--amber);color:#000;border-color:var(--amber)}
+.peersT td.me,.peersT tr.me td{background:#1a1412}
+.peersT .pctl{font-size:9.5px;color:var(--mut)}
+body.term .scrbar{padding:3px 6px;margin-bottom:3px}
+body.term .scrf{font-size:9.5px;padding:0 4px}
+body.term .scrf input{width:40px;font-size:9.5px}
 .uwrap{max-height:420px;overflow:auto;border:1px solid var(--bord);border-radius:3px}
 .chrow{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
 .chbox{flex:1 1 56%;min-width:320px}
@@ -693,6 +709,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.11: SCREENER (EQS) on the MSCI Japan universe -- api funda (EDINET latest actual / prior / guidance) joined with prices and stats: P/B, ROE, OPM, sales growth, guidance OP growth, dividend yield, market cap; presets, custom ranges, sector chips, saved screens (localStorage), CSV; PEERS (RV) table + percentiles in the stock snapshot ---- */
 /* ---- v9.10.1: the constituent basket stands in for the MSCI day until the official level lands; "Communication" abbreviates like the GICS name ---- */
 /* ---- v9.10: MORNING BRIEF at the top of NEWS -- api?action=brief (numbers from the 07:45 JST `brief` function, the analyst routine's English summary), headline strip, AI summary, YOUR BOOK from the state, Japan session (breadth / sectors + rotation / movers / standouts), overnight (SPDRs, cross-asset), today (open indication, calendar, results), headlines, archive chips; terminal: brief across the top ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
@@ -1175,11 +1192,20 @@ body.term #rr-head .tt{font-size:13px}
     </div>
 
     <div id="p-univ" class="panel c12" data-view="japan">
-      <div class="phead"><span class="no">10</span><span class="t">MSCI JAPAN — UNIVERSE</span><span class="aux" id="u-aux"></span></div>
+      <div class="phead"><span class="no">10</span><span class="t">MSCI JAPAN — UNIVERSE &amp; SCREENER</span><span class="aux" id="u-aux"></span></div>
       <div class="pbody">
         <div class="searchrow">
           <input id="u-q" placeholder="filter ticker / name / sector">
           <span class="cnt" id="u-cnt"></span>
+          <span style="flex:1"></span>
+          <span class="chip-sm" id="scr-toggle" title="Screen the universe on fundamentals (EDINET filings) and returns">SCREEN</span>
+          <span class="chip-sm" id="scr-csv" title="Download the rows currently shown as CSV">CSV</span>
+        </div>
+        <div id="scr-bar" class="scrbar" hidden>
+          <div class="scrrow"><span class="mut scrlb">PRESET</span><span id="scr-pre"></span></div>
+          <div class="scrrow" id="scr-ranges"></div>
+          <div class="scrrow"><span class="mut scrlb">SECTOR</span><span id="scr-sec"></span></div>
+          <div class="scrrow"><span class="mut scrlb">SAVED</span><select id="scr-saved"><option value="">— saved screens —</option></select><span class="chip-sm" id="scr-save">SAVE</span><span class="chip-sm" id="scr-del">DELETE</span><span class="chip-sm" id="scr-clear">CLEAR</span><span class="mut" id="scr-note" style="font-size:10px"></span></div>
         </div>
         <div id="univwrap">
         <table id="u-tbl">
@@ -1190,12 +1216,20 @@ body.term #rr-head .tt{font-size:13px}
             <th class="sortable" data-k="w">WGT%</th>
             <th class="sortable" data-k="px">LAST ¥</th>
             <th class="sortable" data-k="c1">1D%</th>
+            <th class="sortable" data-k="c1m">1M%</th>
             <th class="sortable" data-k="c3">3M%</th>
-            <th class="sortable" data-k="c52">52W%</th>
-            <th class="sortable" data-k="pe">P/E FY-E</th>
+            <th class="sortable" data-k="c52">12M%</th>
+            <th class="sortable" data-k="pe" title="price / company-guidance EPS for the current fiscal year">P/E FY-E</th>
+            <th class="sortable" data-k="pb" title="price / book value per share of the latest reported fiscal year (EDINET)">P/B</th>
+            <th class="sortable" data-k="roe" title="ROE as reported for the latest fiscal year (EDINET)">ROE%</th>
+            <th class="sortable" data-k="opm" title="operating income / sales, latest fiscal year (EDINET)">OPM%</th>
+            <th class="sortable" data-k="sg" title="sales growth, latest fiscal year vs the year before (EDINET)">SALES G%</th>
+            <th class="sortable" data-k="gopg" title="company guidance operating income for the current fiscal year vs the latest reported year (EDINET earnings release)">GUID OP G%</th>
+            <th class="sortable" data-k="dy" title="dividend per share of the latest reported fiscal year / price">DIV Y%</th>
+            <th class="sortable" data-k="mcap" title="shares issued at the latest fiscal year-end x price">MKT CAP ¥BN</th>
             <th class="sortable" data-k="adv">ADV ¥BN</th>
           </tr></thead>
-          <tbody id="univ"><tr><td class="l empty" colspan="10">Loading…</td></tr></tbody>
+          <tbody id="univ"><tr><td class="l empty" colspan="18">Loading…</td></tr></tbody>
         </table>
         </div>
       </div>
@@ -1282,6 +1316,7 @@ body.term #rr-head .tt{font-size:13px}
     if(v==="news"){ loadBrief(); loadNews(); loadEcon(); }
     if(v==="research"){ syncTopbarVar(); loadResearch(); }
     if(v==="japan"||v==="world"||v==="asia"){ loadFlow(); }
+    if(v==="japan"){ loadFunda(); }   // v9.11: fundamentals for the screener
     if(S){ if(v==="market"){ renderMarketChart(); } if(v==="japan"){ renderJapanChart(); renderHM(); } if(v==="world"){ renderWorldChart(); renderHMW(); } if(v==="asia"){ renderAsiaChart(); renderHMA(); } if(v==="league"||v==="me") renderChart(); }
   }
   window.addEventListener("hashchange",showView);
@@ -3928,6 +3963,7 @@ body.term #rr-head .tt{font-size:13px}
       +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span style="flex:1"></span><span id="snap-vs"></span></div>'
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
       +'<div id="snap-fs"><span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span></div>'
+      +'<div id="snap-peers"></div>'
       +'</div>';
     document.body.appendChild(ov);
     ov.addEventListener("click",function(ev){ if(ev.target===ov) ov.style.display="none"; });
@@ -4056,7 +4092,7 @@ body.term #rr-head .tt{font-size:13px}
         snapDraw(); snapFund();
       }).catch(function(){ SNAPC[code]={px:[]}; snapDraw(); snapFund(); });
     }
-    snapDraw(); snapFund();
+    snapDraw(); snapFund(); snapPeers();
   }
   document.addEventListener("click",function(ev){
     var t=ev.target&&ev.target.closest?ev.target.closest("[data-snap]"):null;
@@ -4630,17 +4666,101 @@ body.term #rr-head .tt{font-size:13px}
 
   /* ---------- universe table ---------- */
   var uSort={k:"w",dir:-1};
+  /* ---------- v9.11: fundamentals feed (api funda) + derived ratios ---------- */
+  var FUNDA=null, FUNDAM={}, fundaAt=0, fundaLoading=false;
+  function loadFunda(force){
+    if(fundaLoading) return; if(FUNDA&&!force&&Date.now()-fundaAt<1800e3) return;
+    if(typeof ETAGS==="undefined"||!ETAGS){ setTimeout(function(){ loadFunda(force); },0); return; }
+    fundaLoading=true;
+    fetchJ(API+"?action=funda").then(function(j){
+      fundaLoading=false; if(!j||!j.rows) return;
+      FUNDA=j; fundaAt=Date.now(); FUNDAM={}; j.rows.forEach(function(r){ FUNDAM[r.code]=r; });
+      if(curView()==="japan"&&S) renderUniv();
+      if(typeof snapPeers==="function"&&snapCode) snapPeers();
+    }).catch(function(){ fundaLoading=false; });
+  }
+  // one fiscal year at a time: P/B and yield from the latest actual year A, growth A vs the year before P,
+  // guidance growth E vs A on yen amounts (per-share bases can differ across years after splits; amounts cannot)
+  function fundaOf(code,px){
+    var f=FUNDAM[code]; if(!f) return {};
+    var A=f.a,P=f.p,E=f.e,o={fyA:A?A.fy:null,fyE:E?E.fy:null};
+    if(A){
+      if(px>0&&A.bps>0) o.pb=px/A.bps;
+      if(A.roe!=null) o.roe=A.roe*100;
+      if(A.sales>0&&A.op!=null) o.opm=A.op/A.sales*100;
+      if(P&&P.sales>0&&A.sales!=null) o.sg=(A.sales/P.sales-1)*100;
+      if(P&&P.op>0&&A.op!=null) o.opg=(A.op/P.op-1)*100;
+      if(px>0&&A.dps!=null) o.dy=A.dps/px*100;
+      if(px>0&&A.sh>0) o.mcap=A.sh*px/1e9;
+    }
+    if(E&&A&&E.fy>A.fy){ if(A.op>0&&E.op!=null) o.gopg=(E.op/A.op-1)*100; if(A.sales>0&&E.sales!=null) o.gsg=(E.sales/A.sales-1)*100; }
+    return o;
+  }
   function univRows(){
     return S.instruments.filter(function(i){return i.in_universe;}).map(function(i){
-      var s2=statOf(i.code),lc=lastCloseOf(i.code);
+      var s2=statOf(i.code),lc=lastCloseOf(i.code),px=lc?lc.px:null,fd=fundaOf(i.code,px);
       return {code:i.code,name:i.name,sector:i.sector||"",w:i.bm_weight,
-        px:lc?lc.px:null,c1:chg1dOf(i.code),
+        px:px,c1:chg1dOf(i.code),
+        c1m:s2&&s2.chg1m!=null?Number(s2.chg1m):null,
         c3:s2&&s2.chg3m!=null?Number(s2.chg3m):null,
         c52:s2&&s2.chg52w!=null?Number(s2.chg52w):null,
         pe:s2&&s2.per_fwd!=null?Number(s2.per_fwd):null,
+        pb:fd.pb!=null?fd.pb:null,roe:fd.roe!=null?fd.roe:null,opm:fd.opm!=null?fd.opm:null,sg:fd.sg!=null?fd.sg:null,gopg:fd.gopg!=null?fd.gopg:null,dy:fd.dy!=null?fd.dy:null,mcap:fd.mcap!=null?fd.mcap:null,fyA:fd.fyA,fyE:fd.fyE,
         adv:s2&&s2.adv20_value!=null?Number(s2.adv20_value):null};
     });
   }
+  /* ---------- v9.11: the screener (EQS) ---------- */
+  var SCR={pre:"all",sec:{},r:{}}, scrOn=false;
+  var SCR_FIELDS=[["pe","P/E",1],["pb","P/B",2],["roe","ROE%",1],["opm","OPM%",1],["sg","SALES G%",1],["gopg","GUID OP G%",1],["dy","DIV Y%",2],["mcap","MKT CAP ¥bn",0],["adv","ADV ¥bn",1],["c1m","1M%",1],["c3","3M%",1],["c52","12M%",1],["w","WGT%",2]];
+  var SCR_PRESETS={
+    all:{lb:"ALL",r:{},tip:"no fundamental filter"},
+    quality:{lb:"QUALITY",r:{roe:[12,null],opm:[10,null]},tip:"ROE >= 12% and operating margin >= 10% (latest fiscal year)"},
+    value:{lb:"VALUE",r:{pe:[null,12],pb:[null,1.2]},tip:"P/E FY-E <= 12x and P/B <= 1.2x"},
+    growth:{lb:"GROWTH",r:{sg:[8,null],gopg:[5,null]},tip:"sales growth >= 8% (latest year) and guidance operating income growth >= 5%"},
+    yield:{lb:"YIELD",r:{dy:[3.5,null]},tip:"dividend yield >= 3.5% (latest fiscal year DPS / price)"},
+    momentum:{lb:"MOMENTUM",r:{c3:[10,null],c52:[20,null]},tip:"3M >= +10% and 12M >= +20%"},
+    cheapq:{lb:"CHEAP QUALITY",r:{roe:[12,null],pe:[null,14]},tip:"ROE >= 12% and P/E FY-E <= 14x"}
+  };
+  function scrRanges(){ var r={}; var p=SCR_PRESETS[SCR.pre]||SCR_PRESETS.all; Object.keys(p.r).forEach(function(k){ r[k]=p.r[k].slice(); }); Object.keys(SCR.r).forEach(function(k){ var v=SCR.r[k]; if(v&&(v[0]!=null||v[1]!=null)) r[k]=[v[0]!=null?v[0]:(r[k]?r[k][0]:null), v[1]!=null?v[1]:(r[k]?r[k][1]:null)]; }); return r; }
+  function scrPass(row){
+    if(!scrOn) return true;
+    var secs=Object.keys(SCR.sec).filter(function(k){return SCR.sec[k];});
+    if(secs.length&&secs.indexOf(row.sector)<0) return false;
+    var r=scrRanges(), ok=true;
+    Object.keys(r).forEach(function(k){ var v=row[k], lo=r[k][0], hi=r[k][1]; if(lo==null&&hi==null) return; if(v==null){ ok=false; return; } if(lo!=null&&v<lo) ok=false; if(hi!=null&&v>hi) ok=false; });
+    return ok;
+  }
+  function scrRender(){
+    var pre=$("scr-pre"); if(!pre) return;
+    pre.innerHTML=Object.keys(SCR_PRESETS).map(function(k){ var p=SCR_PRESETS[k]; return '<span class="chip-sm'+(SCR.pre===k?" on":"")+'" data-scrpre="'+k+'" title="'+esc(p.tip)+'">'+esc(p.lb)+'</span>'; }).join("");
+    var rg=$("scr-ranges"); rg.innerHTML='<span class="mut scrlb">RANGE</span>'+SCR_FIELDS.map(function(f){ var k=f[0],v=SCR.r[k]||[null,null],eff=scrRanges()[k]; return '<span class="scrf'+((eff&&(eff[0]!=null||eff[1]!=null))?" on":"")+'" title="'+esc(f[1])+(eff&&(eff[0]!=null||eff[1]!=null)?' \u2014 effective '+(eff[0]==null?'':eff[0]+' \u2264 ')+'x'+(eff[1]==null?'':' \u2264 '+eff[1]):'')+'">'+esc(f[1])+' <input data-scrk="'+k+'" data-scri="0" placeholder="min" value="'+(v[0]==null?"":v[0])+'"> <input data-scrk="'+k+'" data-scri="1" placeholder="max" value="'+(v[1]==null?"":v[1])+'"></span>'; }).join("");
+    var secs={}; (S?S.instruments:[]).forEach(function(i){ if(i.in_universe&&i.sector) secs[i.sector]=1; });
+    $("scr-sec").innerHTML=Object.keys(secs).sort().map(function(k){ return '<span class="chip-sm scrsec'+(SCR.sec[k]?" on":"")+'" data-scrsec="'+esc(k)+'" title="'+esc(k)+'">'+esc(secAbbr(k))+'</span>'; }).join("");
+    var saved=scrSavedAll(); var sel=$("scr-saved"); var cur=sel.value; sel.innerHTML='<option value="">\u2014 saved screens \u2014</option>'+Object.keys(saved).sort().map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+'</option>'; }).join(""); sel.value=cur;
+  }
+  function scrSavedAll(){ try{ var a=JSON.parse(localStorage.getItem("jal_screens")||"{}"); return a&&typeof a==="object"?a:{}; }catch(e){ return {}; } }
+  function scrSavedSet(a){ try{ localStorage.setItem("jal_screens",JSON.stringify(a)); }catch(e){} }
+  function scrCsv(rows){
+    var cols=[["code","TKR"],["name","NAME"],["sector","SECTOR"],["w","WGT%"],["px","LAST"],["c1","1D%"],["c1m","1M%"],["c3","3M%"],["c52","12M%"],["pe","PE_FYE"],["pb","PB"],["roe","ROE%"],["opm","OPM%"],["sg","SALES_G%"],["gopg","GUID_OP_G%"],["dy","DIV_Y%"],["mcap","MKTCAP_JPYBN"],["adv","ADV_JPYBN"],["fyA","FY_ACTUAL"],["fyE","FY_GUIDANCE"]];
+    var esc2=function(v){ v=v==null?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+    var lines=[cols.map(function(c){return c[1];}).join(",")].concat(rows.map(function(r){ return cols.map(function(c){ var v=r[c[0]]; if(c[0]==="adv"&&v!=null) v=v/1e9; return esc2(typeof v==="number"?Math.round(v*1000)/1000:v); }).join(","); }));
+    var blob=new Blob([lines.join("\n")],{type:"text/csv"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="orrery_screen_"+new Date(Date.now()+9*3600e3).toISOString().slice(0,10)+".csv"; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+  }
+  function scrBind(){
+    var bar=$("scr-bar"); if(!bar||bar.dataset.bound) return; bar.dataset.bound="1";
+    $("scr-toggle").addEventListener("click",function(){ scrOn=!scrOn; bar.hidden=!scrOn; $("scr-toggle").className="chip-sm"+(scrOn?" on":""); if(scrOn){ scrRender(); loadFunda(); } renderUniv(); });
+    $("scr-csv").addEventListener("click",function(){ scrCsv(univShown||[]); });
+    bar.addEventListener("click",function(ev){
+      var p=ev.target.closest?ev.target.closest("[data-scrpre]"):null; if(p){ SCR.pre=p.getAttribute("data-scrpre"); scrRender(); renderUniv(); return; }
+      var sc=ev.target.closest?ev.target.closest("[data-scrsec]"):null; if(sc){ var k=sc.getAttribute("data-scrsec"); SCR.sec[k]=!SCR.sec[k]; scrRender(); renderUniv(); return; }
+      if(ev.target.id==="scr-clear"){ SCR={pre:"all",sec:{},r:{}}; scrRender(); renderUniv(); return; }
+      if(ev.target.id==="scr-save"){ var nm=prompt("Name this screen"); if(!nm) return; var a=scrSavedAll(); a[nm.slice(0,40)]=JSON.parse(JSON.stringify(SCR)); scrSavedSet(a); scrRender(); $("scr-saved").value=nm.slice(0,40); $("scr-note").textContent="saved \u00b7 "+nm.slice(0,40); return; }
+      if(ev.target.id==="scr-del"){ var cur=$("scr-saved").value; if(!cur) return; var b=scrSavedAll(); delete b[cur]; scrSavedSet(b); scrRender(); $("scr-note").textContent="deleted \u00b7 "+cur; return; }
+    });
+    bar.addEventListener("input",function(ev){ var t=ev.target; if(!t||!t.getAttribute||!t.getAttribute("data-scrk")) return; var k=t.getAttribute("data-scrk"), i=Number(t.getAttribute("data-scri")); var v=t.value.trim()===""?null:Number(t.value); if(v!=null&&isNaN(v)) return; SCR.r[k]=SCR.r[k]||[null,null]; SCR.r[k][i]=v; var eff=scrRanges()[k]; var box=t.closest(".scrf"); if(box) box.className="scrf"+((eff&&(eff[0]!=null||eff[1]!=null))?" on":""); renderUniv(); });
+    bar.addEventListener("change",function(ev){ if(ev.target.id!=="scr-saved") return; var a=scrSavedAll(); var v=ev.target.value; if(a[v]){ SCR=JSON.parse(JSON.stringify(a[v])); scrRender(); ev.target.value=v; renderUniv(); } });
+  }
+  var univShown=[];
   function renderUniv(){
     var q=($("u-q").value||"").toLowerCase();
     var rows=univRows().filter(function(r){
@@ -4653,10 +4773,13 @@ body.term #rr-head .tt{font-size:13px}
       if(typeof x==="string")return dir*String(x).localeCompare(String(y));
       return dir*(x-y);
     });
-    $("u-cnt").textContent=rows.length+" names";
+    var total=rows.length; rows=rows.filter(scrPass); univShown=rows;
+    $("u-cnt").textContent=scrOn?(rows.length+" of "+total+" names match"):(rows.length+" names");
     var wasof=S.instruments.length&&S.instruments[0].weight_asof?S.instruments[0].weight_asof:null;
-    $("u-aux").textContent=(wasof?"weights "+wasof+" · ":"")+(quotesFresh()?"quotes ~30min delay-refresh":"prices at last close");
-    $("univ").innerHTML=rows.map(function(r){
+    $("u-aux").textContent=(wasof?"weights "+wasof+" · ":"")+(quotesFresh()?"quotes ~30min delay-refresh":"prices at last close")+(FUNDA?" · fundamentals EDINET "+String(FUNDA.updated_at||"").slice(0,10):" · fundamentals loading");
+    var d1=function(v,dp){ return v==null?"\u2013":Number(v).toFixed(dp); };
+    var fyt=function(r,what){ return r.fyA?' title="'+what+' \u00b7 FY'+esc(r.fyA)+' actual (EDINET)"':''; };
+    $("univ").innerHTML=rows.length?rows.map(function(r){
       return '<tr class="pick" data-code="'+esc(r.code)+'">'
         +'<td class="l"><b data-snap="'+esc(r.code)+'">'+esc(r.code)+"</b></td>"
         +'<td class="l">'+esc(r.name)+"</td>"
@@ -4664,12 +4787,39 @@ body.term #rr-head .tt{font-size:13px}
         +'<td class="num">'+(r.w==null?"–":r.w.toFixed(2))+"</td>"
         +'<td class="num">'+(r.px==null?"–":n(r.px,r.px<1000?1:0))+"</td>"
         +'<td class="num '+cls(r.c1)+'">'+(r.c1==null?"–":pc(r.c1,2))+"</td>"
+        +'<td class="num '+cls(r.c1m)+'">'+(r.c1m==null?"–":pc(r.c1m,1))+"</td>"
         +'<td class="num '+cls(r.c3)+'">'+(r.c3==null?"–":pc(r.c3,1))+"</td>"
         +'<td class="num '+cls(r.c52)+'">'+(r.c52==null?"–":pc(r.c52,1))+"</td>"
         +'<td class="num">'+(r.pe==null?"–":r.pe.toFixed(1))+"</td>"
+        +'<td class="num"'+fyt(r,"P/B")+'>'+d1(r.pb,2)+"</td>"
+        +'<td class="num"'+fyt(r,"ROE")+'>'+d1(r.roe,1)+"</td>"
+        +'<td class="num"'+fyt(r,"operating margin")+'>'+d1(r.opm,1)+"</td>"
+        +'<td class="num '+cls(r.sg)+'"'+fyt(r,"sales growth vs the year before")+'>'+(r.sg==null?"\u2013":pc(r.sg,1))+"</td>"
+        +'<td class="num '+cls(r.gopg)+'"'+(r.fyE?' title="guidance FY'+esc(r.fyE)+' operating income vs FY'+esc(r.fyA||"")+' actual"':'')+'>'+(r.gopg==null?"\u2013":pc(r.gopg,1))+"</td>"
+        +'<td class="num"'+fyt(r,"dividend yield, DPS")+'>'+d1(r.dy,2)+"</td>"
+        +'<td class="num"'+fyt(r,"market cap, shares issued")+'>'+(r.mcap==null?"\u2013":n(r.mcap,0))+"</td>"
         +'<td class="num">'+(r.adv==null?"–":(r.adv/1e9).toFixed(1))+"</td>"
         +"</tr>";
-    }).join("");
+    }).join(""):'<tr><td class="l empty" colspan="18">No name passes this screen.</td></tr>';
+    scrBind();
+  }
+  /* ---------- v9.11: PEERS (RV) in the snapshot -- the sector's names on the same ratios, with the name's percentile ---- */
+  function snapPeers(){
+    var el=$("snap-peers"); if(!el||!snapCode) return;
+    var inst=instOf(snapCode); if(!inst){ el.innerHTML=""; return; }
+    if(!FUNDA){ el.innerHTML='<h4 class="minih" style="margin:8px 0 3px">PEERS \u2014 '+esc(inst.sector||"")+'</h4><span class="mut">loading fundamentals\u2026</span>'; loadFunda(); return; }
+    var rows=univRows().filter(function(r){ return r.sector===(inst.sector||""); });
+    var keys=[["pe","P/E FY-E",1],["pb","P/B",2],["roe","ROE%",1],["opm","OPM%",1],["sg","SALES G%",1],["gopg","GUID OP G%",1],["dy","DIV Y%",2],["mcap","MKT CAP ¥bn",0],["c1m","1M%",1],["c52","12M%",1]];
+    var me2=rows.find(function(r){return r.code===snapCode;});
+    var pctl=function(k,v){ var a=rows.map(function(r){return r[k];}).filter(function(x){return x!=null;}).sort(function(p,q){return p-q;}); if(v==null||!a.length) return null; var below=a.filter(function(x){return x<v;}).length; return {p:Math.round(below/a.length*100),n:a.length,med:a[Math.floor((a.length-1)/2)]}; };
+    var ord=function(p){ var r=p%100; return p+((r>=11&&r<=13)?"th":(p%10===1?"st":(p%10===2?"nd":(p%10===3?"rd":"th")))); };
+    var line=me2?keys.map(function(k){ var q=pctl(k[0],me2[k[0]]); if(!q) return ""; return '<span class="pctl" title="share of the sector names below this value">'+esc(k[1])+' '+(k[0]==="mcap"?n(me2[k[0]],0):Number(me2[k[0]]).toFixed(k[2]))+(/%/.test(k[1])?"%":"")+' \u2192 '+ord(q.p)+' pct of '+q.n+' (median '+(k[0]==="mcap"?n(q.med,0):Number(q.med).toFixed(k[2]))+')</span>'; }).filter(Boolean).join(" \u00b7 "):"";
+    rows.sort(function(a,b){ return (b.w||0)-(a.w||0); });
+    el.innerHTML='<h4 class="minih" style="margin:8px 0 3px">PEERS \u2014 '+esc(inst.sector||"")+' <span class="mut" style="font-weight:400;letter-spacing:0">'+rows.length+' MSCI Japan names \u00b7 ratios from the latest fiscal year filed (EDINET) \u00b7 sorted by index weight</span></h4>'
+      +(line?'<div style="margin:0 0 4px;line-height:1.6">'+line+'</div>':'')
+      +'<div style="overflow:auto;max-height:220px"><table class="secT peersT"><thead><tr><th class="l">TKR</th><th class="l">NAME</th><th>WGT</th>'+keys.map(function(k){return '<th>'+esc(k[1])+'</th>';}).join("")+'</tr></thead><tbody>'
+      +rows.map(function(r){ return '<tr class="pick'+(r.code===snapCode?" me":"")+'" data-code="'+esc(r.code)+'"><td class="l"><b>'+esc(r.code)+'</b></td><td class="l">'+esc(String(r.name).slice(0,18))+'</td><td class="num">'+(r.w==null?"\u2013":r.w.toFixed(2))+'</td>'+keys.map(function(k){ var v=r[k[0]]; var c=(k[0]==="sg"||k[0]==="gopg"||k[0]==="c1m"||k[0]==="c52")?cls(v):""; return '<td class="num '+c+'">'+(v==null?"\u2013":(k[0]==="mcap"?n(v,0):(c?pc(v,k[2]):Number(v).toFixed(k[2]))))+'</td>'; }).join("")+'</tr>'; }).join("")
+      +'</tbody></table></div>';
   }
   $("u-q").addEventListener("input",renderUniv);
   Array.prototype.forEach.call(document.querySelectorAll("#u-tbl th.sortable"),function(th){
