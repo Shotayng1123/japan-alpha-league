@@ -655,6 +655,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9e: egress -- If-None-Match on every api GET (304 keeps the last payload), state poll 60 s only in TSE hours (3 / 10 min otherwise), nothing polled while hidden; live minute series never CLOSED ---- */
 /* ---- v9.9f: economic calendar keeps 14 days back and shows the result beside the title ("3.75% ▷ 4.00%", highlight colour; "prev x" before the release) ---- */
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
+/* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -5072,7 +5073,7 @@ body.term #rr-head .tt{font-size:13px}
   // v9.9g: the DATA stamp is the newest print on the page, not only the JP quotes (which stop at 15:30 JST)
   function dataStamp(){
     var jq=0; (S&&S.quotes||[]).forEach(function(q2){ var x=Date.parse(q2.updated_at||0); if(x>jq)jq=x; });
-    var mq=0; ((MACRO&&MACRO.meta)||[]).forEach(function(m){ var x=m.market_time?Date.parse(m.market_time):0; if(x>mq)mq=x; });
+    var mq=0, lim=Date.now()+300e3; ((MACRO&&MACRO.meta)||[]).forEach(function(m){ var x=m.market_time?Date.parse(m.market_time):0; if(x>mq&&x<=lim)mq=x; });   // v9.9g.1: FRED series carry a date stamp (21:00Z of the observation day) that can lie ahead of now -- ignore
     var bq=0; Object.keys(DRV1M||{}).forEach(function(k){ var c=DRV1M[k]; if(c&&c.bars&&c.bars.length){ var x=c.bars[c.bars.length-1][0]*1000; if(x>bq)bq=x; } });
     var hm=function(ms){ return ms?new Date(ms+9*3600e3).toISOString().slice(11,16):"\u2013"; };
     var best=Math.max(jq,mq,bq);
