@@ -463,6 +463,11 @@ button.ghost{background:none;border:none;color:var(--dn);cursor:pointer;font-siz
 #hmtip .row{display:flex;justify-content:space-between;gap:14px;padding:1px 0}
 .chip-sm{border:1px solid var(--bord2);padding:1px 8px;border-radius:2px;cursor:pointer;margin-left:5px;font-size:10px;color:var(--txt2);letter-spacing:.05em;user-select:none}
 .chip-sm:hover{border-color:var(--amber)}
+.mvchips{margin:0 6px 0 2px}
+.mvchips .chip-sm{margin-left:3px;padding:0 6px}
+.mvall tbody{display:block;max-height:420px;overflow:auto}
+.mvall thead,.mvall tbody tr{display:table;width:100%;table-layout:fixed}
+.mvall thead th:first-child{width:40%}
 .chip-sm.on{color:#000;border-color:var(--amber);background:var(--amber);font-weight:700}
 
 .searchrow{display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
@@ -709,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.12: GRR -- the three MOVERS tables follow a period chip (1D/1W/1M/3M/12M) and ALL lists every name ranked; snapshot: RATIO line (stock / index) + beta, correlation, annualised vol over the range (COMP / BETA / HRA) ---- */
 /* ---- v9.11: SCREENER (EQS) on the MSCI Japan universe -- api funda (EDINET latest actual / prior / guidance) joined with prices and stats: P/B, ROE, OPM, sales growth, guidance OP growth, dividend yield, market cap; presets, custom ranges, sector chips, saved screens (localStorage), CSV; PEERS (RV) table + percentiles in the stock snapshot ---- */
 /* ---- v9.10.1: the constituent basket stands in for the MSCI day until the official level lands; "Communication" abbreviates like the GICS name ---- */
 /* ---- v9.10: MORNING BRIEF at the top of NEWS -- api?action=brief (numbers from the 07:45 JST `brief` function, the analyst routine's English summary), headline strip, AI summary, YOUR BOOK from the state, Japan session (breadth / sectors + rotation / movers / standouts), overnight (SPDRs, cross-asset), today (open indication, calendar, results), headlines, archive chips; terminal: brief across the top ---- */
@@ -1059,7 +1065,7 @@ body.term #rr-head .tt{font-size:13px}
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; P/E FY-E &middot; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; P/E FY-E &middot; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
               <thead><tr><th class="l">NAME</th><th>1D</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="ms-mov"><tr><td class="l empty" colspan="5">Loading…</td></tr></tbody>
@@ -1091,7 +1097,7 @@ body.term #rr-head .tt{font-size:13px}
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
               <thead><tr><th class="l">NAME</th><th>1D</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="wm-mov"><tr><td class="l empty" colspan="4">Loading…</td></tr></tbody>
@@ -1149,7 +1155,7 @@ body.term #rr-head .tt{font-size:13px}
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
               <thead><tr><th class="l">NAME</th><th>1D</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="am-mov"><tr><td class="l empty" colspan="4">Loading…</td></tr></tbody>
@@ -3591,8 +3597,23 @@ body.term #rr-head .tt{font-size:13px}
       });
     }
 
+    // v9.12 (GRR): the movers follow MOVP -- for 1W/1M/3M/12M the return is that period's, the sector
+    // comparison uses the same period, and NEWS/MOM (one-day evidence) are not claimed
+    var secRetP={}; if(MOVP!=="1d"){ Object.keys(sec).forEach(function(k){ var G=sec[k]; secRetP[k]=G["w"+MOVP]>0?G["s"+MOVP]/G["w"+MOVP]:null; }); }
+    if(MOVP!=="1d"){
+      rows=[];
+      cfg.list.forEach(function(i){ var r=cfg.retOf(i,MOVP); if(r==null) return; var code=cfg.codeOf(i); var tvp=Number(turn[code])||0; if(cfg.tconv){ var fp=cfg.tconv(code); tvp=(fp!=null)?tvp*fp:0; } rows.push({code:code,name:cfg.nameOf(i),sector:i.sector||"Other",w:Number(cfg.wOf(i))||0,r:r,pe:cfg.peOf?cfg.peOf(i):null,adv:cfg.advOf(i),tv:tvp,m1:null,per:true}); });
+    }
     rows.sort(function(a,b){return b.r-a.r;});
+    var mvLbl={"1d":"1D","1w":"1W","1m":"1M","3m":"3M","12m":"12M"}[MOVP]||"1D";
+    var mvTh=movB.parentElement&&movB.parentElement.querySelector("thead th:nth-child(2)"); if(mvTh) mvTh.textContent=mvLbl;
+    if(movB.parentElement) movB.parentElement.className=(movB.parentElement.className||"").replace(/\s*mvall/,"")+(MOVALL?" mvall":"");
     function drv(x){
+      if(x.per){
+        var srp=secRetP[x.sector], residp=(srp==null)?null:(x.r-srp), sharep=(srp==null)?null:Math.abs(srp)/(Math.abs(srp)+Math.abs(residp)||1);
+        if(srp!=null&&Math.abs(srp)>=0.01&&sharep>=0.6) return '<span class="cz sctr" title="'+esc("Moves with its sector over "+mvLbl+" ("+pct(srp,1)+"); residual "+pct(residp,1)+".")+'">SECTOR</span>';
+        return '<span class="cz idio" title="'+esc("Not explained by its sector over "+mvLbl+(srp!=null?" (sector "+pct(srp,1)+", residual "+pct(residp,1)+")":"")+". Headline and trend tags are one-day evidence and are not claimed for longer periods.")+'">IDIO</span>';
+      }
       var sr=secRet[x.sector];
       var resid=(sr==null)?null:(x.r-sr);
       var share=(sr==null)?null:Math.abs(sr)/(Math.abs(sr)+Math.abs(resid)||1);
@@ -3614,7 +3635,7 @@ body.term #rr-head .tt{font-size:13px}
         +'<td class="num'+(va!=null&&va>=2?' warn':'')+'">'+(va==null?'<span class="mut">&ndash;</span>':n(va,va<10?1:0)+'x')+'</td>'
         +'<td class="l">'+drv(x)+'</td></tr>';
     }
-    var K=6;
+    var K=MOVALL?rows.length:6;
     movB.innerHTML=rows.length
       ? (rows.length<=K*2
           ? rows.map(mrow).join("")
@@ -3624,11 +3645,30 @@ body.term #rr-head .tt{font-size:13px}
       var up=rows.filter(function(x){return x.r>0;}).length, dn=rows.filter(function(x){return x.r<0;}).length;
       var tot=0, upv=0;
       rows.forEach(function(x){ tot+=x.tv||0; if(x.r>0) upv+=x.tv||0; });
+      if(MOVP!=="1d"){
+        // v9.12: over a period the one-day turnover split and the NEWS / MOM tags are not claimed
+        brEl.innerHTML="Breadth over "+mvLbl+": "+up+" up / "+dn+" down of "+rows.length+(MOVALL?" &middot; all names ranked":" &middot; top / bottom 6")
+          +' &middot; DRIVER: <span class="cz sctr">SECTOR</span> tracks its sector over '+mvLbl+' &middot; <span class="cz idio">IDIO</span> not explained by sector (heuristic)';
+      } else
       brEl.innerHTML="Breadth "+up+" up / "+dn+" down of "+rows.length
         +(tot>0?(" &middot; "+Math.round(upv/tot*100)+"% of turnover in rising names"):"")
+        +(MOVALL?" &middot; all names ranked":"")
         +' &middot; DRIVER: <span class="cz news">NEWS</span> headline today &middot; <span class="cz sctr">SECTOR</span> tracks sector &middot; <span class="cz mom">MOM</span> 1M trend &middot; <span class="cz idio">IDIO</span> stock-specific (heuristic)';
     }
   }
+  /* ---------- v9.12: movers period / ALL (GRR) ---------- */
+  var MOVP="1d", MOVALL=false;
+  document.addEventListener("click",function(ev){
+    var p=ev.target&&ev.target.closest?ev.target.closest("[data-mvp]"):null, a=ev.target&&ev.target.closest?ev.target.closest("[data-mvall]"):null;
+    if(!p&&!a) return;
+    if(p) MOVP=p.getAttribute("data-mvp"); else MOVALL=!MOVALL;
+    Array.prototype.forEach.call(document.querySelectorAll(".mvchips [data-mvp]"),function(c){ c.className="chip-sm"+(c.getAttribute("data-mvp")===MOVP?" on":""); });
+    Array.prototype.forEach.call(document.querySelectorAll(".mvchips [data-mvall]"),function(c){ c.className="chip-sm"+(MOVALL?" on":""); });
+    if(!S) return;
+    if(typeof renderMarketSummary==="function") renderMarketSummary();
+    if(typeof renderWorldSecMov==="function") renderWorldSecMov();
+    if(typeof renderAsiaSecMov==="function") renderAsiaSecMov();
+  });
   function renderWorldSecMov(){
     if(!S||!$("wm-sec")) return;
     var wy=S.world_yen||{}, wc=S.world_closes||{}, uj=Number(S.usdjpy)||null;
@@ -3960,7 +4000,7 @@ body.term #rr-head .tt{font-size:13px}
       +'<div class="sub" id="snap-sec"></div>'
       +'<div class="snap-facts" id="snap-f"></div>'
       +'<div class="snap-rets" id="snap-r"></div>'
-      +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span style="flex:1"></span><span id="snap-vs"></span></div>'
+      +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span id="snap-beta" style="font-size:10.5px;margin-left:6px"></span><span style="flex:1"></span><span id="snap-vs"></span></div>'
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
       +'<div id="snap-fs"><span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span></div>'
       +'<div id="snap-peers"></div>'
@@ -4005,9 +4045,17 @@ body.term #rr-head .tt{font-size:13px}
     var sIdx=rows.map(function(a){return Number(a[1])/b0*100;});
     var inst=instOf(snapCode), wi=winstOf(snapCode);
     var nm=inst?inst.name:(wi?wi.name:snapCode);
+    // v9.12 (COMP / BETA): the relative-strength ratio (stock / index, rebased to 100) as a dotted third
+    // line, and beta / correlation of daily returns over the same rows
+    var sRel=sName.map(function(v,i){ return sIdx[i]>0?v/sIdx[i]*100:null; });
+    var rs=[], rb=[]; for(var q=1;q<rows.length;q++){ var a0=pxm[dates[q-1]], a1=pxm[dates[q]], b0q=Number(rows[q-1][1]), b1q=Number(rows[q][1]); if(a0>0&&a1>0&&b0q>0&&b1q>0){ rs.push(a1/a0-1); rb.push(b1q/b0q-1); } }
+    var stat=null;
+    if(rs.length>=20){ var nq=rs.length, ms=0, mb=0; for(var q2=0;q2<nq;q2++){ ms+=rs[q2]; mb+=rb[q2]; } ms/=nq; mb/=nq; var cov=0, vs=0, vb=0; for(var q3=0;q3<nq;q3++){ cov+=(rs[q3]-ms)*(rb[q3]-mb); vs+=(rs[q3]-ms)*(rs[q3]-ms); vb+=(rb[q3]-mb)*(rb[q3]-mb); } stat={beta:vb>0?cov/vb:null,rho:(vs>0&&vb>0)?cov/Math.sqrt(vs*vb):null,n:nq,vol:Math.sqrt(vs/(nq-1))*Math.sqrt(250)*100}; }
+    var bs=$("snap-beta"); if(bs) bs.innerHTML=stat?('<span class="mut">\u03b2</span> <b class="num">'+stat.beta.toFixed(2)+'</b> <span class="mut">\u03c1</span> <b class="num">'+stat.rho.toFixed(2)+'</b> <span class="mut">\u03c3</span> <b class="num">'+stat.vol.toFixed(0)+'%</b> <span class="mut" title="daily simple returns of the stock regressed on the index over the range shown (beta), their correlation (rho) and the stock\'s annualised volatility (sigma, 250 days)">vs '+(snapIdx==="W"?"World":"Japan")+', '+stat.n+' sessions</span>'):'<span class="mut">\u03b2 needs 20+ overlapping sessions</span>';
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,
       [{label:String(nm).slice(0,16),color:"#ff6f61",vals:sName,w:2},
-       {label:snapIdx==="W"?"MSCI WORLD":"MSCI JAPAN",color:"#5a6b80",vals:sIdx,w:1}],
+       {label:snapIdx==="W"?"MSCI WORLD":"MSCI JAPAN",color:"#5a6b80",vals:sIdx,w:1},
+       {label:"RATIO (stock / index)",color:"#1fd1c1",vals:sRel,w:1,dash:3}],
       "relative, index=100 at range start","sn",$("snap-tip"));
   }
   /* 5Y financials + company guidance, from the fundamentals table (EDINET DB via the fund job).
