@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Orrery Analytics</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Orrery">
+<meta name="theme-color" content="#050505">
 <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%23e8e6df' stroke-width='11' stroke-linecap='round'&gt;&lt;circle cx='100' cy='92' r='70'/&gt;&lt;ellipse cx='100' cy='92' rx='70' ry='22'/&gt;&lt;ellipse cx='100' cy='92' rx='70' ry='46' transform='rotate(-32 100 92)'/&gt;&lt;circle cx='100' cy='92' r='10' fill='%23e8e6df' stroke='none'/&gt;&lt;circle cx='114.1' cy='38.8' r='7.5' fill='%23e8e6df' stroke='none'/&gt;&lt;line x1='100' y1='162' x2='100' y2='182'/&gt;&lt;path d='M72 186 Q100 176 128 186'/&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&amp;family=IBM+Plex+Sans+JP:wght@400;500;700&amp;family=Cormorant+Garamond:wght@600;700&amp;display=swap">
@@ -642,6 +649,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9b: live US yields (CBOE) + bond prices in GLOBAL MARKETS; six driver tiles per market tab incl. JGB ETFs and the T-note future ---- */
 /* ---- v9.9c: driver tiles at 1D = the instrument's own session from its open (1-min bars, 7 days), drag to pan, last completed session while closed; FX day = 17:00 New York ---- */
 /* ---- v9.9c.1: yield session tiles (^TNX/^TYX/^FVX) report the change in basis points (was 100x too small: +5bp showed as +0bp) ---- */
+/* ---- v9.9d: the TSE lunch stays on the 1D/1W axis, held flat; driver tiles hold 30+ minute gaps flat; terminal MARKET 4x2 = ZN=F + 2510.T for ^IXIC + DXY; web-app manifest + apple-touch-icon ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -2683,7 +2691,7 @@ body.term #rr-head .tt{font-size:13px}
   // (bottom-left) = Nikkei 225 · NASDAQ · US 10Y · SOX · VIX · Hang Seng · DXY · WTI [仮].
   // Both follow the GLOBAL MARKETS period chips.
   var CORE4=["USDJPY=X","1306.T","JGB10Y","^GSPC"];
-  var TIER8=["^N225","^IXIC","^TNX","^SOX","^VIX","^HSI","DX-Y.NYB","CL=F"];   // v9.9b: ^TNX (CBOE, live) for DGS10 (FRED, daily)
+  var TIER8=["^N225","^SOX","^TNX","ZN=F","^VIX","^HSI","2510.T","CL=F"];   // v9.9d: bond prices in the 4x2 -- ZN=F (10Y T-note future) for ^IXIC, 2510.T (NOMURA-BPI JGB ETF) for DX-Y.NYB; S&P 500 and USD/JPY sit in CORE4
   function gDays(p){ return {"1D":1,"1W":7,"1M":31,"3M":92,"6M":183,"12M":365,"24M":730,"36M":1095,"60M":1825}[p]||1; }
   function renderCore(){
     var res=gPer==="1D"?"30m":(gPer==="1W"?"1h":null);
@@ -2755,6 +2763,15 @@ body.term #rr-head .tt{font-size:13px}
       for(var ms=a; ms<=end; ms+=60000){ slots.push(ms); vals.push(null); }
       s.bars.forEach(function(b){ var j=i0+Math.floor((b[0]-a)/60000); if(j>=i0&&j<slots.length) vals[j]=b[1]; });
       s.i0=i0; s.i1=slots.length;
+    });
+    // v9.9d: a gap of 30+ minutes inside a session (the TSE / HKEX / SSE lunch, a thin ETF between prints) is
+    // held flat at the last print, so the break keeps its width and the line stays horizontal across it;
+    // shorter gaps are still bridged by the line. In the live session a trailing gap is filled up to now.
+    var nowSlot=Math.floor(now/60000)*60000;
+    sess.forEach(function(s){
+      var lastV=null, run=0, q;
+      for(q=s.i0;q<s.i1;q++){ var v=vals[q]; if(v!=null){ if(run>=30&&lastV!=null) for(var k=q-run;k<q;k++) vals[k]=lastV; lastV=v; run=0; } else run++; }
+      if(run&&lastV!=null){ var gEnd=s.i1; while(gEnd>s.i1-run&&slots[gEnd-1]>nowSlot) gEnd--; if(gEnd-(s.i1-run)>=30) for(var k2=s.i1-run;k2<gEnd;k2++) vals[k2]=lastV; }
     });
     return {sym:sym,cls:cls,sess:sess,slots:slots,vals:vals,starts:starts,live:last.live};
   }
@@ -3024,7 +3041,8 @@ body.term #rr-head .tt{font-size:13px}
      Shota, 2026-09-16 21:40 JST: keep the selected range, but let a click-hold-drag scroll the
      chart back through earlier sessions, smoothly (1D selected → drag → yesterday, the day
      before …). Each market keeps a TIMELINE per resolution and shows a viewport of it:
-       1D     : one-minute slots on the session grid (open→close, breaks compressed) for every
+       1D     : one-minute slots on the session grid (open→close; v9.9d: the lunch break stays on
+                the axis and the line is held flat across it at the last value before it) for every
                 session in the hourly history; sessions inside the nine-day minute retention carry
                 their 1-minute points (api range=1D&days=9), older sessions carry the hourly closes
                 placed at the bucket end (a sparse line — the legend says "hourly closes");
@@ -3073,11 +3091,11 @@ body.term #rr-head .tt{font-size:13px}
     var dates={}, minuteDays={};
     (minute.points||[]).forEach(function(p){ var l=mkLocal(C.tz,Date.parse(p[0])); if(l){ dates[l.d]=1; minuteDays[l.d]=1; } });
     (hourly.points||[]).forEach(function(p){ var l=mkLocal(C.tz,Date.parse(p[0])); if(l) dates[l.d]=1; });
-    var ds=Object.keys(dates).sort(), slots=[], vals=[], starts=[], sess=[], kind=[], stepMs=step*60e3;
+    var ds=Object.keys(dates).sort(), slots=[], vals=[], starts=[], sess=[], kind=[], brk=[], stepMs=step*60e3;
     ds.forEach(function(d){
       var s=mkSess(C,d); if(!s) return;
       starts.push(slots.length); sess.push(s); kind.push(minuteDays[d]?(step===1?"1-min":"5-min"):"hourly");
-      for(var ms=s.open;ms<=s.close;ms+=stepMs){ if(inBreak(s,ms)>=0) continue; slots.push(ms); vals.push(null); }
+      for(var ms=s.open;ms<=s.close;ms+=stepMs){ slots.push(ms); vals.push(null); brk.push(inBreak(s,ms)>=0); }   // v9.9d: break slots stay on the axis
     });
     var idx={}; for(var i=0;i<slots.length;i++) idx[slots[i]]=i;
     // v9.7.1: a feed bar can carry seconds (Yahoo stamps the first URTH bar of a day at 13:30:20Z) -- floor to the grid step
@@ -3089,7 +3107,18 @@ body.term #rr-head .tt{font-size:13px}
       var e=ms+3600e3, bi=inBreak(s,e); if(bi>=0) e=s.breaks[bi][0]; if(e>s.close) e=s.close;
       e=Math.round(e/stepMs)*stepMs; var i=idx[e]; if(i!=null) vals[i]=p[1];
     });
-    return {step:step,slots:slots,vals:vals,starts:starts,sess:sess,kind:kind,prev:prevMap,intra:true};
+    // v9.9d: a break (the TSE lunch 11:30-12:30) is drawn as a flat line at the last value before it -- the
+    // hour keeps its width on the axis, the print at 12:30 then steps to the new level
+    var nowMs=Date.now();
+    sess.forEach(function(s,si){
+      var i0=starts[si], i1=si+1<starts.length?starts[si+1]:slots.length, hold=null;
+      for(var q=i0;q<i1;q++){
+        if(!brk[q]){ hold=null; continue; }
+        if(q===i0||!brk[q-1]) hold=(q>i0&&vals[q-1]!=null)?vals[q-1]:null;   // entering a break: hold the value at its start, if the session reached it
+        if(vals[q]==null&&hold!=null&&slots[q]<=nowMs) vals[q]=hold;
+      }
+    });
+    return {step:step,slots:slots,vals:vals,starts:starts,sess:sess,kind:kind,brk:brk,prev:prevMap,intra:true};
   }
   function buildHourly(C,hourly,prevMap){
     var pts=(hourly.points||[]).slice().sort(function(a,b){return a[0]<b[0]?-1:1;});
@@ -3143,7 +3172,11 @@ body.term #rr-head .tt{font-size:13px}
     // session separators: drawn while they still read as boundaries; a 3M+ chart has too many
     if((o.seps||[]).length<=25) (o.seps||[]).forEach(function(i){ var xx=X(i); svg+='<line x1="'+xx.toFixed(1)+'" x2="'+xx.toFixed(1)+'" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#23242a" stroke-width="1"/>'; });
     var ticks=o.ticks||[], maxT=narrow?4:(fit?Math.max(4,Math.floor(W/90)):8);
-    if(ticks.length>maxT){ var k=Math.ceil(ticks.length/maxT), t2=[]; for(var q=0;q<ticks.length;q+=k) t2.push(ticks[q]); if(t2[t2.length-1]!==ticks[ticks.length-1]&&ticks.length>1) t2.push(ticks[ticks.length-1]); ticks=t2; }
+    if(ticks.length>maxT){   // v9.9d: thin the hour ticks only; session / date ticks (pri) always stay
+      var pri=ticks.filter(function(t){return t.pri;}), rest=ticks.filter(function(t){return !t.pri;}), room=Math.max(1,maxT-pri.length), k=Math.ceil(rest.length/room), t2=[];
+      for(var q=0;q<rest.length;q+=k) t2.push(rest[q]);
+      var lastT=ticks[ticks.length-1]; ticks=pri.concat(t2); if(ticks.indexOf(lastT)<0&&ticks.length>1) ticks.push(lastT); ticks.sort(function(x,y){return x.i-y.i;});
+    }
     // the first and last labels win: drop any other label within 58 units of either
     if(ticks.length>2){ var x0=X(ticks[0].i), xe=X(ticks[ticks.length-1].i), nT=ticks.length; ticks=ticks.filter(function(t,qi){ return qi===0||qi===nT-1||(X(t.i)-x0>58&&xe-X(t.i)>58); }); }
     ticks.forEach(function(t){ var xx=X(t.i), anc=xx<mL+30?"start":(xx>W-mR-30?"end":"middle"); svg+='<text x="'+xx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+anc+'" font-size="9.5" fill="var(--mut)">'+esc(t.text)+"</text>"; });
@@ -3177,7 +3210,7 @@ body.term #rr-head .tt{font-size:13px}
     var oneSession=tl.intra&&rng==="1D";
     for(var i=a;i<b;i++){
       var ms=tl.slots[i], j=jstParts(ms);
-      labels.push(tl.daily?tl.sess[i].d:(j.md+" "+j.hm+" JST"));
+      labels.push(tl.daily?tl.sess[i].d:(j.md+" "+j.hm+" JST"+(tl.brk&&tl.brk[i]?" · break":"")));
     }
     // sessions touching the slice
     var sIdx=[]; for(var s=0;s<tl.starts.length;s++){ var s0=tl.starts[s], s1=(s+1<tl.starts.length?tl.starts[s+1]:total); if(s1>a&&s0<b) sIdx.push(s); }
@@ -3187,7 +3220,7 @@ body.term #rr-head .tt{font-size:13px}
       visSess.push({s:s,d:tl.sess[s].d,i0:i0-a,i1:i1-a,kind:tl.kind[s],full:s0>=a&&s1<=b});
       if(s0>a) seps.push(s0-a);
       // one whole session in view: its start reads as a time; two or more (a pan mid-session): every session start reads as a date
-      if(!tl.daily){ ticks.push({i:Math.max(s0,a)-a,text:(oneSession&&!multi&&s0>=a)?jstParts(tl.slots[s0]).hm:jstParts(tl.slots[Math.max(s0,a)]).md}); }
+      if(!tl.daily){ ticks.push({i:Math.max(s0,a)-a,text:(oneSession&&!multi&&s0>=a)?jstParts(tl.slots[s0]).hm:jstParts(tl.slots[Math.max(s0,a)]).md,pri:true}); }   // v9.9d: session-start ticks survive the thinning
       if(tl.intra&&rng==="1D"&&tl.prev[tl.sess[s].d]){ var pv=tl.prev[tl.sess[s].d].prev; hsegs.push({i0:i0-a,i1:i1-a,v:pv,text:(i1===Math.min(s1,b)-1&&s===sIdx[sIdx.length-1])?"prev "+lvl(pv):""}); }
     });
     if(oneSession){ for(var q=a;q<b;q++){ var jj=jstParts(tl.slots[q]); if(jj.min%60===0&&!startSet[q]&&q!==a) ticks.push({i:q-a,text:jj.hm}); } ticks.sort(function(x,y){return x.i-y.i;}); if(ticks.length&&ticks[ticks.length-1].i!==b-1-a) ticks.push({i:b-1-a,text:jstParts(tl.slots[b-1]).hm}); }
