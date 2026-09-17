@@ -656,6 +656,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9f: economic calendar keeps 14 days back and shows the result beside the title ("3.75% ▷ 4.00%", highlight colour; "prev x" before the release) ---- */
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
+/* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -3204,10 +3205,14 @@ body.term #rr-head .tt{font-size:13px}
     // session separators: drawn while they still read as boundaries; a 3M+ chart has too many
     if((o.seps||[]).length<=25) (o.seps||[]).forEach(function(i){ var xx=X(i); svg+='<line x1="'+xx.toFixed(1)+'" x2="'+xx.toFixed(1)+'" y1="'+mT+'" y2="'+(H-mB)+'" stroke="#23242a" stroke-width="1"/>'; });
     var ticks=o.ticks||[], maxT=narrow?4:(fit?Math.max(4,Math.floor(W/90)):8);
-    if(ticks.length>maxT){   // v9.9d: thin the hour ticks only; session / date ticks (pri) always stay
-      var pri=ticks.filter(function(t){return t.pri;}), rest=ticks.filter(function(t){return !t.pri;}), room=Math.max(1,maxT-pri.length), k=Math.ceil(rest.length/room), t2=[];
-      for(var q=0;q<rest.length;q+=k) t2.push(rest[q]);
-      var lastT=ticks[ticks.length-1]; ticks=pri.concat(t2); if(ticks.indexOf(lastT)<0&&ticks.length>1) ticks.push(lastT); ticks.sort(function(x,y){return x.i-y.i;});
+    if(ticks.length>maxT){   // v9.9d: thin the hour ticks first; session / date ticks (pri) stay while they fit
+      var pri=ticks.filter(function(t){return t.pri;}), rest=ticks.filter(function(t){return !t.pri;}), lastT=ticks[ticks.length-1], t2=[], q, k;
+      if(pri.length>maxT){   // v9.9h: many sessions in view (1W..12M) -- thin the session ticks themselves, every k-th, as before v9.9d
+        k=Math.ceil(pri.length/maxT); for(q=0;q<pri.length;q+=k) t2.push(pri[q]); ticks=t2;
+      } else {
+        var room=Math.max(1,maxT-pri.length); k=Math.ceil(rest.length/room); for(q=0;q<rest.length;q+=k) t2.push(rest[q]); ticks=pri.concat(t2);
+      }
+      if(ticks.indexOf(lastT)<0&&ticks.length>1) ticks.push(lastT); ticks.sort(function(x,y){return x.i-y.i;});
     }
     // the first and last labels win: drop any other label within 58 units of either
     if(ticks.length>2){ var x0=X(ticks[0].i), xe=X(ticks[ticks.length-1].i), nT=ticks.length; ticks=ticks.filter(function(t,qi){ return qi===0||qi===nT-1||(X(t.i)-x0>58&&xe-X(t.i)>58); }); }
