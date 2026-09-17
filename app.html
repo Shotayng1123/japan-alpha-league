@@ -693,6 +693,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.10.1: the constituent basket stands in for the MSCI day until the official level lands; "Communication" abbreviates like the GICS name ---- */
 /* ---- v9.10: MORNING BRIEF at the top of NEWS -- api?action=brief (numbers from the 07:45 JST `brief` function, the analyst routine's English summary), headline strip, AI summary, YOUR BOOK from the state, Japan session (breadth / sectors + rotation / movers / standouts), overnight (SPDRs, cross-asset), today (open indication, calendar, results), headlines, archive chips; terminal: brief across the top ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
@@ -5104,7 +5105,9 @@ body.term #rr-head .tt{font-size:13px}
     var tile=function(lb,val,chg,unit,sub){ var c2=unit==="bp"?brBp(chg):brPc(chg); return '<div class="mtile"><div class="lb">'+lb+'</div><div class="v '+cls(chg)+'">'+c2+'<small>'+val+'</small></div><div class="sub">'+sub+'</div></div>'; };
     var m=function(o){ return o||{}; };
     var strip='<div class="brstrip">'
-      +tile("MSCI JAPAN NT \u00a5",brNum(m(jp.msci).level,1),m(jp.msci).r1d,"%",esc(jp.session||"")+(m(jp.msci).note?" \u00b7 pending":" \u00b7 WTD "+brPc(m(jp.msci).wtd)))
+      +(m(jp.msci).r1d!=null
+        ? tile("MSCI JAPAN NT \u00a5",brNum(m(jp.msci).level,1),m(jp.msci).r1d,"%",esc(jp.session||"")+" \u00b7 WTD "+brPc(m(jp.msci).wtd))
+        : tile("MSCI JP BASKET",brNum(m(jp.msci).level,1),m(jp.basket).r1d,"%",esc(jp.session||"")+" \u00b7 WTD "+brPc(m(jp.basket).wtd)+" \u00b7 official pending"))   // v9.10.1: the constituent basket stands in until MSCI publishes
       +tile("NIKKEI 225",brNum(m(jp.n225).last,0),m(jp.n225).chg,"%",esc(m(jp.n225).d||"")+" \u00b7 WTD "+brPc(m(jp.n225).wtd))
       +tile("TOPIX (1306)",brNum(m(jp.topix1306).last,0),m(jp.topix1306).chg,"%",esc(m(jp.topix1306).d||""))
       +tile("S&amp;P 500",brNum(m(idx.gspc).last,0),m(idx.gspc).chg,"%",esc(m(idx.gspc).d||"")+" \u00b7 WTD "+brPc(m(idx.gspc).wtd))
@@ -5121,7 +5124,7 @@ body.term #rr-head .tt{font-size:13px}
       +'<div class="brsec"><span class="minih">YOUR BOOK</span><span class="mut">from the live state</span></div>'+brBookHtml();
     // ---- right column: Japan session ----
     var secs=jp.sectors||[], brd=jp.breadth||{};
-    var right='<div class="brsec"><span class="minih">JAPAN \u2014 SESSION '+esc(jp.session||"")+'</span><span class="mut">'+(brd.n?brd.up+" up / "+brd.down+" down / "+brd.flat+" flat of "+brd.n+" names":"")+(jp.msci&&jp.msci.r1d!=null?" \u00b7 MSCI Japan "+brPc(jp.msci.r1d):"")+'</span></div>';
+    var right='<div class="brsec"><span class="minih">JAPAN \u2014 SESSION '+esc(jp.session||"")+'</span><span class="mut">'+(brd.n?brd.up+" up / "+brd.down+" down / "+brd.flat+" flat of "+brd.n+" names":"")+(jp.msci&&jp.msci.r1d!=null?" \u00b7 MSCI Japan "+brPc(jp.msci.r1d):(jp.basket&&jp.basket.r1d!=null?" \u00b7 basket "+brPc(jp.basket.r1d)+" (official pending)":""))+'</span></div>';
     if(secs.length){
       right+='<table class="secT"><thead><tr><th class="l">SECTOR</th><th>1D</th><th>WTD</th><th>LAST WK</th><th>1M</th><th title="rank change this week vs last week (index-weighted returns): + climbed">ROT</th><th title="median P/E FY-E in the sector (n names)">P/E</th></tr></thead><tbody>'
         +secs.map(function(x){ var rot=x.rot==null?"\u2013":(x.rot>0?"\u25b2"+x.rot:(x.rot<0?"\u25bc"+(-x.rot):"\u00b7")); return '<tr><td class="l" title="'+esc(x.sector)+' \u00b7 '+x.n+' names, '+brNum(x.w,1)+'% of the index; top '+esc((x.top||[]).join(", "))+', bottom '+esc((x.bottom||[]).join(", "))+'">'+esc(secAbbr(x.sector))+'</td><td class="num '+cls(x.r1d)+'">'+brPc(x.r1d)+'</td><td class="num '+cls(x.wtd)+'">'+brPc(x.wtd)+'</td><td class="num '+cls(x.pwk)+'">'+brPc(x.pwk)+'</td><td class="num '+cls(x.r1m)+'">'+brPc(x.r1m,1)+'</td><td class="num rot '+(x.rot>0?"up":(x.rot<0?"dn":""))+'">'+rot+'</td><td class="num">'+(x.peMed==null?"\u2013":brNum(x.peMed,1)+'<span class="mut pen">n'+x.peN+'</span>')+'</td></tr>'; }).join("")
@@ -5168,7 +5171,7 @@ body.term #rr-head .tt{font-size:13px}
   // the chip's tooltip.
   var SEC_ABBR={"Information Technology":"Info Tech","Consumer Discretionary":"Cons Disc","Consumer Staples":"Staples",
     "Communication Services":"Comm Svcs","Health Care":"Health Care","Financials":"Financials","Industrials":"Industrials",
-    "Energy":"Energy","Materials":"Materials","Utilities":"Utilities","Real Estate":"Real Estate"};
+    "Energy":"Energy","Materials":"Materials","Utilities":"Utilities","Real Estate":"Real Estate","Communication":"Comm Svcs"};
   function secAbbr(s){ s=String(s||""); return SEC_ABBR[s]||s.slice(0,11); }
   function nwOne(c,pre){ var a=nwCodes(c,pre); return a.length?a[0]:""; }
   function myHeldCodes(){
