@@ -714,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.17: HP -- the snapshot shows the 52-week high / low (dates, distance, position in the range) from the price history and a CSV chip downloads the price table drawn ---- */
 /* ---- v9.16: COMP -- a "vs" box in the snapshot overlays a second name (rebased to 100 over the same rows) with the A/B ratio, the pair's correlation and the relative return over the range ---- */
 /* ---- v9.15: DVD -- dividend history in the snapshot: DPS YoY and payout rows, trailing / guidance yield, DPS CAGR, increases and cuts, split-like years flagged ---- */
 /* ---- v9.14: CN -- the stock snapshot lists the feed's headlines tagged to the name (60 days) and to its sector (7 days), via api news code= / sector= / days= ---- */
@@ -4102,7 +4103,8 @@ body.term #rr-head .tt{font-size:13px}
       +'<div class="sub" id="snap-sec"></div>'
       +'<div class="snap-facts" id="snap-f"></div>'
       +'<div class="snap-rets" id="snap-r"></div>'
-      +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span id="snap-beta" style="font-size:10.5px;margin-left:6px"></span><span style="flex:1"></span><span id="snap-vs"></span><span id="snap-cmpw" style="display:inline-flex;gap:4px;align-items:center;margin-left:6px"><input id="snap-cmp" placeholder="vs 7203 / NVDA" maxlength="8" style="width:96px;font-size:10.5px;padding:1px 4px" title="Compare with a second name: same range, both rebased to 100, plus their ratio (COMP)"><button class="ghost" id="snap-cmpx" type="button" title="Remove the comparison" style="display:none">&#10005;</button></span></div>'
+      +'<div class="snap-rets" id="snap-hl"></div>'
+      +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span id="snap-beta" style="font-size:10.5px;margin-left:6px"></span><span style="flex:1"></span><span id="snap-vs"></span><span id="snap-cmpw" style="display:inline-flex;gap:4px;align-items:center;margin-left:6px"><input id="snap-cmp" placeholder="vs 7203 / NVDA" maxlength="8" style="width:96px;font-size:10.5px;padding:1px 4px" title="Compare with a second name: same range, both rebased to 100, plus their ratio (COMP)"><button class="ghost" id="snap-cmpx" type="button" title="Remove the comparison" style="display:none">&#10005;</button></span><span class="chip-sm" id="snap-csv" title="Download the price table shown: date, close, index level, both rebased to 100 (and the second name when a comparison is on)" style="margin-left:6px">CSV</span></div>'
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
       +'<div id="snap-fs"><span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span></div>'
       +'<div id="snap-peers"></div>'
@@ -4136,6 +4138,31 @@ body.term #rr-head .tt{font-size:13px}
       cx.addEventListener("click",function(){ snapSetCmp(""); });
     }
     if(ci){ ci.value=snapCmp||""; cx.style.display=snapCmp?"":"none"; }
+    var cv=$("snap-csv");
+    if(cv&&!cv._bound){ cv._bound=1; cv.addEventListener("click",snapCsv); }
+  }
+  // v9.17 (HP): the price table behind the chart, as CSV. SNAPT is filled by snapDraw with exactly what is drawn.
+  var SNAPT=null;
+  function snapCsv(){
+    if(!SNAPT||!SNAPT.rows.length) return;
+    var esc2=function(v){ v=v==null?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+    var lines=[SNAPT.cols.map(esc2).join(",")].concat(SNAPT.rows.map(function(r){ return r.map(function(v){ return esc2(typeof v==="number"?Math.round(v*10000)/10000:v); }).join(","); }));
+    var blob=new Blob([lines.join("\n")],{type:"text/csv"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="orrery_"+SNAPT.code+"_prices_"+SNAPT.per+"_"+new Date(Date.now()+9*3600e3).toISOString().slice(0,10)+".csv"; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+  }
+  // v9.17 (HP): 52-week high / low from the price history (the last 252 priced sessions), with dates and distances
+  function snapHiLo(h){
+    var el=$("snap-hl"); if(!el) return;
+    if(!h||h.p||!h.px||h.px.length<2){ el.innerHTML=""; return; }
+    var px=h.px.slice(-252), hi=null, lo=null;
+    px.forEach(function(a){ var v=Number(a[1]); if(!(v>0)) return; if(!hi||v>hi.v) hi={v:v,d:a[0]}; if(!lo||v<lo.v) lo={v:v,d:a[0]}; });
+    var last=Number(px[px.length-1][1]); if(!hi||!lo||!(last>0)){ el.innerHTML=""; return; }
+    var lc=lastCloseOf(snapCode), cur=(lc&&lc.px>0&&!lc.world)?lc.px:last;
+    var dp=cur<1000?1:0;
+    el.innerHTML='<span><span class="mut">52W HIGH</span> <b class="num">'+n(hi.v,dp)+'</b> <span class="mut">'+esc(hi.d.slice(5).replace("-","/"))+'</span></span>'
+      +'<span><span class="mut">52W LOW</span> <b class="num">'+n(lo.v,dp)+'</b> <span class="mut">'+esc(lo.d.slice(5).replace("-","/"))+'</span></span>'
+      +'<span><span class="mut">FROM HIGH</span> <b class="num '+cls(cur/hi.v-1)+'">'+pct(cur/hi.v-1,1)+'</b></span>'
+      +'<span><span class="mut">FROM LOW</span> <b class="num '+cls(cur/lo.v-1)+'">'+pct(cur/lo.v-1,1)+'</b></span>'
+      +'<span><span class="mut">RANGE POS</span> <b class="num">'+(hi.v>lo.v?Math.round((cur-lo.v)/(hi.v-lo.v)*100):100)+'%</b> <span class="mut" title="where the current price sits between the 52-week low (0%) and high (100%), on '+px.length+' priced sessions">of 52W range</span></span>';
   }
   function snapSetCmp(v){
     var code=String(v||"").trim().toUpperCase();
@@ -4204,6 +4231,12 @@ body.term #rr-head .tt{font-size:13px}
       }
       if(bs) bs.innerHTML+=' <span style="margin-left:8px">'+cmpTxt+'</span>';
     }
+    // v9.17 (HP): the table behind the chart, for the CSV chip, plus the 52-week line
+    var cols=["date","close_"+snapCode,"index_"+(snapIdx==="W"?"msci_world":"msci_japan"),"rebased_"+snapCode,"rebased_index","ratio_stock_index"];
+    var trows=dates.map(function(d,i){ return [d,pxm[d],Number(rows[i][1]),sName[i],sIdx[i],sRel[i]]; });
+    if(series.length>3){ cols.push("close_"+snapCmp,"rebased_"+snapCmp,"ratio_"+snapCode+"_"+snapCmp); trows.forEach(function(r,i){ var pb=series[3].vals[i]; r.push(pb==null?null:Number((SNAPC[snapCmp].px.find(function(a){return a[0]===dates[i];})||[null,null])[1]),pb,series[4].vals[i]); }); }
+    SNAPT={code:snapCode,per:snapPer,cols:cols,rows:trows};
+    snapHiLo(h);
     drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,
       "relative, index=100 at range start"+(snapCmp?" (second name rebased at its first overlapping session)":""),"sn",$("snap-tip"));
   }
@@ -4283,7 +4316,7 @@ body.term #rr-head .tt{font-size:13px}
     if(!S||!code) return;
     var inst=instOf(code), wi=winstOf(code), st2=statOf(code), lc=lastCloseOf(code);
     if(!inst&&!wi) return;
-    if(snapCode!==code){ snapCmp=null; var ci9=$("snap-cmp"); if(ci9){ ci9.value=""; ci9.placeholder="vs 7203 / NVDA"; } }   // v9.16
+    if(snapCode!==code){ snapCmp=null; var ci9=$("snap-cmp"); if(ci9){ ci9.value=""; ci9.placeholder="vs 7203 / NVDA"; } var hl9=$("snap-hl"); if(hl9) hl9.innerHTML=""; SNAPT=null; }   // v9.16 / v9.17
     snapCode=code;
     var ov=snapEnsureModal();
     var nm=inst?inst.name:(wi?wi.name:code);
