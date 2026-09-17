@@ -650,6 +650,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9c: driver tiles at 1D = the instrument's own session from its open (1-min bars, 7 days), drag to pan, last completed session while closed; FX day = 17:00 New York ---- */
 /* ---- v9.9c.1: yield session tiles (^TNX/^TYX/^FVX) report the change in basis points (was 100x too small: +5bp showed as +0bp) ---- */
 /* ---- v9.9d: the TSE lunch stays on the 1D/1W axis, held flat; driver tiles hold 30+ minute gaps flat; terminal MARKET 4x2 = ZN=F + 2510.T for ^IXIC + DXY; web-app manifest + apple-touch-icon ---- */
+/* ---- v9.9e: egress -- If-None-Match on every api GET (304 keeps the last payload), state poll 60 s only in TSE hours (3 / 10 min otherwise), nothing polled while hidden; live minute series never CLOSED ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -1499,15 +1500,30 @@ body.term #rr-head .tt{font-size:13px}
   });
 
   /* ---------- data load ---------- */
+  // v9.9e (egress): every api GET remembers the answer's ETag and asks with If-None-Match; a 304 hands back
+  // the previous payload without a body crossing the wire (the api gzips and ETags every JSON answer).
+  var ETAGS={}, EBODY={};
+  function fetchJ(url){
+    var et=ETAGS[url], h={}; if(et) h["If-None-Match"]=et;
+    return fetch(url,{headers:h}).then(function(r){
+      if(r.status===304&&EBODY[url]) return EBODY[url];
+      return r.json().then(function(j){ var e=r.headers.get("etag"); if(e){ ETAGS[url]=e; EBODY[url]=j; } return j; });
+    });
+  }
+  // the state changes with the tick (TSE hours) and the nightly eod: poll every minute while the TSE is in
+  // session or at lunch, every 3 minutes while another venue is, every 10 minutes otherwise; never while hidden
   var nextLoadAt=0, loadTmr=null;
-  function scheduleLoad(){ if(loadTmr) clearTimeout(loadTmr); nextLoadAt=Date.now()+60000; loadTmr=setTimeout(load,60000); }
+  function loadEvery(){ return (inSession("TSE")||inLunch("TSE"))?60000:(anyVenueInSession()?180000:600000); }
+  function scheduleLoad(){ if(loadTmr) clearTimeout(loadTmr); var ms=loadEvery(); nextLoadAt=Date.now()+ms; loadTmr=setTimeout(load,ms); }
   function load(){
     scheduleLoad();
-    fetch(API+"?action=state").then(function(r){return r.json();}).then(function(j){
+    if(document.hidden&&S) return;   // a hidden tab keeps its last state; visibilitychange reloads at once
+    fetchJ(API+"?action=state").then(function(j){
       if(!j.ok){ console.error(j.error); return; }
       S=j; renderAll();
     }).catch(function(e){ console.error(e); });
   }
+  window.__load=load;   // v9.9e: the poll entry point, for the harness
   load();
   // countdown to the next state refresh, beside the DATA stamp (v9.6)
   function tickNext(){
@@ -1628,7 +1644,8 @@ body.term #rr-head .tt{font-size:13px}
   /* ---------- global macro panels ---------- */
   var MACRO=null, gPer="1D";
   function loadMacro(){
-    fetch(API+"?action=macro").then(function(r){return r.json();}).then(function(j){
+    if(document.hidden&&MACRO) return;   // v9.9e: no macro refresh while hidden
+    fetchJ(API+"?action=macro").then(function(j){
       if(!j||!j.meta) return;
       var by={};
       if(j.px){
@@ -2781,7 +2798,7 @@ body.term #rr-head .tt{font-size:13px}
     if(!need.length) return false;
     var fresh=need.every(function(s){ var c=DRV1M[s]; return c&&c.bars&&c.bars.length; });
     var key=need.slice().sort().join(","); if(DRV1MQ[key]) return true; DRV1MQ[key]=1;
-    fetch(API+"?action=bars_all&res=1m&range="+(fresh?"1d":"7d")+"&symbols="+encodeURIComponent(need.join(","))).then(function(r){return r.json();}).then(function(j){
+    fetchJ(API+"?action=bars_all&res=1m&range="+(fresh?"1d":"7d")+"&symbols="+encodeURIComponent(need.join(","))).then(function(j){
       need.forEach(function(s){
         var nb=(j&&j.bars&&j.bars[s])||null, old=DRV1M[s]&&DRV1M[s].bars;
         if(nb&&old&&old.length){ var m={}; old.forEach(function(b){m[b[0]]=b[1];}); nb.forEach(function(b){m[b[0]]=b[1];}); nb=Object.keys(m).map(function(k){return [Number(k),m[k]];}).sort(function(a,b){return a[0]-b[0];}); var cut=Date.now()/1000-8*86400; nb=nb.filter(function(b){return b[0]>=cut;}); }
@@ -2844,6 +2861,7 @@ body.term #rr-head .tt{font-size:13px}
       var m=MACRO.meta.find(function(x){return x.symbol===sym;});
       var mt=m&&m.market_time?Date.parse(m.market_time):null, isOpen=symOpen(sym);
       var badge=isOpen?'<span class="mopen" title="'+esc(OPEN_TIP)+'">OPEN</span>':(((!isOpen)&&mt&&(now-mt>3*3600e3))?'<span class="mclosed">CLOSED</span>':"");
+      var c1=DRV1M[sym]; if(!isOpen&&c1&&c1.bars&&c1.bars.length&&(now-c1.bars[c1.bars.length-1][0]*1000)<90*60e3) badge="";   // v9.9e: live minute bars -> no CLOSED badge
       var t=drvTile1D(sym,m,badge);
       if(t){ h+=t; return; }
       h+=drvTileFallback(sym,m,badge,days,res,per);
@@ -3070,7 +3088,7 @@ body.term #rr-head .tt{font-size:13px}
     if(c&&c.q){ c.q.push(cb); return; }
     MKC[key]=c={at:0,data:c?c.data:null,q:[cb]};
     var done=function(d,failed){ c.data=d; c.at=failed?Date.now()-mkTtl(kind)+60e3:Date.now(); var q=c.q; c.q=null; q.forEach(function(f){f(d);}); };
-    fetch(API+"?action=chart&mkt="+mkt+"&"+mkQuery(kind)).then(function(r){return r.json();})
+    fetchJ(API+"?action=chart&mkt="+mkt+"&"+mkQuery(kind))
       .then(function(j){ done((j&&j.ok&&Array.isArray(j.points))?j:{ok:false,points:[],days:[],session:null},false); })
       .catch(function(){ done(c.data||{ok:false,points:[],days:[],session:null},true); });
   }
@@ -3285,7 +3303,7 @@ body.term #rr-head .tt{font-size:13px}
   }
   // a visible 1D chart at the latest position follows the session: refetched every two minutes
   setInterval(function(){
-    if(!S) return;
+    if(!S||document.hidden) return;   // v9.9e: nothing to refresh while hidden
     Object.keys(MKCFG).forEach(function(m){
       var C=MKCFG[m]; if(C.range()!=="1D") return; var st=MKPAN[m]; if(st&&st.off) return;
       var box=$(C.box); if(!box||!box.getClientRects().length) return;
