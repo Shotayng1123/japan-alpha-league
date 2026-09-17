@@ -468,6 +468,7 @@ button.ghost{background:none;border:none;color:var(--dn);cursor:pointer;font-siz
 .mvall tbody{display:block;max-height:420px;overflow:auto}
 .mvall thead,.mvall tbody tr{display:table;width:100%;table-layout:fixed}
 .mvall thead th:first-child{width:40%}
+.corrT td.num,.corrT th.num{min-width:38px}
 .chip-sm.on{color:#000;border-color:var(--amber);background:var(--amber);font-weight:700}
 
 .searchrow{display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
@@ -714,6 +715,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.19: CORR -- the pairwise correlation matrix of the long book's Japan names (daily returns, 120 sessions) under PORTFOLIO CHARACTERISTICS ---- */
 /* ---- v9.18: MOST -- an ACTIVE chip on the MOVERS tables ranks names by turnover / 20-day ADV (top 12, or all) ---- */
 /* ---- v9.17: HP -- the snapshot shows the 52-week high / low (dates, distance, position in the range) from the price history and a CSV chip downloads the price table drawn ---- */
 /* ---- v9.16: COMP -- a "vs" box in the snapshot overlays a second name (rebased to 100 over the same rows) with the A/B ratio, the pair's correlation and the relative return over the range ---- */
@@ -944,6 +946,7 @@ body.term #rr-head .tt{font-size:13px}
         <table class="mini"><thead><tr><th class="l">METRIC</th><th>PORT</th><th>INDEX</th><th>TILT</th><th class="l">READ</th><th class="l">COVERAGE port &middot; index</th></tr></thead>
         <tbody id="char-body"><tr><td class="l empty" colspan="6">Appears once the book is seeded.</td></tr></tbody></table>
         <div class="hint2" id="char-foot"></div>
+        <div id="char-corr"></div>
       </div>
     </div>
 
@@ -3817,6 +3820,38 @@ body.term #rr-head .tt{font-size:13px}
     }
     next(); next(); next();
   }
+  /* ---------- v9.19 (CORR): pairwise correlation of the long book's names ---------- */
+  function charRets(code){
+    var h=SNAPC[code]; if(!h||h.p||!h.px) return null;
+    var px=h.px.filter(function(a){ return Number(a[1])>0; }).slice(-121), m={};
+    for(var i=1;i<px.length;i++) m[px[i][0]]=Number(px[i][1])/Number(px[i-1][1])-1;
+    return m;
+  }
+  function renderCorr(held,pw){
+    var el=$("char-corr"); if(!el) return;
+    var codes=held.slice().sort(function(a,b){ return (pw[b]||0)-(pw[a]||0); }).slice(0,20);
+    if(codes.length<2){ el.innerHTML=""; return; }
+    var R={}, pending=0;
+    codes.forEach(function(c){ var r=charRets(c); if(r) R[c]=r; else pending++; });
+    if(pending){ el.innerHTML='<div class="hint2">Correlation matrix: '+pending+' histor'+(pending>1?'ies':'y')+' still loading&hellip;</div>'; return; }
+    function rho(a,b){
+      var da=R[a], db=R[b], xs=[], ys=[];
+      Object.keys(da).forEach(function(d){ if(db[d]!=null){ xs.push(da[d]); ys.push(db[d]); } });
+      var n=xs.length; if(n<20) return null;
+      var mx=0, my=0; for(var i=0;i<n;i++){ mx+=xs[i]; my+=ys[i]; } mx/=n; my/=n;
+      var c=0, vx=0, vy=0; for(var j=0;j<n;j++){ c+=(xs[j]-mx)*(ys[j]-my); vx+=(xs[j]-mx)*(xs[j]-mx); vy+=(ys[j]-my)*(ys[j]-my); }
+      return (vx>0&&vy>0)?c/Math.sqrt(vx*vy):null;
+    }
+    var M={}, sum=0, cnt=0;
+    codes.forEach(function(a){ M[a]={}; codes.forEach(function(b){ if(a===b){ M[a][b]=1; return; } if(M[b]&&M[b][a]!=null){ M[a][b]=M[b][a]; return; } var v=rho(a,b); M[a][b]=v; if(v!=null){ sum+=v; cnt++; } }); });
+    var avg=cnt?sum/cnt:null;
+    var h='<h4 class="minih" style="margin-top:10px">CORRELATION MATRIX <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; daily returns of the long book\'s Japan names, last 120 sessions, largest '+codes.length+' by weight'+(avg!=null?' &middot; average pairwise \u03c1 <b class="num">'+avg.toFixed(2)+'</b>':'')+'</span></h4>'
+      +'<div style="overflow-x:auto"><table class="mini corrT"><thead><tr><th class="l"></th>'+codes.map(function(c){ return '<th class="num">'+esc(c)+'</th>'; }).join("")+'</tr></thead><tbody>'
+      +codes.map(function(a){ return '<tr><td class="l"><b data-snap="'+esc(a)+'">'+esc(a)+'</b> <span class="sub">'+esc(String((instOf(a)||{}).name||"").slice(0,10))+'</span></td>'+codes.map(function(b){ var v=M[a][b]; if(a===b) return '<td class="num mut">1</td>'; return '<td class="num"'+(v==null?'':heatBg(v,0,1))+'>'+(v==null?'&ndash;':v.toFixed(2))+'</td>'; }).join("")+'</tr>'; }).join("")
+      +'</tbody></table></div>'
+      +'<div class="hint2">Pearson correlation of daily simple returns over the sessions both names share (20+ needed); shading runs cool below 0.5 and warm above. A high average means the names move together and diversify little.</div>';
+    el.innerHTML=h;
+  }
   function renderChar(p,c){
     var tb=$("char-body"), ft=$("char-foot"); if(!tb) return;
     var poss=S.positions.filter(function(x){return x.player_id===p.id;});
@@ -3874,6 +3909,7 @@ body.term #rr-head .tt{font-size:13px}
         +'<td class="num">'+(tilt==null?'<span class="mut">&ndash;</span>':((tilt>0?"+":"")+n(tilt,m.dp)))+'</td>'
         +'<td class="l"><span class="mut">'+esc(read)+'</span></td><td class="l mut">'+covp+' \u00b7 '+covb+'</td></tr>';
     }).join("");
+    renderCorr(held,pw);
     ft.innerHTML="Portfolio weights = long Japan positions / NAV; index = MSCI Japan weights; both re-normalised over the names with the datum (coverage shown). "
       +(FUNDA&&FUNDA.updated_at?("Fundamentals: EDINET, latest actual fiscal year, stamp "+esc(String(FUNDA.updated_at).slice(0,10))+". "):"Fundamentals loading. ")
       +"Betas: daily returns on the official MSCI Japan level, last 120 sessions."
