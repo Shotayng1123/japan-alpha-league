@@ -714,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.18: MOST -- an ACTIVE chip on the MOVERS tables ranks names by turnover / 20-day ADV (top 12, or all) ---- */
 /* ---- v9.17: HP -- the snapshot shows the 52-week high / low (dates, distance, position in the range) from the price history and a CSV chip downloads the price table drawn ---- */
 /* ---- v9.16: COMP -- a "vs" box in the snapshot overlays a second name (rebased to 100 over the same rows) with the A/B ratio, the pair's correlation and the relative return over the range ---- */
 /* ---- v9.15: DVD -- dividend history in the snapshot: DPS YoY and payout rows, trailing / guidance yield, DPS CAGR, increases and cuts, split-like years flagged ---- */
@@ -1074,7 +1075,7 @@ body.term #rr-head .tt{font-size:13px}
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; P/E FY-E &middot; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvp="act" title="most active: ranked by the session's turnover against 20-day ADV (MOST)">ACTIVE</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; P/E FY-E &middot; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
               <thead><tr><th class="l">NAME</th><th>1D</th><th title="P/E FY-E = price divided by company-guidance EPS for the CURRENT fiscal year (Yahoo! Finance Japan forecast PER, i.e. the company's own full-year guidance). It is not a next-year (FY+1) figure and not sell-side consensus, which is not freely available. Refreshed daily with the close.">P/E FY-E</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="ms-mov"><tr><td class="l empty" colspan="5">Loading…</td></tr></tbody>
@@ -1106,7 +1107,7 @@ body.term #rr-head .tt{font-size:13px}
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvp="act" title="most active: ranked by the session's turnover against 20-day ADV (MOST)">ACTIVE</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
               <thead><tr><th class="l">NAME</th><th>1D</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="wm-mov"><tr><td class="l empty" colspan="4">Loading…</td></tr></tbody>
@@ -1164,7 +1165,7 @@ body.term #rr-head .tt{font-size:13px}
             </table>
           </div>
           <div>
-            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
+            <h4 class="minih">TOP / BOTTOM MOVERS <span class="mvchips"><span class="chip-sm on" data-mvp="1d">1D</span><span class="chip-sm" data-mvp="1w">1W</span><span class="chip-sm" data-mvp="1m">1M</span><span class="chip-sm" data-mvp="3m">3M</span><span class="chip-sm" data-mvp="12m">12M</span><span class="chip-sm" data-mvp="act" title="most active: ranked by the session's turnover against 20-day ADV (MOST)">ACTIVE</span><span class="chip-sm" data-mvall="1" title="every name in the universe, ranked (GRR)">ALL</span></span><span class="mut" style="font-weight:400;letter-spacing:0">&mdash; volume vs ADV &middot; move driver</span></h4>
             <table class="secT">
               <thead><tr><th class="l">NAME</th><th>1D</th><th>VOL/ADV</th><th class="l">DRIVER</th></tr></thead>
               <tbody id="am-mov"><tr><td class="l empty" colspan="4">Loading…</td></tr></tbody>
@@ -3608,13 +3609,16 @@ body.term #rr-head .tt{font-size:13px}
 
     // v9.12 (GRR): the movers follow MOVP -- for 1W/1M/3M/12M the return is that period's, the sector
     // comparison uses the same period, and NEWS/MOM (one-day evidence) are not claimed
-    var secRetP={}; if(MOVP!=="1d"){ Object.keys(sec).forEach(function(k){ var G=sec[k]; secRetP[k]=G["w"+MOVP]>0?G["s"+MOVP]/G["w"+MOVP]:null; }); }
-    if(MOVP!=="1d"){
+    var secRetP={}; if(MOVP!=="1d"&&MOVP!=="act"){ Object.keys(sec).forEach(function(k){ var G=sec[k]; secRetP[k]=G["w"+MOVP]>0?G["s"+MOVP]/G["w"+MOVP]:null; }); }
+    if(MOVP!=="1d"&&MOVP!=="act"){
       rows=[];
       cfg.list.forEach(function(i){ var r=cfg.retOf(i,MOVP); if(r==null) return; var code=cfg.codeOf(i); var tvp=Number(turn[code])||0; if(cfg.tconv){ var fp=cfg.tconv(code); tvp=(fp!=null)?tvp*fp:0; } rows.push({code:code,name:cfg.nameOf(i),sector:i.sector||"Other",w:Number(cfg.wOf(i))||0,r:r,pe:cfg.peOf?cfg.peOf(i):null,adv:cfg.advOf(i),tv:tvp,m1:null,per:true}); });
     }
+    // v9.18 (MOST): ACTIVE keeps the 1D rows and ranks them by turnover / ADV (names without a turnover or an ADV go last)
+    var vaOf=function(x){ return (x.adv&&x.adv>0&&x.tv>0)?x.tv/x.adv:-1; };
+    if(MOVP==="act") rows.sort(function(a,b){ return vaOf(b)-vaOf(a)||b.r-a.r; }); else
     rows.sort(function(a,b){return b.r-a.r;});
-    var mvLbl={"1d":"1D","1w":"1W","1m":"1M","3m":"3M","12m":"12M"}[MOVP]||"1D";
+    var mvLbl={"1d":"1D","1w":"1W","1m":"1M","3m":"3M","12m":"12M","act":"1D"}[MOVP]||"1D";
     var mvTh=movB.parentElement&&movB.parentElement.querySelector("thead th:nth-child(2)"); if(mvTh) mvTh.textContent=mvLbl;
     if(movB.parentElement) movB.parentElement.className=(movB.parentElement.className||"").replace(/\s*mvall/,"")+(MOVALL?" mvall":"");
     function drv(x){
@@ -3645,6 +3649,14 @@ body.term #rr-head .tt{font-size:13px}
         +'<td class="l">'+drv(x)+'</td></tr>';
     }
     var K=MOVALL?rows.length:6;
+    if(MOVP==="act"){
+      // top of the turnover ranking only, no bottom block; names without turnover data are left out
+      var act=rows.filter(function(x){ return vaOf(x)>0; }), KA=MOVALL?act.length:12;
+      movB.innerHTML=act.length?act.slice(0,KA).map(mrow).join(""):'<tr><td class="l empty" colspan="'+cfg.mcols+'">Turnover not loaded yet (flow).</td></tr>';
+      if(brEl) brEl.innerHTML="Most active: "+(MOVALL?"all "+act.length+" names":"top "+Math.min(KA,act.length)+" of "+act.length)+" ranked by the session's turnover / 20-day ADV (&#9889; = 2x or more)"
+        +' &middot; DRIVER: <span class="cz news">NEWS</span> headline today &middot; <span class="cz sctr">SECTOR</span> tracks sector &middot; <span class="cz mom">MOM</span> 1M trend &middot; <span class="cz idio">IDIO</span> stock-specific (heuristic)';
+      return;
+    }
     movB.innerHTML=rows.length
       ? (rows.length<=K*2
           ? rows.map(mrow).join("")
