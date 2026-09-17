@@ -654,6 +654,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9d: the TSE lunch stays on the 1D/1W axis, held flat; driver tiles hold 30+ minute gaps flat; terminal MARKET 4x2 = ZN=F + 2510.T for ^IXIC + DXY; web-app manifest + apple-touch-icon ---- */
 /* ---- v9.9e: egress -- If-None-Match on every api GET (304 keeps the last payload), state poll 60 s only in TSE hours (3 / 10 min otherwise), nothing polled while hidden; live minute series never CLOSED ---- */
 /* ---- v9.9f: economic calendar keeps 14 days back and shows the result beside the title ("3.75% ▷ 4.00%", highlight colour; "prev x" before the release) ---- */
+/* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 .rlrow{display:grid;grid-template-columns:38px 62px minmax(0,1fr) 54px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid var(--bord);cursor:pointer;font-size:11px;border-left:2px solid transparent}
 .rlrow:hover{background:#2a1210}
 .rlrow.on{background:#2a1210;border-left-color:var(--amber)}
@@ -1536,7 +1537,15 @@ body.term #rr-head .tt{font-size:13px}
     el.textContent=" \u00b7 \u21bb "+Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
   }
   tickNext(); setInterval(tickNext,1000);
-  document.addEventListener("visibilitychange",function(){ if(!document.hidden) load(); });
+  // v9.9g: a tab or home-screen app coming back to the foreground refreshes everything it shows at once
+  var BOOT_AT=Date.now();
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden) return;
+    if(Date.now()-BOOT_AT>20*3600e3){ location.reload(); return; }   // a day-old page fetches today's app.html
+    load();
+    if(typeof loadMacro==="function"&&MACRO) loadMacro();
+    if(typeof refresh1D==="function") refresh1D();
+  });
 
   /* ---------- bars proxy & sparklines ---------- */
   var BARSC={};  // res -> {at,data} macro intraday bars
@@ -1650,6 +1659,7 @@ body.term #rr-head .tt{font-size:13px}
     if(document.hidden&&MACRO) return;   // v9.9e: no macro refresh while hidden
     fetchJ(API+"?action=macro").then(function(j){
       if(!j||!j.meta) return;
+      setTimeout(dataStamp,0);   // v9.9g: the header stamp follows the macro stamps
       var by={};
       if(j.px){
         Object.keys(j.px).forEach(function(k){
@@ -2807,7 +2817,7 @@ body.term #rr-head .tt{font-size:13px}
         if(nb&&old&&old.length){ var m={}; old.forEach(function(b){m[b[0]]=b[1];}); nb.forEach(function(b){m[b[0]]=b[1];}); nb=Object.keys(m).map(function(k){return [Number(k),m[k]];}).sort(function(a,b){return a[0]-b[0];}); var cut=Date.now()/1000-8*86400; nb=nb.filter(function(b){return b[0]>=cut;}); }
         DRV1M[s]={at:Date.now(),bars:nb||old||null};
       });
-      delete DRV1MQ[key]; cb();
+      delete DRV1MQ[key]; cb(); if(typeof dataStamp==="function") dataStamp();   // v9.9g
     }).catch(function(){ need.forEach(function(s){ DRV1M[s]={at:Date.now()-60e3,bars:(DRV1M[s]&&DRV1M[s].bars)||null}; }); delete DRV1MQ[key]; });
     return true;
   }
@@ -3305,14 +3315,15 @@ body.term #rr-head .tt{font-size:13px}
     });
   }
   // a visible 1D chart at the latest position follows the session: refetched every two minutes
-  setInterval(function(){
+  function refresh1D(){
     if(!S||document.hidden) return;   // v9.9e: nothing to refresh while hidden
     Object.keys(MKCFG).forEach(function(m){
       var C=MKCFG[m]; if(C.range()!=="1D") return; var st=MKPAN[m]; if(st&&st.off) return;
       var box=$(C.box); if(!box||!box.getClientRects().length) return;
       var c=MKC[m+"|1D"]; if(c) c.at=0; renderMktChart(m);   // stale, not deleted: no "Loading" flash
     });
-  },120e3);
+  }
+  setInterval(refresh1D,120e3);
   function renderAsiaUniv(){
     var tb=$("au-body"); if(!tb) return;
     var rows=asiaRows();
@@ -5058,10 +5069,19 @@ body.term #rr-head .tt{font-size:13px}
     });
   });
 
+  // v9.9g: the DATA stamp is the newest print on the page, not only the JP quotes (which stop at 15:30 JST)
+  function dataStamp(){
+    var jq=0; (S&&S.quotes||[]).forEach(function(q2){ var x=Date.parse(q2.updated_at||0); if(x>jq)jq=x; });
+    var mq=0; ((MACRO&&MACRO.meta)||[]).forEach(function(m){ var x=m.market_time?Date.parse(m.market_time):0; if(x>mq)mq=x; });
+    var bq=0; Object.keys(DRV1M||{}).forEach(function(k){ var c=DRV1M[k]; if(c&&c.bars&&c.bars.length){ var x=c.bars[c.bars.length-1][0]*1000; if(x>bq)bq=x; } });
+    var hm=function(ms){ return ms?new Date(ms+9*3600e3).toISOString().slice(11,16):"\u2013"; };
+    var best=Math.max(jq,mq,bq);
+    var el=$("updt"); if(!el) return;
+    el.textContent=best?("DATA "+hm(best)+" JST"):"";
+    el.title="newest print on the page \u00b7 JP quotes "+hm(jq)+" \u00b7 macro / world quotes "+hm(mq)+" \u00b7 minute bars "+hm(bq)+" (JST)";
+  }
   function renderAll(){
-    var qt=0;
-    S.quotes.forEach(function(q2){ var x=Date.parse(q2.updated_at||0); if(x>qt)qt=x; });
-    $("updt").textContent=qt?("DATA "+new Date(qt+9*3600e3).toISOString().slice(11,16)+" JST"):"";
+    dataStamp();
     var bmr=S.benchmark;
     if(bmr.length){
       var l=bmr[bmr.length-1],pv=bmr.length>1?bmr[bmr.length-2]:null;
