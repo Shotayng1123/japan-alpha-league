@@ -714,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.16: COMP -- a "vs" box in the snapshot overlays a second name (rebased to 100 over the same rows) with the A/B ratio, the pair's correlation and the relative return over the range ---- */
 /* ---- v9.15: DVD -- dividend history in the snapshot: DPS YoY and payout rows, trailing / guidance yield, DPS CAGR, increases and cuts, split-like years flagged ---- */
 /* ---- v9.14: CN -- the stock snapshot lists the feed's headlines tagged to the name (60 days) and to its sector (7 days), via api news code= / sector= / days= ---- */
 /* ---- v9.13: PORT -- PORTFOLIO CHARACTERISTICS vs INDEX under the Brinson table: weighted P/E FY-E, P/B (harmonic), ROE, dividend yield, 3M / 12M return, weighted-average market cap and the book's beta vs the official MSCI Japan level, each with coverage ---- */
@@ -4091,7 +4092,7 @@ body.term #rr-head .tt{font-size:13px}
   })();
 
   /* ---------- company snapshot ---------- */
-  var SNAPC={}, snapPer="3M", snapIdx="J";
+  var SNAPC={}, snapPer="3M", snapIdx="J", snapCmp=null;   // v9.16: snapCmp = the second name (COMP)
   function snapEnsureModal(){
     var ov=$("snapmod");
     if(ov) return ov;
@@ -4101,7 +4102,7 @@ body.term #rr-head .tt{font-size:13px}
       +'<div class="sub" id="snap-sec"></div>'
       +'<div class="snap-facts" id="snap-f"></div>'
       +'<div class="snap-rets" id="snap-r"></div>'
-      +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span id="snap-beta" style="font-size:10.5px;margin-left:6px"></span><span style="flex:1"></span><span id="snap-vs"></span></div>'
+      +'<div style="display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap"><span class="mut" style="font-size:10px">REL. INDEX=100</span><span id="snap-per"></span><span id="snap-beta" style="font-size:10.5px;margin-left:6px"></span><span style="flex:1"></span><span id="snap-vs"></span><span id="snap-cmpw" style="display:inline-flex;gap:4px;align-items:center;margin-left:6px"><input id="snap-cmp" placeholder="vs 7203 / NVDA" maxlength="8" style="width:96px;font-size:10.5px;padding:1px 4px" title="Compare with a second name: same range, both rebased to 100, plus their ratio (COMP)"><button class="ghost" id="snap-cmpx" type="button" title="Remove the comparison" style="display:none">&#10005;</button></span></div>'
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
       +'<div id="snap-fs"><span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span></div>'
       +'<div id="snap-peers"></div>'
@@ -4126,6 +4127,26 @@ body.term #rr-head .tt{font-size:13px}
     Array.prototype.forEach.call(vsEl.querySelectorAll("[data-svs]"),function(c){
       c.addEventListener("click",function(){ snapIdx=c.getAttribute("data-svs"); snapDraw(); });
     });
+    // v9.16 (COMP): the vs box -- Enter sets the second name, the x clears it; bound once
+    var ci=$("snap-cmp"), cx=$("snap-cmpx");
+    if(ci&&!ci._bound){
+      ci._bound=1;
+      ci.addEventListener("keydown",function(ev){ if(ev.key==="Enter"){ ev.preventDefault(); snapSetCmp(ci.value); } });
+      ci.addEventListener("change",function(){ snapSetCmp(ci.value); });
+      cx.addEventListener("click",function(){ snapSetCmp(""); });
+    }
+    if(ci){ ci.value=snapCmp||""; cx.style.display=snapCmp?"":"none"; }
+  }
+  function snapSetCmp(v){
+    var code=String(v||"").trim().toUpperCase();
+    if(code===snapCode) code="";
+    if(code&&!instOf(code)&&!winstOf(code)){ var ci0=$("snap-cmp"); if(ci0){ ci0.value=""; ci0.placeholder="not in the universe"; } snapCmp=null; snapDraw(); return; }
+    snapCmp=code||null;
+    if(snapCmp&&!SNAPC[snapCmp]){
+      var c2=snapCmp; SNAPC[c2]={p:1};
+      fetch(API+"?action=hist&code="+encodeURIComponent(c2)).then(function(r){return r.json();}).then(function(j){ SNAPC[c2]=(j&&j.px)?j:{px:[]}; if(snapCmp===c2) snapDraw(); }).catch(function(){ SNAPC[c2]={px:[]}; if(snapCmp===c2) snapDraw(); });
+    }
+    snapDraw();
   }
   var snapCode=null;
   function snapDraw(){
@@ -4154,11 +4175,37 @@ body.term #rr-head .tt{font-size:13px}
     var stat=null;
     if(rs.length>=20){ var nq=rs.length, ms=0, mb=0; for(var q2=0;q2<nq;q2++){ ms+=rs[q2]; mb+=rb[q2]; } ms/=nq; mb/=nq; var cov=0, vs=0, vb=0; for(var q3=0;q3<nq;q3++){ cov+=(rs[q3]-ms)*(rb[q3]-mb); vs+=(rs[q3]-ms)*(rs[q3]-ms); vb+=(rb[q3]-mb)*(rb[q3]-mb); } stat={beta:vb>0?cov/vb:null,rho:(vs>0&&vb>0)?cov/Math.sqrt(vs*vb):null,n:nq,vol:Math.sqrt(vs/(nq-1))*Math.sqrt(250)*100}; }
     var bs=$("snap-beta"); if(bs) bs.innerHTML=stat?('<span class="mut">\u03b2</span> <b class="num">'+stat.beta.toFixed(2)+'</b> <span class="mut">\u03c1</span> <b class="num">'+stat.rho.toFixed(2)+'</b> <span class="mut">\u03c3</span> <b class="num">'+stat.vol.toFixed(0)+'%</b> <span class="mut" title="daily simple returns of the stock regressed on the index over the range shown (beta), their correlation (rho) and the stock\'s annualised volatility (sigma, 250 days)">vs '+(snapIdx==="W"?"World":"Japan")+', '+stat.n+' sessions</span>'):'<span class="mut">\u03b2 needs 20+ overlapping sessions</span>';
-    drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,
-      [{label:String(nm).slice(0,16),color:"#ff6f61",vals:sName,w:2},
+    var series=[{label:String(nm).slice(0,16),color:"#ff6f61",vals:sName,w:2},
        {label:snapIdx==="W"?"MSCI WORLD":"MSCI JAPAN",color:"#5a6b80",vals:sIdx,w:1},
-       {label:"RATIO (stock / index)",color:"#1fd1c1",vals:sRel,w:1,dash:3}],
-      "relative, index=100 at range start","sn",$("snap-tip"));
+       {label:"RATIO (stock / index)",color:"#1fd1c1",vals:sRel,w:1,dash:3}];
+    // v9.16 (COMP): the second name on the same rows, rebased at the first row both names have, plus the
+    // A/B ratio and the pair's correlation of daily returns and the relative return over the range
+    if(snapCmp){
+      var h2=SNAPC[snapCmp], cmpTxt="";
+      if(!h2||h2.p) cmpTxt='<span class="mut">vs '+esc(snapCmp)+': loading&hellip;</span>';
+      else if(!h2.px||h2.px.length<2) cmpTxt='<span class="mut">vs '+esc(snapCmp)+': no price history</span>';
+      else{
+        var pxm2={}; h2.px.forEach(function(a){ if(a[0]>=startD) pxm2[a[0]]=Number(a[1]); });
+        var i0=-1; for(var q4=0;q4<dates.length;q4++){ if(pxm2[dates[q4]]>0){ i0=q4; break; } }
+        if(i0<0) cmpTxt='<span class="mut">vs '+esc(snapCmp)+': no overlapping sessions in this range</span>';
+        else{
+          var a0c=pxm[dates[i0]], b0c=pxm2[dates[i0]];
+          var sB=dates.map(function(d,i){ return (i>=i0&&pxm2[d]>0)?pxm2[d]/b0c*100:null; });
+          var sA2=dates.map(function(d,i){ return (i>=i0&&pxm[d]>0)?pxm[d]/a0c*100:null; });
+          var sAB=dates.map(function(d,i){ return (sA2[i]!=null&&sB[i]>0)?sA2[i]/sB[i]*100:null; });
+          var inst2=instOf(snapCmp), wi2=winstOf(snapCmp), nm2=inst2?inst2.name:(wi2?wi2.name:snapCmp);
+          series.push({label:String(nm2).slice(0,16),color:"#b08cff",vals:sB,w:2});
+          series.push({label:"RATIO ("+esc(snapCode)+" / "+esc(snapCmp)+")",color:"#b08cff",vals:sAB,w:1,dash:3});
+          var ra=[], rb2=[]; for(var q5=i0+1;q5<dates.length;q5++){ var x0=pxm[dates[q5-1]], x1=pxm[dates[q5]], y0=pxm2[dates[q5-1]], y1=pxm2[dates[q5]]; if(x0>0&&x1>0&&y0>0&&y1>0){ ra.push(x1/x0-1); rb2.push(y1/y0-1); } }
+          var rho2=null; if(ra.length>=20){ var n2=ra.length, ma=0, mb2=0; for(var q6=0;q6<n2;q6++){ ma+=ra[q6]; mb2+=rb2[q6]; } ma/=n2; mb2/=n2; var cv=0, va=0, vb2=0; for(var q7=0;q7<n2;q7++){ cv+=(ra[q7]-ma)*(rb2[q7]-mb2); va+=(ra[q7]-ma)*(ra[q7]-ma); vb2+=(rb2[q7]-mb2)*(rb2[q7]-mb2); } rho2=(va>0&&vb2>0)?cv/Math.sqrt(va*vb2):null; }
+          var lastA2=null, lastB=null; for(var q8=dates.length-1;q8>=0;q8--){ if(sA2[q8]!=null&&sB[q8]!=null){ lastA2=sA2[q8]; lastB=sB[q8]; break; } }
+          cmpTxt='<span class="mut">vs</span> <b>'+esc(snapCmp)+'</b> '+(lastA2!=null?('<span class="mut">range</span> <b class="num '+cls(lastA2-100)+'">'+pct(lastA2/100-1,1)+'</b> <span class="mut">/</span> <b class="num '+cls(lastB-100)+'">'+pct(lastB/100-1,1)+'</b> <span class="mut">relative</span> <b class="num '+cls(lastA2-lastB)+'">'+pct(lastA2/lastB-1,1)+'</b> '):'')+(rho2!=null?'<span class="mut">\u03c1</span> <b class="num">'+rho2.toFixed(2)+'</b> <span class="mut">('+ra.length+' sessions)</span>':'<span class="mut">\u03c1 needs 20+ overlapping sessions</span>');
+        }
+      }
+      if(bs) bs.innerHTML+=' <span style="margin-left:8px">'+cmpTxt+'</span>';
+    }
+    drawLineChart(box,leg,dates.map(function(d){return (days>200?d.slice(2,7):d.slice(5)).replace("-","/");}),dates,series,
+      "relative, index=100 at range start"+(snapCmp?" (second name rebased at its first overlapping session)":""),"sn",$("snap-tip"));
   }
   /* 5Y financials + company guidance, from the fundamentals table (EDINET DB via the fund job).
      Amounts arrive in yen; shown in ¥bn. FY label = fiscal year-end year. The "E" column is the
@@ -4236,6 +4283,7 @@ body.term #rr-head .tt{font-size:13px}
     if(!S||!code) return;
     var inst=instOf(code), wi=winstOf(code), st2=statOf(code), lc=lastCloseOf(code);
     if(!inst&&!wi) return;
+    if(snapCode!==code){ snapCmp=null; var ci9=$("snap-cmp"); if(ci9){ ci9.value=""; ci9.placeholder="vs 7203 / NVDA"; } }   // v9.16
     snapCode=code;
     var ov=snapEnsureModal();
     var nm=inst?inst.name:(wi?wi.name:code);
