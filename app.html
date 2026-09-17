@@ -714,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.15: DVD -- dividend history in the snapshot: DPS YoY and payout rows, trailing / guidance yield, DPS CAGR, increases and cuts, split-like years flagged ---- */
 /* ---- v9.14: CN -- the stock snapshot lists the feed's headlines tagged to the name (60 days) and to its sector (7 days), via api news code= / sector= / days= ---- */
 /* ---- v9.13: PORT -- PORTFOLIO CHARACTERISTICS vs INDEX under the Brinson table: weighted P/E FY-E, P/B (harmonic), ROE, dividend yield, 3M / 12M return, weighted-average market cap and the book's beta vs the official MSCI Japan level, each with coverage ---- */
 /* ---- v9.12: GRR -- the three MOVERS tables follow a period chip (1D/1W/1M/3M/12M) and ALL lists every name ranked; snapshot: RATIO line (stock / index) + beta, correlation, annualised vol over the range (COMP / BETA / HRA) ---- */
@@ -4190,9 +4191,34 @@ body.term #rr-head .tt{font-size:13px}
       +'<tr class="sep"><td class="l">NET INCOME</td>'+cols.map(function(r){return bnc(r.ni,r.fc);}).join("")+'</tr>'
       +'<tr><td class="l pct">&nbsp; margin</td>'+cols.map(function(r){return pct(mg(r.ni,r.sales),r.fc,false);}).join("")+'</tr>'
       +'<tr class="sep"><td class="l">EPS</td>'+cols.map(function(r){return yen(r.eps,r.fc,r.eps!=null&&Math.abs(r.eps)<100?2:1);}).join("")+'</tr>';
-    if(cols.some(function(r){return r.dps!=null;})) body+='<tr><td class="l">DPS</td>'+cols.map(function(r){return yen(r.dps,r.fc,r.dps!=null&&r.dps<10?2:1);}).join("")+'</tr>';
     var lc=lastCloseOf(snapCode);
     var notes=[];
+    // v9.15 (DVD): dividend rows under DPS and a DIVIDENDS summary. Per-share figures are as reported for
+    // each fiscal year (not split-adjusted), so a year where EPS and DPS both step by more than 45% is
+    // flagged as a likely split rather than read as growth.
+    var hasDps=cols.some(function(r){return r.dps!=null;});
+    if(hasDps){
+      function dpsYoy(r){ var p=prevOf[r.fc?r.fy+"E":r.fy]; return (p&&p.dps>0&&r.dps!=null)?(r.dps/p.dps-1)*100:null; }
+      function payout(r){ return (r.dps!=null&&r.eps>0)?r.dps/r.eps*100:null; }
+      function splitLike(r){ var p=prevOf[r.fc?r.fy+"E":r.fy]; if(!p||!(p.eps>0)||!(p.dps>0)||r.eps==null||r.dps==null) return false; var a=r.eps/p.eps, b=r.dps/p.dps; return (a<0.55||a>1.8)&&(b<0.55||b>1.8)&&((a<1)===(b<1)); }
+      body+='<tr><td class="l">DPS</td>'+cols.map(function(r){return yen(r.dps,r.fc,r.dps!=null&&r.dps<10?2:1);}).join("")+'</tr>'
+        +'<tr><td class="l pct">&nbsp; YoY</td>'+cols.map(function(r){ var v=dpsYoy(r); return splitLike(r)?'<td class="num pct'+(r.fc?" est":"")+'" title="EPS and DPS both step in the same direction by more than 45% this year: likely a share split or consolidation, not a dividend change">split?</td>':pct(v,r.fc,true); }).join("")+'</tr>'
+        +'<tr><td class="l pct">&nbsp; payout</td>'+cols.map(function(r){return pct(payout(r),r.fc,false);}).join("")+'</tr>';
+      var actD=act.filter(function(r){return r.dps!=null;}), lastA=actD.length?actD[actD.length-1]:null;
+      var win=cols.filter(function(r){return !r.fc&&r.dps!=null;});
+      var firstW=win.length?win[0]:null;
+      var cagr=(firstW&&lastA&&firstW!==lastA&&firstW.dps>0&&lastA.dps>0)?(Math.pow(lastA.dps/firstW.dps,1/(win.length-1))-1)*100:null;
+      var ups=0, cuts=0, streak=0;
+      win.forEach(function(r,i){ if(!i) return; if(splitLike(r)) return; var p=win[i-1]; if(r.dps>p.dps){ ups++; streak++; } else if(r.dps<p.dps){ cuts++; streak=0; } else streak=0; });
+      var ty=(lastA&&lc&&lc.px>0)?lastA.dps/lc.px*100:null, fy2=(fc&&fc.dps!=null&&lc&&lc.px>0)?fc.dps/lc.px*100:null;
+      var parts=[];
+      if(lastA) parts.push('trailing yield <b class="num">'+(ty==null?"&ndash;":ty.toFixed(2)+"%")+'</b> (FY'+esc(lastA.fy)+' DPS &yen;'+n(lastA.dps,lastA.dps<10?2:1)+(lc?' / &yen;'+n(lc.px,lc.px<1000?1:0):'')+')');
+      if(fc&&fc.dps!=null) parts.push('guidance yield <b class="num">'+(fy2==null?"&ndash;":fy2.toFixed(2)+"%")+'</b> (FY'+esc(fc.fy)+'E DPS &yen;'+n(fc.dps,fc.dps<10?2:1)+')');
+      if(lastA&&lastA.eps>0) parts.push('payout FY'+esc(lastA.fy)+' <b class="num">'+(lastA.dps/lastA.eps*100).toFixed(1)+'%</b>');
+      if(cagr!=null) parts.push('DPS CAGR FY'+esc(firstW.fy)+'&ndash;FY'+esc(lastA.fy)+' <b class="num">'+(cagr>0?"+":"")+cagr.toFixed(1)+'%</b>'+(win.some(splitLike)?' <span class="warn">(a split-like year is inside the window; treat as approximate)</span>':''));
+      if(win.length>1) parts.push(ups+' increase'+(ups===1?'':'s')+' / '+cuts+' cut'+(cuts===1?'':'s')+' in '+(win.length-1)+' years, current run of increases '+streak);
+      if(parts.length) notes.push('<b>DIVIDENDS</b> &middot; '+parts.join(' &middot; ')+' &middot; <span class="mut">per-share figures as reported by fiscal year, not split-adjusted</span>');
+    }
     if(fc){
       var rel=String(fc.src||"").replace(/^EDINET DB\s*/,"");
       var pe=(lc&&lc.px>0&&fc.eps>0)?lc.px/fc.eps:null;
