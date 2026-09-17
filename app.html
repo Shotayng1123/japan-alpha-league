@@ -714,6 +714,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.14: CN -- the stock snapshot lists the feed's headlines tagged to the name (60 days) and to its sector (7 days), via api news code= / sector= / days= ---- */
 /* ---- v9.13: PORT -- PORTFOLIO CHARACTERISTICS vs INDEX under the Brinson table: weighted P/E FY-E, P/B (harmonic), ROE, dividend yield, 3M / 12M return, weighted-average market cap and the book's beta vs the official MSCI Japan level, each with coverage ---- */
 /* ---- v9.12: GRR -- the three MOVERS tables follow a period chip (1D/1W/1M/3M/12M) and ALL lists every name ranked; snapshot: RATIO line (stock / index) + beta, correlation, annualised vol over the range (COMP / BETA / HRA) ---- */
 /* ---- v9.11: SCREENER (EQS) on the MSCI Japan universe -- api funda (EDINET latest actual / prior / guidance) joined with prices and stats: P/B, ROE, OPM, sales growth, guidance OP growth, dividend yield, market cap; presets, custom ranges, sector chips, saved screens (localStorage), CSV; PEERS (RV) table + percentiles in the stock snapshot ---- */
@@ -4103,6 +4104,7 @@ body.term #rr-head .tt{font-size:13px}
       +'<div class="legend" id="snap-leg"></div><div id="snap-box"></div><div id="snap-tip"></div>'
       +'<div id="snap-fs"><span class="mut">5Y FINANCIALS &mdash; loading&hellip;</span></div>'
       +'<div id="snap-peers"></div>'
+      +'<div id="snap-news"></div>'
       +'</div>';
     document.body.appendChild(ov);
     ov.addEventListener("click",function(ev){ if(ev.target===ov) ov.style.display="none"; });
@@ -4239,7 +4241,56 @@ body.term #rr-head .tt{font-size:13px}
         snapDraw(); snapFund();
       }).catch(function(){ SNAPC[code]={px:[]}; snapDraw(); snapFund(); });
     }
-    snapDraw(); snapFund(); snapPeers();
+    snapDraw(); snapFund(); snapPeers(); snapNews();
+  }
+  /* ---------- v9.14 (CN): the name's and its sector's headlines in the snapshot ---------- */
+  // Two filtered reads of the news feed (api news code= / sector= / days=), cached 10 minutes per name:
+  // headlines tagged to the ticker over the last 60 days, then the sector's over the last 7 days
+  // (minus any already shown). The feed's own tags are shown (sentiment, significance, source);
+  // an empty result is said plainly -- the feed tags tickers sparsely.
+  var SNAPN={};
+  function snapNews(){
+    var el=$("snap-news"); if(!el||!snapCode) return;
+    var code=snapCode, inst=instOf(code), wi=winstOf(code);
+    var sec=inst?(inst.sector||""):(wi?(wi.sector||""):"");
+    var key=code+"|"+sec, c=SNAPN[key];
+    if(c&&!c.p&&Date.now()-c.at<600e3){ snapNewsRender(el,code,sec,c); return; }
+    el.innerHTML='<h4 class="minih">NEWS</h4><div class="empty">Loading headlines&hellip;</div>';
+    if(c&&c.p) return;
+    SNAPN[key]={p:1,at:Date.now()};
+    var q1=fetch(API+"?action=news&n=40&days=60&code="+encodeURIComponent(code)).then(function(r){return r.json();}).catch(function(){return null;});
+    var q2=sec?fetch(API+"?action=news&n=40&days=7&sector="+encodeURIComponent(sec)).then(function(r){return r.json();}).catch(function(){return null;}):Promise.resolve({rows:[]});
+    Promise.all([q1,q2]).then(function(rs){
+      SNAPN[key]={at:Date.now(),name:(rs[0]&&rs[0].rows)||[],sec:(rs[1]&&rs[1].rows)||[],err:!(rs[0]&&rs[0].rows)};
+      if(snapCode===code) snapNews();
+    });
+  }
+  function snapNewsRow(r,nowJ){
+    var c=r[5]||[];
+    var d=new Date(Date.parse(r[0])+9*3600e3);
+    var ds=d.toISOString().slice(0,10), hm=d.toISOString().slice(11,16);
+    var tlab=(ds===nowJ?hm:ds.slice(5).replace("-","/")+" "+hm);
+    var sig=Number(nwOne(c,"n:"))||1, dots='';
+    for(var i=0;i<5;i++) dots+=(i<sig?'&#9679;':'<i>&#9679;</i>');
+    var sent=nwOne(c,"x:");
+    var sc=sent==="POS"?'<span class="nwc pos" title="Reads positive for the market">+</span>':(sent==="NEG"?'<span class="nwc neg" title="Reads negative for the market">&minus;</span>':'<span class="nwc neu" title="Direction not determinable from the headline">N</span>');
+    var tks=nwTickers(c);
+    return '<div class="nwrow"><span class="nwt">'+esc(tlab)+'</span><span class="nwsig">'+dots+'</span><span class="nwtags">'+sc+(tks.length?'<span class="nwc tk" title="'+esc(tks.join(", "))+'">'+esc(tks[0])+(tks.length>1?' +'+(tks.length-1):'')+'</span>':'')+'</span>'
+      +'<span class="nwh"><a href="'+esc(r[3])+'" target="_blank" rel="noopener noreferrer">'+esc(r[2])+'</a></span><span class="nwsrc">'+esc(r[1])+'</span></div>';
+  }
+  function snapNewsRender(el,code,sec,c){
+    var nowJ=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+    var name=(c.name||[]).slice(0,8);
+    var seen={}; name.forEach(function(r){ seen[r[3]]=1; });
+    var srows=(c.sec||[]).filter(function(r){ return !seen[r[3]]; }).slice(0,6);
+    var h='<h4 class="minih">NEWS <span class="mut" style="font-weight:400;letter-spacing:0">&mdash; headlines tagged to '+esc(code)+' (last 60 days) and to '+(sec?esc(sec):"its sector")+' (last 7 days), from the feed</span></h4>';
+    if(c.err) h+='<div class="empty">News unavailable right now.</div>';
+    else h+=(name.length?name.map(function(r){return snapNewsRow(r,nowJ);}).join(""):'<div class="empty">No headline tagged to '+esc(code)+' in the feed in the last 60 days.</div>');
+    if(sec&&!c.err){
+      h+='<div class="sub" style="margin-top:6px">'+esc(sec)+' &mdash; last 7 days'+(srows.length?'':'')+'</div>';
+      h+=srows.length?srows.map(function(r){return snapNewsRow(r,nowJ);}).join(""):'<div class="empty">No '+esc(sec)+' headline in the feed in the last 7 days.</div>';
+    }
+    el.innerHTML=h;
   }
   document.addEventListener("click",function(ev){
     var t=ev.target&&ev.target.closest?ev.target.closest("[data-snap]"):null;
