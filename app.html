@@ -49,7 +49,11 @@ a{color:var(--cyan)}
 #topbar .chip:hover{border-color:var(--amber)}
 #mktstat{font-size:12px;letter-spacing:.08em;color:var(--amber);font-weight:700;white-space:nowrap}
 #mktstat .mksep{color:var(--mut);font-weight:400}
-#nxt{color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* v9.22: the refresh countdown as its own chip -- amber while it counts, green for two seconds when a
+   payload lands, so "is this page live?" is answerable at a glance */
+#nxt{color:var(--amber);border-color:var(--amber-dim);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700;min-width:46px;text-align:center}
+#nxt.hit{color:var(--up);border-color:#1d5c3a;background:rgba(63,208,126,.16)}
+#nxt.stale{color:var(--mut);border-color:var(--bord2);font-weight:400}
 #clock{color:var(--txt2);font-size:11px}
 #nav{display:flex;gap:2px;margin-left:6px}
 #nav a{color:var(--txt2);text-decoration:none;font-size:11px;letter-spacing:.1em;padding:4px 11px;border:1px solid transparent;border-radius:3px}
@@ -146,6 +150,7 @@ body.term #topbar .bmq{gap:7px;font-size:10.5px}
 body.term #topbar .chip{padding:1px 6px;font-size:9.5px}
 body.term #topbar .chip-sm{padding:0 5px;margin-left:2px}
 body.term #topbar .chip-sm.hl .hlw{display:none}   /* v9.21: the DATA chip is just the mark in terminal mode */
+body.term #topbar #nxt{min-width:40px}             /* v9.22: the countdown chip stays narrow in terminal mode */
 body.term #nav{gap:1px;margin-left:2px}
 body.term #nav a{padding:2px 6px;font-size:9.5px;letter-spacing:.04em}
 body.term #upd{font-size:9.5px!important}
@@ -450,6 +455,17 @@ svg[data-hv]:hover{filter:brightness(1.25)}
 
 form.tkt{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;margin-bottom:8px}
 form.tkt .full{grid-column:1/-1}
+/* v9.24: the ticker type-ahead */
+.acw{position:relative}
+.ac{position:absolute;top:100%;left:0;z-index:60;min-width:100%;width:max-content;max-width:min(420px,78vw);max-height:250px;overflow-y:auto;background:var(--panel2);border:1px solid var(--bord2);box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.ac .acr{display:flex;gap:8px;align-items:baseline;padding:4px 8px;cursor:pointer;font-size:11.5px;white-space:nowrap;border-bottom:1px solid var(--bord)}
+.ac .acr:last-child{border-bottom:none}
+.ac .acr:hover,.ac .acr.on{background:#2a1210}
+.ac .acr .c{color:var(--amber);font-weight:700;font-variant-numeric:tabular-nums;min-width:46px}
+.ac .acr .nm{color:var(--txt);overflow:hidden;text-overflow:ellipsis;max-width:210px}
+.ac .acr .nm b{color:var(--amber);font-weight:700}
+.ac .acr .mk{margin-left:auto;color:var(--mut);font-size:9.5px;padding-left:8px}
+.ac .acn{padding:5px 8px;color:var(--mut);font-size:11px}
 label.f{display:block;color:var(--mut);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
 input,select,button,textarea{font-family:var(--mono);font-size:12.5px;color:var(--txt);background:#0f1013;border:1px solid var(--bord2);border-radius:3px;padding:6px 8px}
 input:focus,select:focus,button:focus{outline:1px solid var(--amber);outline-offset:0}
@@ -739,6 +755,9 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.24: the order ticket's Ticker field predicts from a code OR any part of a company name, over the Japan, World and Asia books at once; arrows / Enter / Escape, and an unambiguous typed name resolves on TRANSMIT ---- */
+/* ---- v9.23: the three market charts carry the latest value to the right edge on a thin dotted line and tag it there; the right margin is sized to the tag and capped on a narrow chart ---- */
+/* ---- v9.22: the refresh countdown becomes its own chip at the top right -- amber countdown, green flash when a payload lands, grey while the tab is hidden, click = refresh everything now ---- */
 /* ---- v9.21: the morning notes as a headline list in NEWS -- "Morning Update (2026-Sep-18): <title>", newest first, 5 / 10 / 20 / ALL, click opens that morning's brief in place; every note the platform has written stays reachable ---- */
 /* ---- v9.20: RESILIENCE + DATA HEALTH -- a failed chart / macro reply keeps the series already on the page; the header DATA chip polls api?action=health (every pipeline's newest row, every job's last run) and turns amber with the flags ---- */
 /* ---- v9.19: CORR -- the pairwise correlation matrix of the long book's Japan names (daily returns, 120 sessions) under PORTFOLIO CHARACTERISTICS ---- */
@@ -849,7 +868,8 @@ body.term #rr-head .tt{font-size:13px}
     <span id="mktstat" class="mut">TSE —</span>
     <span id="bmlvl" class="num mut">MSCI JP —</span>
     <span id="clock" class="num"></span>
-    <span id="upd" class="mut" style="font-size:10px"><span id="updt"></span><span id="nxt" class="num" title="Next state refresh &mdash; the page refetches the league state every 60 s"></span></span>
+    <span id="upd" class="mut" style="font-size:10px"><span id="updt"></span></span>
+    <span id="nxt" class="chip-sm nxt" title="Time to the next automatic refresh &mdash; click to refresh now">&#8635; &ndash;:&ndash;&ndash;</span>
     <span id="hlth" class="chip-sm hl hl-unk" title="DATA HEALTH &mdash; loading">DATA ?</span>
     <span id="sz-ctl"><span class="chip-sm" data-sz="0.85">S</span><span class="chip-sm on" data-sz="1">M</span><span class="chip-sm" data-sz="1.15">L</span><span class="chip-sm" data-sz="1.35">XL</span></span>
     <span id="cmp-ctl" class="chip-sm" title="Terminal layout &mdash; one screen per tab, sized to the window">COMPACT</span>
@@ -913,7 +933,7 @@ body.term #rr-head .tt{font-size:13px}
       <div class="pbody">
         <div id="tkt-lock" class="locknote">Sign in (top-right) to place orders. Orders start filling at the next TSE close — max 20% of 20-day ADV per day. Each fill is charged the league cost (shown in the preview).</div>
         <form class="tkt" id="tkt" style="display:none" autocomplete="off">
-          <div><label class="f">Ticker</label><input id="t-code" placeholder="7203 / NVDA" maxlength="7"></div>
+          <div class="acw"><label class="f">Ticker</label><input id="t-code" placeholder="7203, Toyota, NVDA&hellip;" maxlength="28" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false"><div id="t-ac" class="ac" hidden></div></div>
           <div><label class="f">Side</label><select id="t-side"><option>BUY</option><option>SELL</option></select></div>
           <div><label class="f">Size in</label><select id="t-mode"><option value="bn">¥bn</option><option value="shares">Shares</option><option value="bps">bps of NAV</option></select></div>
           <div><label class="f">Qty</label><input id="t-qty" inputmode="decimal" placeholder="30"></div>
@@ -1659,17 +1679,42 @@ body.term #rr-head .tt{font-size:13px}
     fetchJ(API+"?action=state").then(function(j){
       if(!j.ok){ console.error(j.error); return; }
       S=j; renderAll();
+      if(typeof nxtHit==="function") nxtHit();   // v9.22: the chip flashes on a payload that was applied
     }).catch(function(e){ console.error(e); });
   }
   window.__load=load;   // v9.9e: the poll entry point, for the harness
   load();
-  // countdown to the next state refresh, beside the DATA stamp (v9.6)
+  // v9.22: the countdown chip. It counts down to the next automatic state refresh, flashes green for two
+  // seconds when a payload actually lands, and greys out while the tab is in the background (where the
+  // poll deliberately does not fetch). Clicking it refreshes everything at once.
+  var lastLoadAt=0;
   function tickNext(){
     var el=$("nxt"); if(!el) return;
-    if(!nextLoadAt){ el.textContent=""; return; }
+    if(el.dataset.hit) return;                       // the green flash owns the chip for its two seconds
+    el.classList.toggle("stale",!!document.hidden);
+    var every=Math.round(loadEvery()/1000);
+    var why=(inSession("TSE")||inLunch("TSE"))?"while the TSE is open":(anyVenueInSession()?"while another venue is open":"outside market hours");
+    if(!nextLoadAt){ el.textContent="\u21bb \u2013:\u2013\u2013"; return; }
     var sec=Math.max(0,Math.round((nextLoadAt-Date.now())/1000));
-    el.textContent=" \u00b7 \u21bb "+Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
+    el.textContent="\u21bb "+Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
+    el.title="Next automatic refresh in "+sec+" s \u2014 this page refetches the league state every "+every+" s "+why
+      +(lastLoadAt?"\nLast payload "+new Date(lastLoadAt+9*3600e3).toISOString().slice(11,19)+" JST":"\nNo payload yet")
+      +(document.hidden?"\nThe tab is in the background: the poll waits and refreshes the moment you come back":"")
+      +"\nClick to refresh now (state, macro, data health and the 1D charts)";
   }
+  function nxtHit(){
+    lastLoadAt=Date.now();
+    var el=$("nxt"); if(!el) return;
+    el.dataset.hit="1"; el.classList.add("hit"); el.textContent="\u21bb \u2713";
+    setTimeout(function(){ delete el.dataset.hit; el.classList.remove("hit"); tickNext(); },2000);
+  }
+  function refreshNow(){
+    load();
+    if(typeof loadMacro==="function") loadMacro();
+    if(typeof loadHealth==="function") loadHealth();
+    if(typeof refresh1D==="function") refresh1D();
+  }
+  (function(){ var el=$("nxt"); if(el) el.addEventListener("click",refreshNow); })();
   tickNext(); setInterval(tickNext,1000);
   // v9.9g: a tab or home-screen app coming back to the foreground refreshes everything it shows at once
   var BOOT_AT=Date.now();
@@ -3385,7 +3430,15 @@ body.term #rr-head .tt{font-size:13px}
       +(o.note?'<span class="mut">'+esc(o.note)+"</span>":"");
     var cw=(box&&box.clientWidth)||0, ch=(box&&box.clientHeight)||0, narrow=cw>0&&cw<600;
     var fit=isTerm()&&cw>120&&ch>80;
-    var W=fit?Math.round(cw):(narrow?Math.max(240,Math.round(cw)):560),H=fit?Math.round(ch):250,mL=54,mR=8,mT=8,mB=20,iW=W-mL-mR,iH=H-mT-mB;
+    var W=fit?Math.round(cw):(narrow?Math.max(240,Math.round(cw)):560),H=fit?Math.round(ch):250;
+    // v9.23: the latest value gets a dotted carry to the right edge and a tag in the margin. The tag is
+    // measured first because the right margin has to hold it: its face shrinks on a narrow chart and its
+    // width is capped at a fifth of the chart, so a phone keeps a usable plot.
+    var lastI=-1, lastV=null;
+    for(var li=o.vals.length-1;li>=0;li--){ if(o.vals[li]!=null){ lastI=li; lastV=o.vals[li]; break; } }
+    var tagTxt=(lastV==null)?null:n(lastV,1), tagFs=narrow?8:9;
+    var tagW=tagTxt?Math.max(24,Math.min(Math.round(W*0.2),Math.round(tagTxt.length*tagFs*0.62)+8)):0;
+    var mL=54,mR=8+(tagW?tagW+3:0),mT=8,mB=20,iW=W-mL-mR,iH=H-mT-mB;
     var all=[]; o.vals.forEach(function(v){if(v!=null)all.push(v);}); (o.hsegs||[]).forEach(function(h){ if(h.v!=null) all.push(h.v); });
     if(!all.length){ box.innerHTML='<div class="empty">–</div>'; return null; }
     var lo=Math.min.apply(null,all),hi=Math.max.apply(null,all);
@@ -3424,8 +3477,18 @@ body.term #rr-head .tt{font-size:13px}
     var d="",st=false;
     for(var i=0;i<nn;i++){ var vv=o.vals[i]; if(vv==null) continue; d+=(st?"L":"M")+X(i).toFixed(1)+","+Y(vv).toFixed(1); st=true; }
     svg+='<path d="'+d+'" fill="none" stroke="'+o.color+'" stroke-width="1.4"/>';
-    var lastI=-1; for(var i2=nn-1;i2>=0;i2--){ if(o.vals[i2]!=null){ lastI=i2; break; } }
-    if(lastI>=0) svg+='<circle cx="'+X(lastI).toFixed(1)+'" cy="'+Y(o.vals[lastI]).toFixed(1)+'" r="2.4" fill="'+o.color+'"/>';
+    if(lastI>=0){
+      var lx=X(lastI), ly=Y(lastV), xEnd=W-mR+2;
+      // the carry: only when the tag gutter is to the RIGHT of the last point (panned back far enough that
+      // the last drawn point already sits at the edge, there is nothing to carry and the line is skipped)
+      if(tagW&&xEnd>lx+3) svg+='<line class="lastc" x1="'+lx.toFixed(1)+'" x2="'+xEnd.toFixed(1)+'" y1="'+ly.toFixed(1)+'" y2="'+ly.toFixed(1)+'" stroke="'+o.color+'" stroke-width="1" stroke-dasharray="2 3" opacity=".8"/>';
+      svg+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="2.4" fill="'+o.color+'"/>';
+      if(tagW){
+        var ty=Math.max(mT+7,Math.min(H-mB-7,ly));   // the tag never leaves the plot, even at the extremes
+        svg+='<rect class="lastt" x="'+(W-mR+3)+'" y="'+(ty-6.5).toFixed(1)+'" width="'+tagW+'" height="13" rx="2" fill="'+o.color+'"/>'
+          +'<text class="lastv" x="'+(W-mR+3+tagW/2).toFixed(1)+'" y="'+(ty+3.2).toFixed(1)+'" text-anchor="middle" font-size="'+tagFs+'" font-weight="700" fill="#08080a">'+esc(tagTxt)+"</text>";
+      }
+    }
     svg+='<rect id="'+pfx+'hv" x="'+mL+'" y="'+mT+'" width="'+iW+'" height="'+iH+'" fill="transparent"/></svg>';
     box.innerHTML=svg;
     var xs=[]; for(var i3=0;i3<nn;i3++) xs.push(X(i3));
@@ -4021,6 +4084,7 @@ body.term #rr-head .tt{font-size:13px}
     var inp=$("t-code");
     if(inp&&code){
       inp.value=code;
+      if(typeof acClose==="function") acClose();   // v9.24
       var msg=$("t-msg"); if(msg){ msg.textContent="Ticker set: "+code; msg.className="msg ok"; }
       if(curView()==="market"||curView()==="league") location.hash="#trade";
     }
@@ -4066,14 +4130,107 @@ body.term #rr-head .tt{font-size:13px}
       .then(function(r){return r.json();});
   }
 
+  /* ---------- v9.24: the ticker type-ahead ----------
+     One list over all three books. A query matches a code / symbol or any part of a name (and the sector,
+     so "semis" finds the sector's names); ranked code-prefix, then name-prefix, then name-substring, then
+     anything else, and within a rank the bigger index weight first so the household names come up. */
+  var ACI=-1, ACROWS=[];
+  function acUniverse(){
+    if(!S) return [];
+    var out=[];
+    (S.instruments||[]).forEach(function(i){ if(i.in_universe===false) return; out.push({code:String(i.code),name:String(i.name||""),sector:String(i.sector||""),mkt:"JP",w:Number(i.bm_weight)||0}); });
+    (S.world_instruments||[]).forEach(function(w){ if(w.in_universe===false&&w.in_asxj!==true) return; out.push({code:String(w.symbol),name:String(w.name||""),sector:String(w.sector||""),mkt:w.in_asxj?("ASIA"+(w.location?" \u00b7 "+String(w.location):"")):"WORLD",w:0}); });
+    return out;
+  }
+  function acMatch(q){
+    q=String(q||"").trim().toLowerCase(); if(!q) return [];
+    var out=[];
+    acUniverse().forEach(function(x){
+      var c=x.code.toLowerCase(), nm=x.name.toLowerCase(), sc=x.sector.toLowerCase(), r=-1;
+      if(c===q) r=0;
+      else if(c.indexOf(q)===0) r=1;
+      else if(nm.indexOf(q)===0) r=2;
+      else if(nm.indexOf(" "+q)>=0) r=3;          // a word inside the name ("motor" finds Toyota Motor)
+      else if(nm.indexOf(q)>=0) r=4;
+      else if(sc.indexOf(q)>=0) r=5;
+      if(r>=0) out.push({x:x,r:r});
+    });
+    out.sort(function(a,b){ return a.r-b.r || b.x.w-a.x.w || (a.x.code<b.x.code?-1:1); });
+    return out.slice(0,10).map(function(o){return o.x;});
+  }
+  function acHi(name,q){
+    q=String(q||"").trim(); if(!q) return esc(name);
+    var i=name.toLowerCase().indexOf(q.toLowerCase());
+    if(i<0) return esc(name);
+    return esc(name.slice(0,i))+"<b>"+esc(name.slice(i,i+q.length))+"</b>"+esc(name.slice(i+q.length));
+  }
+  function acClose(){ var b=$("t-ac"); if(b){ b.hidden=true; b.innerHTML=""; } ACI=-1; ACROWS=[]; var inp=$("t-code"); if(inp) inp.setAttribute("aria-expanded","false"); }
+  function acOpen(){
+    var inp=$("t-code"), box=$("t-ac"); if(!inp||!box) return;
+    var q=inp.value||"";
+    ACROWS=acMatch(q);
+    if(!q.trim()||!ACROWS.length){
+      if(!q.trim()){ acClose(); return; }
+      box.hidden=false; box.innerHTML='<div class="acn">No name or code matches \u201c'+esc(q)+'\u201d in the three books.</div>'; ACI=-1; inp.setAttribute("aria-expanded","true"); return;
+    }
+    if(ACI>=ACROWS.length) ACI=-1;
+    box.innerHTML=ACROWS.map(function(x,k){ return '<div class="acr'+(k===ACI?" on":"")+'" data-ac="'+esc(x.code)+'" data-k="'+k+'"><span class="c">'+esc(x.code)+'</span><span class="nm">'+acHi(x.name,q)+'</span><span class="mk">'+esc(secAbbr(x.sector))+" \u00b7 "+esc(x.mkt)+'</span></div>'; }).join("");
+    box.hidden=false; inp.setAttribute("aria-expanded","true");
+  }
+  function acPick(k){
+    var x=ACROWS[k]; if(!x) return;
+    var inp=$("t-code"); inp.value=x.code; acClose(); tkPrev();
+    var msg=$("t-msg"); if(msg){ msg.textContent=x.code+" \u2014 "+x.name; msg.className="msg ok"; }
+    inp.focus();
+  }
+  // A name typed but never picked. Resolved only where there is no judgement to make: it is already a
+  // code; or exactly one name equals it (so "Toyota Motor" is 7203 even though it is also the start of
+  // "Toyota Motor ADR"); or the whole universe yields exactly one match. Anything else stays unresolved --
+  // the ticket asks rather than guessing which Mitsu- the reader meant.
+  function acLookup(v){
+    v=String(v||"").trim(); if(!v) return null;
+    var up=v.toUpperCase();
+    if(instOf(up)||winstOf(up)) return up;
+    var lc=v.toLowerCase(), exact=acUniverse().filter(function(x){ return x.name.toLowerCase()===lc; });
+    if(exact.length===1) return exact[0].code;
+    var m=acMatch(v);
+    return m.length===1?m[0].code:null;
+  }
+  function acResolve(){
+    var inp=$("t-code"); if(!inp) return null;
+    var c=acLookup(inp.value);
+    if(c) inp.value=c;
+    return c;
+  }
+  (function(){
+    var inp=$("t-code"), box=$("t-ac"); if(!inp||!box) return;
+    inp.addEventListener("input",acOpen);
+    inp.addEventListener("focus",function(){ if((inp.value||"").trim()) acOpen(); });
+    inp.addEventListener("blur",function(){ setTimeout(acClose,140); });   // after a row's mousedown
+    inp.addEventListener("keydown",function(ev){
+      if(box.hidden||!ACROWS.length){ if(ev.key==="ArrowDown"&&(inp.value||"").trim()){ acOpen(); ev.preventDefault(); } return; }
+      if(ev.key==="ArrowDown"){ ACI=(ACI+1)%ACROWS.length; acOpen(); ev.preventDefault(); }
+      else if(ev.key==="ArrowUp"){ ACI=(ACI<=0?ACROWS.length:ACI)-1; acOpen(); ev.preventDefault(); }
+      else if(ev.key==="Enter"){ if(ACI>=0){ acPick(ACI); ev.preventDefault(); } }
+      else if(ev.key==="Escape"){ acClose(); ev.preventDefault(); }
+      else if(ev.key==="Tab"&&ACI>=0){ acPick(ACI); }
+    });
+    box.addEventListener("mousedown",function(ev){
+      var r=ev.target.closest?ev.target.closest("[data-ac]"):null; if(!r) return;
+      ev.preventDefault(); acPick(Number(r.getAttribute("data-k")));
+    });
+  })();
+
   /* ---------- pre-trade preview: active-weight impact + est. fill days ---------- */
   function tkPrev(){
     var el=$("tk-prev"); if(!el||!S) return;
     var myp=me?S.players.find(function(p){return p.nickname.toLowerCase()===me.nickname.toLowerCase();}):null;
-    var code=($("t-code").value||"").trim().toUpperCase();
+    var raw=($("t-code").value||"").trim(), code=raw.toUpperCase();
     var qty=parseFloat(($("t-qty").value||"").replace(/,/g,""));
     var mode=$("t-mode").value, side=$("t-side").value;
     if(!myp||!code||!(qty>0)){ el.innerHTML=""; return; }
+    // v9.24: a name typed in full ("Toyota Motor") previews as its code without the reader having to pick
+    if(!instOf(code)&&!winstOf(code)) code=acLookup(raw)||code;
     var inst=instOf(code), lc=lastCloseOf(code), st2=statOf(code), wi=winstOf(code);
     if(!lc||!(lc.px>0)){ el.innerHTML='<span class="mut">No price data for '+esc(code)+' yet.</span>'; return; }
     var c=playerCalc(myp);
@@ -4152,7 +4309,15 @@ body.term #rr-head .tt{font-size:13px}
     ev.preventDefault();
     var msg=$("t-msg"); msg.className="msg";
     if(!me){ msg.textContent="Sign in first."; msg.className="msg err"; return; }
-    var code=$("t-code").value.trim().toUpperCase();
+    // v9.24: an unambiguous name resolves to its code; prose that resolves to nothing is refused here,
+    // with the reason, instead of being sent as a ticker the api will only reject
+    var code=acResolve();
+    if(!code){
+      var rawc=$("t-code").value.trim(), cands=S?acMatch(rawc):[];
+      if(cands.length>1){ msg.textContent="“"+rawc+"” matches "+cands.length+" names ("+cands.slice(0,3).map(function(x){return x.code;}).join(", ")+(cands.length>3?"…":"")+") — pick one from the list."; msg.className="msg err"; return; }
+      if(/^[A-Za-z0-9.\-]{1,7}$/.test(rawc)) code=rawc.toUpperCase();   // code-shaped and unknown here: the api decides, as before
+      else { msg.textContent="No name or code matches “"+rawc+"”."; msg.className="msg err"; return; }
+    }
     var qty=parseFloat($("t-qty").value.replace(/,/g,""));
     var mode=$("t-mode").value;
     if(mode==="bps"){
