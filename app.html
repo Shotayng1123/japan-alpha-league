@@ -463,6 +463,17 @@ button.ghost{background:none;border:none;color:var(--dn);cursor:pointer;font-siz
 #hmtip .row{display:flex;justify-content:space-between;gap:14px;padding:1px 0}
 .chip-sm{border:1px solid var(--bord2);padding:1px 8px;border-radius:2px;cursor:pointer;margin-left:5px;font-size:10px;color:var(--txt2);letter-spacing:.05em;user-select:none}
 .chip-sm:hover{border-color:var(--amber)}
+/* v9.20: DATA HEALTH chip + panel */
+.chip-sm.hl{font-weight:600}
+.chip-sm.hl-ok{color:var(--up);border-color:#1d5c3a}
+.chip-sm.hl-warn{color:#f2b544;border-color:#7a5a1a;background:rgba(242,181,68,.12)}
+.chip-sm.hl-unk{color:var(--mut)}
+#hlpop{position:fixed;top:46px;right:12px;z-index:70;background:var(--panel2);border:1px solid var(--bord2);padding:10px 12px;width:min(640px,calc(100vw - 24px));max-height:72vh;overflow:auto;font-size:11px;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+#hlpop h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em}
+#hlpop table.mini{width:100%;font-size:10.5px}
+#hlpop .flag{color:#f2b544}
+#hlpop .okc{color:var(--up)}
+#hlpop .bad{color:var(--dn)}
 .mvchips{margin:0 6px 0 2px}
 .mvchips .chip-sm{margin-left:3px;padding:0 6px}
 .mvall tbody{display:block;max-height:420px;overflow:auto}
@@ -715,6 +726,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.20: RESILIENCE + DATA HEALTH -- a failed chart / macro reply keeps the series already on the page; the header DATA chip polls api?action=health (every pipeline's newest row, every job's last run) and turns amber with the flags ---- */
 /* ---- v9.19: CORR -- the pairwise correlation matrix of the long book's Japan names (daily returns, 120 sessions) under PORTFOLIO CHARACTERISTICS ---- */
 /* ---- v9.18: MOST -- an ACTIVE chip on the MOVERS tables ranks names by turnover / 20-day ADV (top 12, or all) ---- */
 /* ---- v9.17: HP -- the snapshot shows the 52-week high / low (dates, distance, position in the range) from the price history and a CSV chip downloads the price table drawn ---- */
@@ -824,6 +836,7 @@ body.term #rr-head .tt{font-size:13px}
     <span id="bmlvl" class="num mut">MSCI JP —</span>
     <span id="clock" class="num"></span>
     <span id="upd" class="mut" style="font-size:10px"><span id="updt"></span><span id="nxt" class="num" title="Next state refresh &mdash; the page refetches the league state every 60 s"></span></span>
+    <span id="hlth" class="chip-sm hl hl-unk" title="DATA HEALTH &mdash; loading">DATA ?</span>
     <span id="sz-ctl"><span class="chip-sm" data-sz="0.85">S</span><span class="chip-sm on" data-sz="1">M</span><span class="chip-sm" data-sz="1.15">L</span><span class="chip-sm" data-sz="1.35">XL</span></span>
     <span id="cmp-ctl" class="chip-sm" title="Terminal layout &mdash; one screen per tab, sized to the window">COMPACT</span>
     <span id="fs-ctl" class="chip-sm" title="Fullscreen &mdash; hides the header (Esc or click the corner strip to leave; keys 1&ndash;9 switch tabs)">&#9974; FULL</span>
@@ -1610,12 +1623,16 @@ body.term #rr-head .tt{font-size:13px}
   // v9.9e (egress): every api GET remembers the answer's ETag and asks with If-None-Match; a 304 hands back
   // the previous payload without a body crossing the wire (the api gzips and ETags every JSON answer).
   var ETAGS={}, EBODY={};
+  // v9.20: every api failure this page sees (HTTP >= 400 or a network error) is kept for the DATA HEALTH chip
+  var APIERR=[];
+  function apiErr(url,what){ APIERR.push({at:Date.now(),url:String(url),what:what}); if(APIERR.length>40) APIERR.shift(); if(typeof healthChip==="function") healthChip(); }
   function fetchJ(url){
     var et=ETAGS[url], h={}; if(et) h["If-None-Match"]=et;
     return fetch(url,{headers:h}).then(function(r){
       if(r.status===304&&EBODY[url]) return EBODY[url];
+      if(r.status>=400) apiErr(url,"HTTP "+r.status);
       return r.json().then(function(j){ var e=r.headers.get("etag"); if(e){ ETAGS[url]=e; EBODY[url]=j; } return j; });
-    });
+    }).catch(function(e){ apiErr(url,String((e&&e.message)||e)); throw e; });
   }
   // the state changes with the tick (TSE hours) and the nightly eod: poll every minute while the TSE is in
   // session or at lunch, every 3 minutes while another venue is, every 10 minutes otherwise; never while hidden
@@ -1647,6 +1664,7 @@ body.term #rr-head .tt{font-size:13px}
     if(Date.now()-BOOT_AT>20*3600e3){ location.reload(); return; }   // a day-old page fetches today's app.html
     load();
     if(typeof loadMacro==="function"&&MACRO) loadMacro();
+    if(typeof loadHealth==="function") loadHealth();   // v9.20
     if(typeof refresh1D==="function") refresh1D();
   });
 
@@ -1761,7 +1779,7 @@ body.term #rr-head .tt{font-size:13px}
   function loadMacro(){
     if(document.hidden&&MACRO) return;   // v9.9e: no macro refresh while hidden
     fetchJ(API+"?action=macro").then(function(j){
-      if(!j||!j.meta) return;
+      if(!j||!j.meta||!j.meta.length) return;   // v9.20: a 503 / empty reply keeps the last good payload
       setTimeout(dataStamp,0);   // v9.9g: the header stamp follows the macro stamps
       var by={};
       if(j.px){
@@ -1784,6 +1802,72 @@ body.term #rr-head .tt{font-size:13px}
   // gated on the venue's own print timestamp. Inside the Asian sessions -- the only hours our tick
   // runs -- the payload now reloads every five minutes, matching the tick, and falls back to 30
   // outside them so an idle overnight tab costs nothing extra.
+  /* ---------- v9.20: DATA HEALTH -- the api's own check of every pipeline (api?action=health) + this page's api failures ---------- */
+  var HEALTH=null, HEALTH_AT=0;
+  function loadHealth(){
+    if(document.hidden&&HEALTH) return;
+    fetchJ(API+"?action=health").then(function(j){ if(j&&j.pipelines){ HEALTH=j; HEALTH_AT=Date.now(); } healthChip(); }).catch(function(){ healthChip(); });
+  }
+  function healthChip(){
+    var el=$("hlth"); if(!el) return;
+    var now=Date.now(), recent=APIERR.filter(function(e){ return now-e.at<600e3; });
+    var flags=(HEALTH&&HEALTH.flags)||[], stale=!!HEALTH&&(now-HEALTH_AT>20*60e3);
+    var bad=flags.length+(recent.length?1:0);
+    el.className="chip-sm hl "+(!HEALTH?"hl-unk":((bad||stale)?"hl-warn":"hl-ok"));
+    el.textContent="DATA "+(!HEALTH?"?":((bad||stale)?"\u26a0 "+(bad||"stale"):"\u2713"));
+    var lines=[];
+    if(!HEALTH) lines.push("DATA HEALTH: the api health check has not answered yet");
+    else lines.push("DATA HEALTH "+new Date(HEALTH.at).toISOString().slice(11,16)+"Z: "+(flags.length?flags.length+" flag(s)":"every pipeline current"));
+    flags.forEach(function(f){ lines.push("\u26a0 "+f); });
+    if(recent.length){ var l=recent[recent.length-1]; lines.push("\u26a0 "+recent.length+" api call(s) failed on this page in the last 10 min (last: "+l.what+" "+l.url.replace(API,"").slice(0,70)+")"); }
+    if(stale) lines.push("\u26a0 the health reply is "+Math.round((now-HEALTH_AT)/60e3)+" min old");
+    lines.push("click for the detail");
+    el.title=lines.join("\n");
+    var pop=$("hlpop"); if(pop) healthPanel();
+  }
+  function hlAge(iso){ if(!iso) return "\u2013"; var m=Math.round((Date.now()-Date.parse(iso))/60e3); if(m<0) m=0; return m<90?m+" min":(m<48*60?(m/60).toFixed(1)+" h":Math.round(m/1440)+" d"); }
+  function hlTs(iso){ if(!iso) return "\u2013"; var d=new Date(iso); if(isNaN(d)) return esc(String(iso)); if(/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) return esc(String(iso)); return esc(new Date(d.getTime()+9*3600e3).toISOString().slice(5,16).replace("T"," ")+" JST"); }
+  function healthPanel(){
+    var pop=$("hlpop"); if(!pop){ pop=document.createElement("div"); pop.id="hlpop"; document.body.appendChild(pop); }
+    var H=HEALTH, h="";
+    var now=Date.now(), recent=APIERR.filter(function(e){ return now-e.at<600e3; });
+    h+='<h4>DATA HEALTH <span class="mut" style="font-weight:400;letter-spacing:0">\u2014 '+(H?("api check "+hlTs(H.at)+" \u00b7 rechecked every 5 min"):"not loaded yet")+'</span> <span class="chip-sm" id="hlpop-x" style="float:right">CLOSE</span></h4>';
+    if(H){
+      var flags=H.flags||[];
+      h+='<div style="margin-bottom:8px">'+(flags.length?flags.map(function(f){ return '<div class="flag">\u26a0 '+esc(f)+'</div>'; }).join(""):'<div class="okc">\u2713 every pipeline current (no flags)</div>')+'</div>';
+      var P=H.pipelines||{}, rows=[
+        ["TICK \u00b7 JP basket 1-min",P.tick&&P.tick.last_ts,P.tick&&(P.tick.in_session?"in session":"closed"),P.tick&&(P.tick.ok?"ok":P.tick.note)],
+        ["BARS \u00b7 World proxy 1-min",P.bars_world&&P.bars_world.last_ts,P.bars_world&&(P.bars_world.in_session?"in session":"closed"),P.bars_world&&(P.bars_world.ok?"ok":P.bars_world.note)],
+        ["BARS \u00b7 Asia proxy 1-min",P.bars_asia&&P.bars_asia.last_ts,P.bars_asia&&(P.bars_asia.in_session?"in session":"closed"),P.bars_asia&&(P.bars_asia.ok?"ok":P.bars_asia.note)],
+        ["BARS \u00b7 hourly rollup",P.bars_1h&&P.bars_1h.last_ts,"06:15 JST daily",P.bars_1h&&(P.bars_1h.note||"ok")],
+        ["EOD \u00b7 JP prices",P.eod&&P.eod.prices_d,"07:00 JST daily",P.eod&&(P.eod.note||"ok")],
+        ["EOD \u00b7 MSCI Japan close",P.eod&&P.eod.benchmark_d,"next morning","ok"],
+        ["EOD \u00b7 world prices / MSCI World",P.eod&&(P.eod.world_prices_d+" / "+P.eod.benchmark_world_d),"","ok"],
+        ["MACRO \u00b7 newest Yahoo stamp",P.macro&&P.macro.newest_market_time,"5 min in session",P.macro&&(P.macro.note||"ok")],
+        ["BRIEF \u00b7 morning brief",P.brief&&(P.brief.latest_d+(P.brief.narrative_at?" (narrative "+hlTs(P.brief.narrative_at)+")":" (numbers only)")),"07:45 / 07:50 JST","expected "+(P.brief&&P.brief.expected_d)],
+        ["NEWS \u00b7 newest headline",P.news&&P.news.newest_published_at,"every 5 min",P.news&&(P.news.note||"ok")],
+        ["FUND \u00b7 fundamentals refresh",P.fund&&P.fund.newest_updated_at,"weekly",P.fund&&(P.fund.note||"ok")]
+      ];
+      h+='<table class="mini"><thead><tr><th class="l">PIPELINE</th><th class="l">NEWEST</th><th class="num">AGE</th><th class="l">CADENCE</th><th class="l">STATUS</th></tr></thead><tbody>';
+      rows.forEach(function(r){ var ok=r[3]==="ok"||/^expected/.test(String(r[3])); h+='<tr><td class="l">'+esc(r[0])+'</td><td class="l num">'+hlTs(r[1])+'</td><td class="num">'+(/^\d{4}-\d{2}-\d{2}($| )/.test(String(r[1]))?hlAge(String(r[1]).slice(0,10)+"T00:00:00Z"):hlAge(r[1]))+'</td><td class="l mut">'+esc(r[2]||"")+'</td><td class="l '+(ok?"okc":"bad")+'">'+esc(String(r[3]||"\u2013"))+'</td></tr>'; });
+      h+='</tbody></table>';
+      var J=H.jobs||{}, jn=Object.keys(J);
+      if(jn.length){
+        h+='<table class="mini" style="margin-top:8px"><thead><tr><th class="l">JOB</th><th class="l">LAST RUN</th><th class="l">RESULT</th><th class="num">FAILS 24H</th><th class="l">LAST FAILURE</th></tr></thead><tbody>';
+        jn.forEach(function(k){ var j=J[k]; h+='<tr><td class="l"><b>'+esc(k)+'</b></td><td class="l num">'+hlTs(j.last_at)+'</td><td class="l '+(j.last_ok===false?"bad":"okc")+'" title="'+esc(j.last_detail||"")+'">'+(j.last_ok==null?"\u2013":(j.last_ok?"ok":"FAILED"))+'</td><td class="num'+(j.fails_24h?" bad":"")+'">'+j.fails_24h+'</td><td class="l mut" title="'+esc(j.last_fail||"")+'">'+(j.last_fail?hlTs(j.last_fail_at)+" "+esc(String(j.last_fail).slice(0,60)):"\u2013")+'</td></tr>'; });
+        h+='</tbody></table>';
+      }
+      if(H.retries) h+='<div class="hint2">api REST retries in this isolate: '+esc(String(H.retries.n))+(H.retries.last?' (last '+hlTs(H.retries.last.at)+' '+esc(String(H.retries.last.status))+' '+esc(String(H.retries.last.path))+')':'')+'</div>';
+    }
+    h+='<div class="hint2" style="margin-top:6px">This page: '+(recent.length?('<span class="flag">'+recent.length+' api call(s) failed in the last 10 min</span>'+recent.slice(-5).map(function(e){ return '<div class="mut">'+hlTs(new Date(e.at).toISOString())+' '+esc(e.what)+' '+esc(e.url.replace(API,"").slice(0,80))+'</div>'; }).join("")):'<span class="okc">no api call failed in the last 10 min</span>')+'</div>';
+    h+='<div class="hint2">Rules: the tick must print within 10 min while the TSE is open and cover every priced session; the morning brief must exist for the latest weekday; the news job must have run in the last 30 min; a job whose last run failed is flagged until it succeeds. A transient "JWT issued at future" is Supabase\u2019s gateway (retried 3x since 09-18); a flag that persists means a pipeline stopped.</div>';
+    pop.innerHTML=h;
+    var x=$("hlpop-x"); if(x) x.addEventListener("click",function(){ pop.parentNode.removeChild(pop); });
+  }
+  (function(){ var el=$("hlth"); if(!el) return; el.addEventListener("click",function(ev){ ev.stopPropagation(); var pop=$("hlpop"); if(pop){ pop.parentNode.removeChild(pop); return; } healthPanel(); });
+    document.addEventListener("click",function(ev){ var pop=$("hlpop"); if(pop&&!pop.contains(ev.target)) pop.parentNode.removeChild(pop); }); })();
+  loadHealth();
+  setInterval(loadHealth,300000);
   loadMacro();
   (function macroLoop(){ setTimeout(function(){ loadMacro(); macroLoop(); }, anyVenueInSession()?300000:1800000); })();
   Array.prototype.forEach.call(document.querySelectorAll("#mg-ctl [data-gper]"),function(c2){
@@ -3205,7 +3289,7 @@ body.term #rr-head .tt{font-size:13px}
     MKC[key]=c={at:0,data:c?c.data:null,q:[cb]};
     var done=function(d,failed){ c.data=d; c.at=failed?Date.now()-mkTtl(kind)+60e3:Date.now(); var q=c.q; c.q=null; q.forEach(function(f){f(d);}); };
     fetchJ(API+"?action=chart&mkt="+mkt+"&"+mkQuery(kind))
-      .then(function(j){ done((j&&j.ok&&Array.isArray(j.points))?j:{ok:false,points:[],days:[],session:null},false); })
+      .then(function(j){ var good=!!(j&&j.ok&&Array.isArray(j.points)); done(good?j:(c.data||{ok:false,points:[],days:[],session:null}),!good); })   // v9.20: a 503 keeps the series on the page, retried in 60 s
       .catch(function(){ done(c.data||{ok:false,points:[],days:[],session:null},true); });
   }
   function loadMany(mkt,kinds,cb){ var out={}, left=kinds.length; kinds.forEach(function(k){ loadMktChart(mkt,k,function(d){ out[k]=d; if(--left===0) cb(out); }); }); }
