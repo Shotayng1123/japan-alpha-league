@@ -755,6 +755,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.25: the line is not carried across a close -- every session is its own subpath on the three market charts and on the driver tiles; daily-close ranges are unchanged ---- */
 /* ---- v9.24: the order ticket's Ticker field predicts from a code OR any part of a company name, over the Japan, World and Asia books at once; arrows / Enter / Escape, and an unambiguous typed name resolves on TRANSMIT ---- */
 /* ---- v9.23: the three market charts carry the latest value to the right edge on a thin dotted line and tag it there; the right margin is sized to the tag and capped on a narrow chart ---- */
 /* ---- v9.22: the refresh countdown becomes its own chip at the top right -- amber countdown, green flash when a payload lands, grey while the tab is hidden, click = refresh everything now ---- */
@@ -1795,11 +1796,12 @@ body.term #rr-head .tt{font-size:13px}
     opt=opt||{};
     var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
     if(!(mx-mn>0)) mx=mn+1e-9;
-    var d="", xs=[], ys=[];
+    var d="", xs=[], ys=[], sbrk={};
+    (opt.breaks||[]).forEach(function(k){ sbrk[k]=1; });   // v9.25: an index here starts a new subpath (a session open)
     for(var i=0;i<vals.length;i++){
       var xx=opt.xs?opt.xs[i]:(i/(vals.length-1)*w), yy=(1-(vals[i]-mn)/(mx-mn))*(hgt-3)+1.5;
       xs.push(xx); ys.push(yy);
-      d+=(i?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
+      d+=((i&&!sbrk[i])?"L":"M")+xx.toFixed(1)+" "+yy.toFixed(1);
     }
     var col=up===false?"var(--dn)":(up?"var(--up)":"var(--mut)");
     var id="";
@@ -3077,8 +3079,9 @@ body.term #rr-head .tt{font-size:13px}
     if(W<2) W=Math.min(total,2);
     st.off=Math.max(0,Math.min(maxOff,st.off||0)); st.W=W; st.maxOff=maxOff;
     var a=total-W-st.off, b=total-st.off;
-    var xs=[], vs=[], labels=[];
-    for(var i=a;i<b;i++){ var v=tl.vals[i]; if(v==null) continue; xs.push(((i-a)/Math.max(1,W-1))*120); vs.push(v); labels.push(hvJst(tl.slots[i]/1000)); }
+    var xs=[], vs=[], labels=[], sbr=[], sstart={};
+    tl.starts.forEach(function(k){ sstart[k]=1; });
+    for(var i=a;i<b;i++){ var v=tl.vals[i]; if(v==null) continue; if(sstart[i]&&i>a&&vs.length) sbr.push(vs.length); xs.push(((i-a)/Math.max(1,W-1))*120); vs.push(v); labels.push(hvJst(tl.slots[i]/1000)); }
     var isY=m&&(m.kind==="yield"||m.kind==="yield10x");
     var first=vs.length?vs[0]:null, last=vs.length?vs[vs.length-1]:null;
     var chg=(first!=null&&last!=null)?(isY?(last-first):(last/first-1)):null;   // yields: percent points (x100 = bp in pctStr); prices: a fraction
@@ -3088,7 +3091,7 @@ body.term #rr-head .tt{font-size:13px}
     var lbl=m?m.label:sym;
     var vl=last==null?"&ndash;":(isY?last.toFixed(2)+"%":n(last,last<10?3:(last<100?2:(last<10000?1:0))));
     var chTxt=chg==null?"":pctStr(chg,isY);
-    var spark=vs.length>1?sparkSvg(vs,120,34,chg==null?null:chg>=0,{xs:xs,labels:labels,fmt:isY?function(v){return v.toFixed(2)+"%";}:null}):'<div class="mut" style="font-size:9px;margin-top:6px">no prints yet</div>';
+    var spark=vs.length>1?sparkSvg(vs,120,34,chg==null?null:chg>=0,{xs:xs,labels:labels,breaks:sbr,fmt:isY?function(v){return v.toFixed(2)+"%";}:null}):'<div class="mut" style="font-size:9px;margin-top:6px">no prints yet</div>';
     return '<div class="mtile drv1d" data-sym="'+esc(sym)+'" data-off="'+st.off+'" data-w="'+W+'" data-total="'+total+'" title="drag ↔ to pan back through the last 7 days · double-click = latest">'+lbLine(lbl,badge,m&&m.market_time)
       +'<div class="vl">'+vl+'</div><div class="ch '+(chg==null?"":(chg>=0?"up":"dn"))+'">'+chTxt+' <span class="mut">'+esc(tag)+'</span></div>'+spark+'</div>';
   }
@@ -3474,9 +3477,22 @@ body.term #rr-head .tt{font-size:13px}
       svg+='<line x1="'+xa.toFixed(1)+'" x2="'+xb.toFixed(1)+'" y1="'+yh.toFixed(1)+'" y2="'+yh.toFixed(1)+'" stroke="#8a877e" stroke-width="1" stroke-dasharray="4 3"/>'
         +(h.text?'<text x="'+(xb-2).toFixed(1)+'" y="'+(yh-3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#8a877e">'+esc(h.text)+"</text>":"");
     });
-    var d="",st=false;
-    for(var i=0;i<nn;i++){ var vv=o.vals[i]; if(vv==null) continue; d+=(st?"L":"M")+X(i).toFixed(1)+","+Y(vv).toFixed(1); st=true; }
-    svg+='<path d="'+d+'" fill="none" stroke="'+o.color+'" stroke-width="1.4"/>';
+    // v9.25: a session break starts a new subpath, so nothing is drawn between a close and the next open.
+    // A gap INSIDE a session (a thin minute, the held lunch) still joins up -- only the close is a break.
+    var brk={}; (o.breaks||[]).forEach(function(k){ brk[k]=1; });
+    var segs=[], cur=[];
+    for(var i=0;i<nn;i++){
+      if(brk[i]&&cur.length){ segs.push(cur); cur=[]; }
+      var vv=o.vals[i]; if(vv==null) continue;
+      cur.push([X(i),Y(vv)]);
+    }
+    if(cur.length) segs.push(cur);
+    var d="", dots="";
+    segs.forEach(function(sg){
+      if(sg.length===1){ dots+='<circle cx="'+sg[0][0].toFixed(1)+'" cy="'+sg[0][1].toFixed(1)+'" r="1.3" fill="'+o.color+'"/>'; return; }   // a session with one visible point still shows
+      d+="M"+sg.map(function(p,k){ return (k?"L":"")+p[0].toFixed(1)+","+p[1].toFixed(1); }).join("");
+    });
+    svg+='<path d="'+d+'" fill="none" stroke="'+o.color+'" stroke-width="1.4"/>'+dots;
     if(lastI>=0){
       var lx=X(lastI), ly=Y(lastV), xEnd=W-mR+2;
       // the carry: only when the tag gutter is to the RIGHT of the last point (panned back far enough that
@@ -3505,7 +3521,7 @@ body.term #rr-head .tt{font-size:13px}
     st.off=Math.max(0,Math.min(maxOff,st.off||0)); st.maxOff=maxOff; st.tl=tl; st.Wslots=W;
     var a=total-W-st.off, b=total-st.off;   // [a,b)
     var vals=tl.slots.slice(a,b).map(function(_,i){return tl.vals[a+i];});
-    var labels=[], ticks=[], seps=[], hsegs=[], visSess=[];
+    var labels=[], ticks=[], seps=[], brks=[], hsegs=[], visSess=[];
     var oneSession=tl.intra&&rng==="1D";
     for(var i=a;i<b;i++){
       var ms=tl.slots[i], j=jstParts(ms);
@@ -3517,7 +3533,7 @@ body.term #rr-head .tt{font-size:13px}
     sIdx.forEach(function(s){
       var s0=tl.starts[s], s1=(s+1<tl.starts.length?tl.starts[s+1]:total), i0=Math.max(s0,a), i1=Math.min(s1,b)-1;
       visSess.push({s:s,d:tl.sess[s].d,i0:i0-a,i1:i1-a,kind:tl.kind[s],full:s0>=a&&s1<=b});
-      if(s0>a) seps.push(s0-a);
+      if(s0>a){ seps.push(s0-a); if(!tl.daily) brks.push(s0-a); }   // v9.25: brks always breaks the line; seps only draws the rule (and is dropped past 25)
       // one whole session in view: its start reads as a time; two or more (a pan mid-session): every session start reads as a date
       if(!tl.daily){ ticks.push({i:Math.max(s0,a)-a,text:(oneSession&&!multi&&s0>=a)?jstParts(tl.slots[s0]).hm:jstParts(tl.slots[Math.max(s0,a)]).md,pri:true}); }   // v9.9d: session-start ticks survive the thinning
       if(tl.intra&&rng==="1D"&&tl.prev[tl.sess[s].d]){ var pv=tl.prev[tl.sess[s].d].prev; hsegs.push({i0:i0-a,i1:i1-a,v:pv,text:(i1===Math.min(s1,b)-1&&s===sIdx[sIdx.length-1])?"prev "+lvl(pv):""}); }
@@ -3541,7 +3557,7 @@ body.term #rr-head .tt{font-size:13px}
     if(kinds.hourly&&tl.intra) note+=" · 1-minute bars accrue from the next sessions";
     var back=0; for(var sb=tl.starts.length-1;sb>=0&&tl.starts[sb]>=b;sb--) back++;
     note+=(st.off?" · ⬅ "+(back?back+" session"+(back>1?"s":"")+" back":"earlier")+" · double-click for latest":" · drag ↔ to pan");
-    var g=drawLevelChart(box,leg,{pfx:C.pfx,color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,hsegs:hsegs,note:note});
+    var g=drawLevelChart(box,leg,{pfx:C.pfx,color:C.color,name:C.name,vals:vals,labels:labels,ticks:ticks,seps:seps,breaks:brks,hsegs:hsegs,note:note});
     if(g){ st.svgW=g.W; st.iW=g.iW; }
   }
   // ---- mouse pan: hold and drag shifts the viewport; double-click returns to the latest ----
