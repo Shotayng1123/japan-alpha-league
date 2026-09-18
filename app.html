@@ -61,6 +61,18 @@ a{color:var(--cyan)}
 .panel{background:var(--panel);border:1px solid var(--bord);border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
 /* v9.10 MORNING BRIEF */
 .brarch{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:0 0 6px}
+/* v9.21: the morning notes as headlines, one open at a time */
+.brctl{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:0 0 6px}
+.brrow{display:flex;gap:7px;align-items:baseline;padding:5px 6px;border-top:1px solid var(--bord);cursor:pointer;font-size:12px}
+.brrow:first-child{border-top:none}
+.brrow:hover{background:#2a1210}
+.brrow .tw{color:var(--mut);font-size:9px;width:9px;flex:none}
+.brrow .hl{color:var(--txt);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brrow .hl b{color:var(--amber);font-weight:700}
+.brrow.open{background:#17181b}
+.brrow.open .hl{white-space:normal}
+.brrow .mt{margin-left:auto;color:var(--mut);font-size:10px;flex:none;padding-left:8px;white-space:nowrap}
+.brdet{padding:8px 6px 12px;border-top:1px dashed var(--bord2);background:#0a0a0b}
 .brarch .chip-sm.nar::after{content:"\25cf";color:var(--amber);font-size:7px;margin-left:3px;vertical-align:middle}
 .brstrip{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 .brstrip .mtile{flex:1 1 128px;min-width:118px;padding:5px 8px;background:#101114;border:1px solid var(--bord);border-radius:4px;overflow:hidden}
@@ -133,6 +145,7 @@ body.term #topbar .brand .mark{width:15px;height:15px}
 body.term #topbar .bmq{gap:7px;font-size:10.5px}
 body.term #topbar .chip{padding:1px 6px;font-size:9.5px}
 body.term #topbar .chip-sm{padding:0 5px;margin-left:2px}
+body.term #topbar .chip-sm.hl .hlw{display:none}   /* v9.21: the DATA chip is just the mark in terminal mode */
 body.term #nav{gap:1px;margin-left:2px}
 body.term #nav a{padding:2px 6px;font-size:9.5px;letter-spacing:.04em}
 body.term #upd{font-size:9.5px!important}
@@ -726,6 +739,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.21: the morning notes as a headline list in NEWS -- "Morning Update (2026-Sep-18): <title>", newest first, 5 / 10 / 20 / ALL, click opens that morning's brief in place; every note the platform has written stays reachable ---- */
 /* ---- v9.20: RESILIENCE + DATA HEALTH -- a failed chart / macro reply keeps the series already on the page; the header DATA chip polls api?action=health (every pipeline's newest row, every job's last run) and turns amber with the flags ---- */
 /* ---- v9.19: CORR -- the pairwise correlation matrix of the long book's Japan names (daily returns, 120 sessions) under PORTFOLIO CHARACTERISTICS ---- */
 /* ---- v9.18: MOST -- an ACTIVE chip on the MOVERS tables ranks names by turnover / 20-day ADV (top 12, or all) ---- */
@@ -1001,7 +1015,7 @@ body.term #rr-head .tt{font-size:13px}
     <div id="p-br" class="panel c12" data-view="news">
       <div class="phead"><span class="no">12B</span><span class="t">MORNING BRIEF &mdash; <span id="br-title">TOKYO 07:45 JST</span></span><span class="aux" id="br-aux"></span></div>
       <div class="pbody">
-        <div id="br-arch" class="brarch"></div>
+        <div id="br-ctl" class="brctl"></div>
         <div id="br-box"><div class="empty">Loading the morning brief&hellip;</div></div>
         <div class="hint2">Numbers are computed at 07:45 JST from the platform&rsquo;s own tables (Tokyo closes, the tick&rsquo;s NY closes, CBOE live yields, econ results, the news feed) and the S&amp;P sector SPDRs and the CME Nikkei yen future from the price feed; every block names its date. The English summary is written by the analyst routine a few minutes later and quotes only these figures; a &ldquo;likely trigger&rdquo; carries its source, and an (E) marks a general channel rather than a sourced link.</div>
       </div>
@@ -1814,7 +1828,7 @@ body.term #rr-head .tt{font-size:13px}
     var flags=(HEALTH&&HEALTH.flags)||[], stale=!!HEALTH&&(now-HEALTH_AT>20*60e3);
     var bad=flags.length+(recent.length?1:0);
     el.className="chip-sm hl "+(!HEALTH?"hl-unk":((bad||stale)?"hl-warn":"hl-ok"));
-    el.textContent="DATA "+(!HEALTH?"?":((bad||stale)?"\u26a0 "+(bad||"stale"):"\u2713"));
+    el.innerHTML='<span class="hlw">DATA </span>'+(!HEALTH?"?":((bad||stale)?"\u26a0 "+(bad||"stale"):"\u2713"));
     var lines=[];
     if(!HEALTH) lines.push("DATA HEALTH: the api health check has not answered yet");
     else lines.push("DATA HEALTH "+new Date(HEALTH.at).toISOString().slice(11,16)+"Z: "+(flags.length?flags.length+" flag(s)":"every pipeline current"));
@@ -5614,22 +5628,41 @@ body.term #rr-head .tt{font-size:13px}
   /* ---------- news ---------- */
   /* ---------- v9.10 MORNING BRIEF ---------- */
   var BRIEF=null, BRIEF_DATES=[], brLoading=false, brWant="";
+  // v9.21: every morning fetched this session, by date; which one is open; how many headlines to list
+  var BRIEFS={}, brOpen=null, brBusy={}, brN=10;   // brOpen: null = not chosen yet (the newest opens), "" = the reader closed it
+  var BR_MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function brStamp(d){ var x=new Date(Date.parse(d+"T00:00:00Z")); if(isNaN(x)) return String(d); return x.getUTCFullYear()+"-"+BR_MON[x.getUTCMonth()]+"-"+("0"+x.getUTCDate()).slice(-2); }
   function brPc(v,dp){ if(v==null||isNaN(v)) return "\u2013"; var s2=Number(v).toFixed(dp==null?2:dp); return (v>0?"+":"")+s2+"%"; }
   function brBp(v){ if(v==null||isNaN(v)) return "\u2013"; var b=Math.round(v); return (b>0?"+":"")+b+"bp"; }
   function brNum(v,dp){ return v==null||isNaN(v)?"\u2013":n(v,dp); }
   function brDate(d){ if(!d) return ""; var x=new Date(Date.parse(d+"T00:00:00Z")); if(isNaN(x)) return d; return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][x.getUTCDay()]+" "+x.getUTCDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][x.getUTCMonth()]; }
   function brHm(iso){ if(!iso) return "\u2013"; var ms=Date.parse(iso); return isNaN(ms)?"\u2013":new Date(ms+9*3600e3).toISOString().slice(11,16)+" JST"; }
+  function brQN(){ return brN||400; }
   function loadBrief(force){
     if(!ETAGS){ setTimeout(function(){ loadBrief(force); },0); return; }   // the first showView() runs before fetchJ's tables are declared
     if(brLoading) return;
-    if(BRIEF&&!force&&!brWant){ renderBrief(); return; }
+    if(BRIEF_DATES.length&&!force){ renderBrief(); return; }
     brLoading=true;
-    var url=API+"?action=brief"+(brWant?"&d="+brWant:"");
-    fetchJ(url).then(function(j){
+    fetchJ(API+"?action=brief&n="+brQN()).then(function(j){
       brLoading=false;
-      if(!j||!j.ok){ BRIEF={pending:(j&&j.error)||"unavailable"}; renderBrief(); return; }
-      BRIEF_DATES=j.dates||[]; BRIEF=j.brief?j.brief:{pending:j.pending||"no brief yet"}; renderBrief();
-    }).catch(function(){ brLoading=false; if(!BRIEF){ BRIEF={pending:"unavailable right now"}; renderBrief(); } });
+      // v9.21 (after the 09-18 outage): a failed reply never empties a list that is already on screen
+      if(!j||!j.ok){ if(!BRIEF_DATES.length) BRIEF={pending:(j&&(j.error||j.pending))||"unavailable"}; renderBrief(); return; }
+      BRIEF_DATES=j.dates||[];
+      if(j.brief){ BRIEFS[j.brief.d]=j.brief; if(brOpen===null) brOpen=j.brief.d; }
+      else if(!BRIEF_DATES.length) BRIEF={pending:j.pending||"no brief yet"};
+      renderBrief();
+    }).catch(function(){ brLoading=false; if(!BRIEF_DATES.length&&!BRIEF){ BRIEF={pending:"unavailable right now"}; } renderBrief(); });
+  }
+  // one morning, fetched the first time its headline is opened and kept for the session
+  function loadBriefDay(d){
+    if(BRIEFS[d]||brBusy[d]) return;
+    brBusy[d]=1;
+    fetchJ(API+"?action=brief&n="+brQN()+"&d="+encodeURIComponent(d)).then(function(j){
+      delete brBusy[d];
+      if(j&&j.ok){ if(j.dates&&j.dates.length) BRIEF_DATES=j.dates; if(j.brief) BRIEFS[j.brief.d]=j.brief; else BRIEFS[d]={d:d,failed:"that morning is not in the archive"}; }
+      else BRIEFS[d]={d:d,failed:(j&&(j.error||j.pending))||"could not be loaded"};
+      renderBrief();
+    }).catch(function(){ delete brBusy[d]; BRIEFS[d]={d:d,failed:"could not be loaded"}; renderBrief(); });
   }
   // the narrative: paragraphs split on blank lines, "- " lines as bullets, **bold** kept, everything escaped
   function brNarrativeHtml(t){
@@ -5681,14 +5714,55 @@ body.term #rr-head .tt{font-size:13px}
     if(rows.length) h+='<div class="brchips"><span class="mut" style="font-size:10px;align-self:center">DVA 1D top</span>'+rows.slice(0,3).map(line).join("")+'<span class="mut" style="font-size:10px;align-self:center;margin-left:6px">bottom</span>'+rows.slice(-3).reverse().map(line).join("")+'</div>';
     return h;
   }
+  // v9.21: the headline list. One row per morning the platform has written, newest first; the open row
+  // carries that morning's full brief underneath it. The title comes from the api (the routine writes it
+  // as the narrative's first line; older notes fall back to their first sentence and are shown in the
+  // muted style with a tooltip saying so, rather than passing a machine cut off as the analyst's words).
   function renderBrief(){
-    var box=$("br-box"), arch=$("br-arch"), aux=$("br-aux"), ttl=$("br-title"); if(!box) return;
-    arch.innerHTML=BRIEF_DATES.slice(0,10).map(function(x){ return '<span class="chip-sm'+((BRIEF&&BRIEF.d===x.d)?" on":"")+(x.narrative?" nar":"")+'" data-brd="'+esc(x.d)+'" title="'+esc(x.d)+(x.narrative?" \u00b7 with summary":" \u00b7 numbers only")+'">'+esc(x.d.slice(5).replace("-","/"))+'</span>'; }).join("");
-    if(!BRIEF){ box.innerHTML='<div class="empty">Loading the morning brief&hellip;</div>'; return; }
-    if(BRIEF.pending){ box.innerHTML='<div class="empty">Morning brief not available: '+esc(BRIEF.pending)+'</div>'; aux.textContent=""; return; }
+    var box=$("br-box"), ctl=$("br-ctl"), aux=$("br-aux"), ttl=$("br-title"); if(!box) return;
+    if(ctl) ctl.innerHTML='<span class="minih">MORNING UPDATES</span>'
+      +'<span class="mut" style="font-size:10px">show</span>'
+      +[5,10,20,0].map(function(k){ return '<span class="chip-sm'+(brN===k?" on":"")+'" data-brn="'+k+'" title="'+(k?("the newest "+k+" notes"):"every note in the archive")+'">'+(k||"ALL")+'</span>'; }).join("")
+      +'<span class="mut" style="font-size:10px;margin-left:4px">'+(BRIEF_DATES.length?(BRIEF_DATES.length+" note"+(BRIEF_DATES.length===1?"":"s")+" kept"+(brN&&BRIEF_DATES.length>brN?", "+brN+" shown":"")):"")+'</span>';
+    if(!BRIEF_DATES.length){
+      box.innerHTML=(BRIEF&&BRIEF.pending)?'<div class="empty">Morning brief not available: '+esc(BRIEF.pending)+'</div>':'<div class="empty">Loading the morning updates&hellip;</div>';
+      if(aux) aux.textContent=""; return;
+    }
+    var rows=BRIEF_DATES.slice(0,brN||BRIEF_DATES.length);
+    if(brOpen===null&&rows.length) brOpen=rows[0].d;                        // first render: the newest note is open
+    var open=null; rows.forEach(function(x){ if(x.d===brOpen) open=x; });
+    if(ttl) ttl.textContent=open?(brDate(open.d).toUpperCase()+" \u00b7 TOKYO 07:45 JST"):"TOKYO 07:45 JST";
+    if(aux){ var ob=open?BRIEFS[open.d]:null; aux.textContent=(ob&&ob.at)?("numbers "+brHm(ob.at)+(ob.narrative_at?" \u00b7 summary "+brHm(ob.narrative_at):" \u00b7 summary pending")):""; }
+    box.innerHTML=rows.map(function(x){
+      var isOpen=x.d===brOpen, ttext=x.title||(x.narrative?"":"numbers only \u2014 summary pending");
+      var der=x.tsrc==="derived";
+      var head='<div class="brrow'+(isOpen?" open":"")+'" data-brd="'+esc(x.d)+'" title="'+esc(x.d)+(der?" \u00b7 headline cut from the first sentence (this note was written before the routine wrote its own headline)":"")+'">'
+        +'<span class="tw">'+(isOpen?"\u25be":"\u25b8")+'</span>'
+        +'<span class="hl"><b>Morning Update ('+esc(brStamp(x.d))+'):</b> <span'+(der?' class="mut"':'')+'>'+esc(ttext)+'</span></span>'
+        +'<span class="mt">'+(x.narrative?brHm(x.at).replace(" JST",""):"numbers only")+'</span></div>';
+      if(!isOpen) return head;
+      var B=BRIEFS[x.d];
+      var det=B?(B.failed?'<div class="empty">'+esc(B.failed)+'</div>':brDetailHtml(B)):'<div class="empty">Loading '+esc(x.d)+'&hellip;</div>';
+      return head+'<div class="brdet">'+det+'</div>';
+    }).join("");
+    if(open&&!BRIEFS[open.d]) loadBriefDay(open.d);
+    Array.prototype.forEach.call(box.querySelectorAll("[data-snap]"),function(t){ t.addEventListener("click",function(ev){ ev.stopPropagation(); openSnap(t.getAttribute("data-snap")); }); });
+    if(!box.dataset.brbound){ box.dataset.brbound="1"; box.addEventListener("click",function(ev){
+      if(ev.target.closest&&ev.target.closest(".brdet")) return;            // clicks inside an open note are the note's own
+      var r=ev.target.closest?ev.target.closest(".brrow"):null; if(!r) return;
+      var d=r.getAttribute("data-brd");
+      brOpen=(brOpen===d)?"":d; if(brOpen&&!BRIEFS[brOpen]) loadBriefDay(brOpen);
+      renderBrief();
+    }); }
+    if(ctl&&!ctl.dataset.brbound){ ctl.dataset.brbound="1"; ctl.addEventListener("click",function(ev){
+      var c2=ev.target.closest?ev.target.closest("[data-brn]"):null; if(!c2) return;
+      var k=Number(c2.getAttribute("data-brn"))||0; if(k===brN) return;
+      var grew=(k===0||k>brN); brN=k; renderBrief();
+      if(grew) loadBrief(true);                                             // ALL / a bigger window: ask the api for more rows
+    }); }
+  }
+  function brDetailHtml(BRIEF){
     var b=BRIEF.body||{}, jp=b.jp||{}, us=b.us||{}, op=b.open||{}, cal=b.cal||{}, hl=b.headlines||{}, wk=b.week||{};
-    ttl.textContent=brDate(BRIEF.d).toUpperCase()+" \u00b7 TOKYO 07:45 JST";
-    aux.textContent="numbers "+brHm(BRIEF.at)+(BRIEF.narrative_at?" \u00b7 summary "+brHm(BRIEF.narrative_at):" \u00b7 summary pending");
     var idx=us.idx||{}, rt=us.rates||{}, fx=us.fx||{}, cm=us.cmdty||{};
     var tile=function(lb,val,chg,unit,sub){ var c2=unit==="bp"?brBp(chg):brPc(chg); return '<div class="mtile"><div class="lb">'+lb+'</div><div class="v '+cls(chg)+'">'+c2+'<small>'+val+'</small></div><div class="sub">'+sub+'</div></div>'; };
     var m=function(o){ return o||{}; };
@@ -5746,9 +5820,7 @@ body.term #rr-head .tt{font-size:13px}
     right+='<div class="brsec"><span class="minih">HEADLINES</span><span class="mut">'+(hl.count24h!=null?hl.count24h+" items in 24h, significance \u2265 3 shown":"")+'</span></div>';
     right+=top.length?top.map(function(x){ var d=new Date(Date.parse(x.t)+9*3600e3); return '<div class="brhead"><span class="t">'+d.toISOString().slice(11,16)+'</span><span>'+(x.x==="POS"?'<span class="nwc pos">+</span> ':(x.x==="NEG"?'<span class="nwc neg">&minus;</span> ':''))+'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.title)+'</a>'+(x.s?' <span class="nwc" style="font-size:9px">'+esc(secAbbr(x.s))+'</span>':'')+'</span><span class="src">'+esc(x.src)+'</span></div>'; }).join(""):'<div class="mut" style="font-size:11px">No headline at that significance in the last 24 hours.</div>';
     if(wk&&wk.complete&&(wk.sectors||[]).length) right+='<div class="brsec"><span class="minih">LAST WEEK</span><span class="mut">'+esc(wk.from)+' \u2192 '+esc(wk.to)+' \u00b7 MSCI Japan '+brPc((wk.msci||{}).ret)+'</span></div><div class="brchips">'+wk.sectors.map(function(x){ return '<span class="nwc'+(x.ret>0?" up":(x.ret<0?" dn":""))+'">'+esc(secAbbr(x.sector))+' '+brPc(x.ret,1)+'</span>'; }).join("")+'</div>';
-    box.innerHTML=strip+'<div class="brcols"><div>'+left+'</div><div>'+right+'</div></div>'+((b.notes||[]).length?'<div class="hint2" style="margin-top:6px">Notes from the 07:45 run: '+esc(b.notes.join(" \u00b7 "))+'</div>':'');
-    Array.prototype.forEach.call(box.querySelectorAll("[data-snap]"),function(t){ t.addEventListener("click",function(){ openSnap(t.getAttribute("data-snap")); }); });
-    if(!arch.dataset.bound){ arch.dataset.bound="1"; arch.addEventListener("click",function(ev){ var c2=ev.target.closest?ev.target.closest("[data-brd]"):null; if(!c2) return; brWant=c2.getAttribute("data-brd"); loadBrief(true); }); }
+    return strip+'<div class="brcols"><div>'+left+'</div><div>'+right+'</div></div>'+((b.notes||[]).length?'<div class="hint2" style="margin-top:6px">Notes from the 07:45 run: '+esc(b.notes.join(" \u00b7 "))+'</div>':'');
   }
 
   var NEWS=null, nwLoading=false, nwF={g:"",x:"",lang:"",tk:false,held:false};
@@ -5874,7 +5946,7 @@ body.term #rr-head .tt{font-size:13px}
     if(NEWS) renderNews();
     if(RS.list){ renderRList(); renderCalls(); if(RS.cur&&RS.doc[RS.cur]&&curView()==="research") renderReport(); }
   }
-  setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); if(!brWant) loadBrief(true); } },600000);
+  setInterval(function(){ if(curView()==="news"){ NEWS=null; loadNews(); loadBrief(true); } },600000);   // v9.21: the refresh reloads the list; the open note stays open
   setInterval(function(){ if(curView()==="research"){ RS.list=null; loadResearch(true); } },900000);
 })();
 </script>
