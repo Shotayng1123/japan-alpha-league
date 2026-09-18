@@ -755,6 +755,7 @@ footer{color:var(--mut);font-size:10.5px;margin-top:26px;line-height:1.6;font-fa
 /* ---- v9.9g: DATA stamp = the newest print on the page (JP quotes / macro stamps / minute bars, tooltip per source); a tab or home-screen app coming to the foreground refreshes state + macro + 1D charts, and reloads itself when a day old ---- */
 /* ---- v9.9g.1: the stamp ignores macro stamps that lie ahead of now (FRED date stamps at 21:00Z showed "DATA 06:00 JST") ---- */
 /* ---- v9.9h: x-axis thinning restored for multi-session views -- v9.9d exempted every session tick, so a 3M view printed 64 overlapping dates ---- */
+/* ---- v9.26: the close breaks the line on the 1D range only (and on the 1D driver tiles, which are a single-session view); 1W and longer join across the close as before ---- */
 /* ---- v9.25: the line is not carried across a close -- every session is its own subpath on the three market charts and on the driver tiles; daily-close ranges are unchanged ---- */
 /* ---- v9.24: the order ticket's Ticker field predicts from a code OR any part of a company name, over the Japan, World and Asia books at once; arrows / Enter / Escape, and an unambiguous typed name resolves on TRANSMIT ---- */
 /* ---- v9.23: the three market charts carry the latest value to the right edge on a thin dotted line and tag it there; the right margin is sized to the tag and capped on a narrow chart ---- */
@@ -3533,7 +3534,7 @@ body.term #rr-head .tt{font-size:13px}
     sIdx.forEach(function(s){
       var s0=tl.starts[s], s1=(s+1<tl.starts.length?tl.starts[s+1]:total), i0=Math.max(s0,a), i1=Math.min(s1,b)-1;
       visSess.push({s:s,d:tl.sess[s].d,i0:i0-a,i1:i1-a,kind:tl.kind[s],full:s0>=a&&s1<=b});
-      if(s0>a){ seps.push(s0-a); if(!tl.daily) brks.push(s0-a); }   // v9.25: brks always breaks the line; seps only draws the rule (and is dropped past 25)
+      if(s0>a){ seps.push(s0-a); if(rng==="1D") brks.push(s0-a); }   // v9.26: only 1D breaks the line at a close; 1W and longer join across it again (seps still draws the rule, and is dropped past 25)
       // one whole session in view: its start reads as a time; two or more (a pan mid-session): every session start reads as a date
       if(!tl.daily){ ticks.push({i:Math.max(s0,a)-a,text:(oneSession&&!multi&&s0>=a)?jstParts(tl.slots[s0]).hm:jstParts(tl.slots[Math.max(s0,a)]).md,pri:true}); }   // v9.9d: session-start ticks survive the thinning
       if(tl.intra&&rng==="1D"&&tl.prev[tl.sess[s].d]){ var pv=tl.prev[tl.sess[s].d].prev; hsegs.push({i0:i0-a,i1:i1-a,v:pv,text:(i1===Math.min(s1,b)-1&&s===sIdx[sIdx.length-1])?"prev "+lvl(pv):""}); }
